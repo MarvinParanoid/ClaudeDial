@@ -1,7 +1,11 @@
 #pragma once
 
+#include <QByteArray>
 #include <QObject>
 #include <QString>
+
+#include <functional>
+#include <optional>
 
 class QLocalServer;
 
@@ -24,12 +28,21 @@ public:
     /// When false, the running instance has been asked to show itself.
     [[nodiscard]] bool acquire();
 
+    /// Supplies what this instance answers to a `status` request. The payload is
+    /// the same JSON `--json` prints: percentages and timestamps only.
+    void setStatusProvider(std::function<QByteArray()> provider);
+
+    /// Asks a running instance for its current status, so a one-shot CLI call
+    /// costs no API request. nullopt when nothing is running.
+    [[nodiscard]] static std::optional<QByteArray> queryStatus();
+
 Q_SIGNALS:
     /// Another launch happened; show the popup.
     void activationRequested();
 
 private:
     QLocalServer* m_server = nullptr;
+    std::function<QByteArray()> m_statusProvider;
 };
 
 } // namespace claudometer

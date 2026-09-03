@@ -3,6 +3,7 @@
 #include "core/Config.h"
 #include "core/Credentials.h"
 #include "core/Format.h"
+#include "core/UsageJson.h"
 #include "core/UsageService.h"
 #include "tray/IconRenderer.h"
 #include "tray/Notifier.h"
@@ -51,7 +52,7 @@ bool Application::initialize()
     // settings window's title bar.
     {
         IconRenderer::Options logo;
-        logo.showPercentage = false;
+        logo.style = Config::TrayStyle::Gauge; // the mark, not a reading
         logo.foreground = QGuiApplication::palette().color(QPalette::WindowText);
         // A fixed reading, so the icon behaves like a logo rather than tracking
         // usage the way the tray icon does.
@@ -120,6 +121,12 @@ void Application::showPopup()
         m_popup->toggle(m_tray ? m_tray->iconGeometry() : QRect());
 }
 
+QByteArray Application::statusJson() const
+{
+    return core::json::status(m_service->state(), m_config->warningThreshold(),
+                              m_config->criticalThreshold());
+}
+
 void Application::updateTray()
 {
     if (!m_tray)
@@ -128,7 +135,7 @@ void Application::updateTray()
     const auto& state = m_service->state();
 
     IconRenderer::Options options;
-    options.showPercentage = m_config->showPercentageInTray();
+    options.style = m_config->trayStyle();
     // There is no way to ask a StatusNotifierItem host what its panel looks
     // like, so the application palette is the best available proxy. It is right
     // on Plasma with a matching panel theme and can be wrong on a panel that is
@@ -136,6 +143,7 @@ void Application::updateTray()
     options.foreground = m_panelForeground;
     options.warningThreshold = m_config->warningThreshold();
     options.criticalThreshold = m_config->criticalThreshold();
+    options.stale = state.stale;
 
     const std::optional<double> percentage = state.fiveHour
         ? std::optional<double>(state.fiveHour->percentage)

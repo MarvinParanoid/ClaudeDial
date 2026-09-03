@@ -87,5 +87,9 @@ int main(int argc, char** argv)
     QObject::connect(&instance, &claudometer::SingleInstance::activationRequested,
                      &application, &claudometer::Application::showPopup);
 
+    // Lets `claudometer --json` from a status bar read this instance's last
+    // result instead of spending an API request of its own.
+    instance.setStatusProvider([&application] { return application.statusJson(); });
+
     return QApplication::exec();
 }

@@ -38,11 +38,20 @@ Rectangle {
             onToggled: settings.startOnLogin = checked
         }
 
-        Toggle {
+        SettingRow {
+            width: parent.width
             theme: theme
-            text: qsTr("Show percentage in tray")
-            checked: settings.showPercentageInTray
-            onToggled: settings.showPercentageInTray = checked
+            label: qsTr("Tray style")
+
+            // Two variants of the same mark: the arc is identical, and only its
+            // middle differs. The popup header keeps the needle either way, as
+            // the constant logotype.
+            Segmented {
+                theme: theme
+                options: [qsTr("Gauge"), qsTr("Percentage")]
+                currentIndex: settings.trayStyleIndex
+                onActivated: function(index) { settings.trayStyleIndex = index }
+            }
         }
 
         SectionHeader {

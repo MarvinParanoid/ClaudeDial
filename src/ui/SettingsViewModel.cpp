@@ -69,15 +69,16 @@ void SettingsViewModel::setCriticalThreshold(int percent)
         m_config->setCriticalThreshold(percent);
 }
 
-bool SettingsViewModel::showPercentageInTray() const
+int SettingsViewModel::trayStyleIndex() const
 {
-    return m_config->showPercentageInTray();
+    return m_config->trayStyle() == Config::TrayStyle::Gauge ? 0 : 1;
 }
 
-void SettingsViewModel::setShowPercentageInTray(bool show)
+void SettingsViewModel::setTrayStyleIndex(int index)
 {
-    if (show != m_config->showPercentageInTray())
-        m_config->setShowPercentageInTray(show);
+    const auto style = index == 0 ? Config::TrayStyle::Gauge : Config::TrayStyle::Percentage;
+    if (style != m_config->trayStyle())
+        m_config->setTrayStyle(style);
 }
 
 int SettingsViewModel::themeIndex() const

@@ -25,6 +25,16 @@ public:
         Dark,
     };
 
+    /// What the tray icon puts inside the Claudometer arc.
+    ///
+    /// Two variants of one mark, not two icons: the arc is identical in both,
+    /// and only its middle differs. Gauge photographs better; Percentage is the
+    /// better daily driver, because it answers the question without a hover.
+    enum class TrayStyle {
+        Gauge,      ///< the needle - the logotype, and a reading you interpret
+        Percentage, ///< the exact number
+    };
+
     explicit Config(QObject* parent = nullptr);
 
     /// Where settings live. Useful in bug reports, and asserted in tests so the
@@ -44,8 +54,8 @@ public:
     [[nodiscard]] int criticalThreshold() const;
     void setCriticalThreshold(int percent);
 
-    [[nodiscard]] bool showPercentageInTray() const;
-    void setShowPercentageInTray(bool show);
+    [[nodiscard]] TrayStyle trayStyle() const;
+    void setTrayStyle(TrayStyle style);
 
     [[nodiscard]] Theme theme() const;
     void setTheme(Theme theme);

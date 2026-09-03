@@ -1,5 +1,7 @@
 #pragma once
 
+#include "core/Config.h"
+
 #include <QColor>
 #include <QIcon>
 
@@ -17,12 +19,11 @@ class IconRenderer
 {
 public:
     struct Options {
-        /// Draw the number inside a ring - the default. The number is the whole
-        /// point of a tray indicator: it tells you the state without a hover and
-        /// without interpreting anything. The ring around it still fills as the
-        /// limit is spent, so the icon carries an exact value and a visual state
-        /// at once. Clear this to get the dial instead.
-        bool showPercentage = true;
+        /// Needle or number. Both draw the same Claudometer arc, and the arc
+        /// fills with usage either way - so the two are variants of one mark and
+        /// a full ring is never drawn. A full ring was tried first and read as a
+        /// notification badge or a battery indicator.
+        core::Config::TrayStyle style = core::Config::TrayStyle::Percentage;
 
         /// Neutral colour, taken from the application palette so the icon
         /// follows the panel's light/dark theme.
@@ -30,6 +31,11 @@ public:
 
         int warningThreshold = 75;
         int criticalThreshold = 90;
+
+        /// Dim the whole mark. The number on screen is the last one we managed
+        /// to fetch, and until now the tray gave no sign of that at all - only
+        /// the tooltip and the popup said so, which is no use to a glance.
+        bool stale = false;
     };
 
     /// A multi-resolution icon; the panel picks the size it needs.
@@ -41,8 +47,8 @@ private:
     [[nodiscard]] static QColor colorFor(double percentage, const Options& options);
     [[nodiscard]] static QPixmap renderPixmap(int size, std::optional<double> percentage,
                                               const Options& options);
-    static void paintRingWithNumber(QPainter& painter, int size, double percentage,
-                                    const Options& options);
+    static void paintNumberInArc(QPainter& painter, int size, double percentage,
+                                 const Options& options);
 };
 
 } // namespace claudometer::tray

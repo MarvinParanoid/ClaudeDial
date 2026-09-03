@@ -1,5 +1,7 @@
 #include "Cli.h"
 
+#include "SingleInstance.h"
+
 #include "core/Config.h"
 #include "core/Credentials.h"
 #include "core/Format.h"
@@ -67,13 +69,31 @@ int run(int argc, char** argv, bool jsonOutput)
     QCoreApplication::setApplicationName(QStringLiteral("claudometer"));
     QCoreApplication::setApplicationVersion(QStringLiteral(CLAUDOMETER_VERSION));
 
+    QTextStream out(stdout);
+
+    // A tray instance is already polling on its own timer, and the rate-limit
+    // bucket is per access token - so a status bar calling this every few
+    // seconds would consume it twice over. Take the running instance's answer
+    // when there is one, and only reach for the network when there is not.
+    if (const auto shared = SingleInstance::queryStatus()) {
+        if (jsonOutput) {
+            out << *shared;
+            out.flush();
+            return 0;
+        }
+        if (const auto state = json::parseStatus(*shared)) {
+            printHuman(out, *state);
+            out.flush();
+            return 0;
+        }
+    }
+
     Credentials credentials;
     Config config;
     UsageClient client(&credentials);
 
     credentials.reload();
 
-    QTextStream out(stdout);
     QTextStream err(stderr);
     int exitCode = 0;
 

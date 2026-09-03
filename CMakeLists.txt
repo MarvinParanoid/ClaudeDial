@@ -40,3 +40,32 @@ include(GNUInstallDirs)
 install(TARGETS claudometer RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 install(FILES data/claudometer.desktop DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/applications)
 install(DIRECTORY data/icons/ DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/icons)
+
+# --- packaging ----------------------------------------------------------------
+#
+# Only three files are installed, and the QML lives inside the binary as a Qt
+# resource, so every format packages the same small payload.
+
+set(CPACK_PACKAGE_NAME claudometer)
+set(CPACK_PACKAGE_VENDOR "Claudometer contributors")
+set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "${PROJECT_DESCRIPTION}")
+set(CPACK_PACKAGE_HOMEPAGE_URL "https://github.com/OWNER/claudometer")
+set(CPACK_PACKAGE_CONTACT "Claudometer contributors")
+set(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_CURRENT_SOURCE_DIR}/LICENSE")
+set(CPACK_PACKAGE_FILE_NAME "claudometer-${PROJECT_VERSION}-linux-x86_64")
+set(CPACK_STRIP_FILES ON)
+set(CPACK_GENERATOR "TGZ")
+
+# Let dpkg work the library dependencies out from the binary itself. Hard-coding
+# them is a losing game: Debian and Ubuntu disagree on the Qt 6 package names,
+# and Ubuntu's 64-bit time_t transition renamed them again.
+set(CPACK_DEBIAN_PACKAGE_SHLIBDEPS ON)
+set(CPACK_DEBIAN_PACKAGE_SECTION utils)
+set(CPACK_DEBIAN_FILE_NAME DEB-DEFAULT)
+
+set(CPACK_RPM_PACKAGE_LICENSE MIT)
+set(CPACK_RPM_PACKAGE_GROUP "Applications/System")
+set(CPACK_RPM_PACKAGE_REQUIRES "qt6-qtbase >= 6.5, qt6-qtdeclarative >= 6.5")
+set(CPACK_RPM_FILE_NAME RPM-DEFAULT)
+
+include(CPack)

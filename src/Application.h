@@ -3,6 +3,7 @@
 #include "core/UsageClient.h"
 #include "core/UsageState.h"
 
+#include <QByteArray>
 #include <QColor>
 #include <QObject>
 
@@ -46,6 +47,10 @@ public:
     /// Show the popup - used when a second launch asks the running instance to
     /// surface itself.
     void showPopup();
+
+    /// The current state as `--json` would print it, for answering another
+    /// process over the local socket.
+    [[nodiscard]] QByteArray statusJson() const;
 
 private:
     void updateTray();

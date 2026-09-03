@@ -29,12 +29,22 @@ struct Colors {
 ///
 /// This is the only implementation of the mark. The tray icon and the popup
 /// header both call it, which is what makes them identical rather than similar.
+/// What sits inside the dial.
+///
+/// The two tray styles are variants of one mark, not two icons: the arc is the
+/// same in both, and only its middle differs - a needle, or the exact number.
+/// Empty leaves the middle to the caller.
+enum class Center {
+    Needle,
+    Empty,
+};
+
 /// `thicknessScale` thins the strokes without changing the dial's radius.
 /// The tray icon uses 1.0 - that weight is what makes it survive at 16-22 px on
 /// an unknown panel. The popup header sits on a calm card next to 14 px text,
 /// where the same weight reads as heavy, so it asks for a lighter one. The
 /// geometry stays shared; only the stroke weight and the colours differ.
 void paint(QPainter& painter, const QRectF& bounds, std::optional<double> percentage,
-           const Colors& colors, double thicknessScale = 1.0);
+           const Colors& colors, double thicknessScale = 1.0, Center center = Center::Needle);
 
 } // namespace claudometer::gauge

@@ -93,6 +93,12 @@ status-bar configs end up in public dotfiles repos.
 display, so they work over SSH and from a startup script before the compositor
 is up.
 
+**Polling `--json` is free while the tray is running.** The rate-limit bucket is
+per access token, so a status bar on its own timer and the tray on its would
+otherwise consume it twice over. A one-shot invocation asks the running instance
+for its last result over a local socket and only reaches for the network when
+nothing is running - so a Waybar `interval` costs nothing, and returns instantly.
+
 ## Building
 
 Needs Qt 6.5+, CMake 3.21+ and a C++20 compiler. No other runtime dependencies -
@@ -140,16 +146,26 @@ the sandbox:
 ## Settings
 
 Right-click the tray icon, or use the gear in the popup. Start on login, refresh
-interval, notifications, warning and critical thresholds, percentage in the tray
-icon, and theme (system / light / dark). Stored in
-`~/.config/claudometer/claudometer.conf`.
+interval, notifications, warning and critical thresholds, tray style, and theme
+(system / light / dark). Stored in `~/.config/claudometer/claudometer.conf`;
+the `[state]` group in that file is Claudometer's own bookkeeping, not settings.
 
-"Show percentage in tray" is **on by default**: the tray shows the 5-hour figure
-as a number inside a ring, and the ring fills as the limit is spent - an exact
-value and a visual state in one glance, with no hover and nothing to interpret.
-It was checked in a real panel down to 16 px. At 100% the icon shows `!`, because
-three digits are not legible at that size and "at the limit" is better said than
-counted. Clear the setting to get the speedometer dial instead.
+**Tray style** picks what goes inside the Claudometer arc:
+
+- **Percentage** (default) - the exact 5-hour figure. Answers the question with
+  no hover and nothing to interpret, which is what a tray indicator is for.
+  At 100% it shows `!`: three digits are not legible at 16 px, and "at the
+  limit" is better said than counted.
+- **Gauge** - the needle. The nicer mark, and a reading you take in at a glance
+  as little / half / nearly all, with the exact figure a hover away.
+
+The arc is identical in both, and fills with usage either way, so they are two
+variants of one mark rather than two icons. The popup header always shows the
+needle, as the constant logotype. A full ring was tried first and read as a
+notification badge.
+
+When the data is stale the whole mark fades, so a glance at the panel tells you
+the number is the last one Claudometer managed to fetch.
 
 The tray icon stays monochrome until the warning threshold, then goes amber, then
 red - a panel icon is on screen permanently and should not be a standing splash

@@ -29,7 +29,7 @@ constexpr double kTrackAlpha = 0.20;   ///< the unfilled dial must stay quiet
 } // namespace
 
 void paint(QPainter& painter, const QRectF& bounds, std::optional<double> percentage,
-           const Colors& colors, double thicknessScale)
+           const Colors& colors, double thicknessScale, Center center)
 {
     const double size = std::min(bounds.width(), bounds.height());
     if (size <= 0)
@@ -63,6 +63,11 @@ void paint(QPainter& painter, const QRectF& bounds, std::optional<double> percen
         painter.setPen(QPen(colors.value, dialWidth, Qt::SolidLine, Qt::RoundCap));
         painter.drawArc(dial, static_cast<int>(kStartAngle * 16),
                         static_cast<int>(kSweep * clamped / 100.0 * 16));
+    }
+
+    if (center == Center::Empty) {
+        painter.restore();
+        return; // the caller fills the middle - with the number, in practice
     }
 
     // The needle is the identity: it makes the mark a meter rather than a

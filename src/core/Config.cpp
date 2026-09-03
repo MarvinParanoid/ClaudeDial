@@ -15,7 +15,7 @@ constexpr auto kRefreshInterval = "refreshIntervalSeconds";
 constexpr auto kNotifications = "notificationsEnabled";
 constexpr auto kWarning = "warningThreshold";
 constexpr auto kCritical = "criticalThreshold";
-constexpr auto kShowPercentage = "showPercentageInTray";
+constexpr auto kTrayStyle = "trayStyle";
 constexpr auto kTheme = "theme";
 
 /// Grouped separately from the settings proper - see Config.h.
@@ -135,16 +135,21 @@ void Config::setCriticalThreshold(int percent)
     Q_EMIT changed();
 }
 
-bool Config::showPercentageInTray() const
+Config::TrayStyle Config::trayStyle() const
 {
-    // On by default: the number is readable at 16 px and tells the user the
-    // state with no hover and nothing to interpret. Clearing it gives the dial.
-    return m_settings->value(QLatin1String(kShowPercentage), true).toBool();
+    // Percentage by default: it is readable at 16 px and answers the question
+    // with no hover and nothing to interpret. The needle is the nicer mark, and
+    // it stays the logotype in the popup header regardless of this setting.
+    const QString value = m_settings->value(QLatin1String(kTrayStyle),
+                                            QStringLiteral("percentage")).toString();
+    return value == QLatin1String("gauge") ? TrayStyle::Gauge : TrayStyle::Percentage;
 }
 
-void Config::setShowPercentageInTray(bool show)
+void Config::setTrayStyle(TrayStyle style)
 {
-    m_settings->setValue(QLatin1String(kShowPercentage), show);
+    m_settings->setValue(QLatin1String(kTrayStyle),
+                         style == TrayStyle::Gauge ? QStringLiteral("gauge")
+                                                   : QStringLiteral("percentage"));
     Q_EMIT changed();
 }
 

@@ -19,7 +19,7 @@ class SettingsViewModel : public QObject
     Q_PROPERTY(bool notificationsEnabled READ notificationsEnabled WRITE setNotificationsEnabled NOTIFY changed)
     Q_PROPERTY(int warningThreshold READ warningThreshold WRITE setWarningThreshold NOTIFY changed)
     Q_PROPERTY(int criticalThreshold READ criticalThreshold WRITE setCriticalThreshold NOTIFY changed)
-    Q_PROPERTY(bool showPercentageInTray READ showPercentageInTray WRITE setShowPercentageInTray NOTIFY changed)
+    Q_PROPERTY(int trayStyleIndex READ trayStyleIndex WRITE setTrayStyleIndex NOTIFY changed)
     Q_PROPERTY(int themeIndex READ themeIndex WRITE setThemeIndex NOTIFY changed)
 
 public:
@@ -41,8 +41,9 @@ public:
     [[nodiscard]] int criticalThreshold() const;
     void setCriticalThreshold(int percent);
 
-    [[nodiscard]] bool showPercentageInTray() const;
-    void setShowPercentageInTray(bool show);
+    /// 0 = Gauge, 1 = Percentage - matching the order of the UI selector.
+    [[nodiscard]] int trayStyleIndex() const;
+    void setTrayStyleIndex(int index);
 
     /// 0 = System, 1 = Light, 2 = Dark - matching the order of the UI selector.
     [[nodiscard]] int themeIndex() const;

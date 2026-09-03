@@ -41,6 +41,7 @@ private Q_SLOTS:
 
     void emitsDocumentedJsonShape();
     void emitsValidJsonWhenUnavailable();
+    void roundTripsStatusJson();
 
     void clampsRefreshIntervalToFloor();
     void storesSettingsAtTheDocumentedPath();
@@ -336,6 +337,39 @@ void CoreTest::emitsValidJsonWhenUnavailable()
     QVERIFY(root.value(QStringLiteral("five_hour")).isNull());
 }
 
+void CoreTest::roundTripsStatusJson()
+{
+    // The CLI reads a running instance's answer back through this, so that a
+    // status bar polling --json costs no API request. If the two halves drift,
+    // the CLI silently falls back to spending quota.
+    const QDateTime now(QDate(2026, 9, 3), QTime(12, 0, 0), QTimeZone::UTC);
+
+    UsageState original;
+    original.updatedAt = now;
+    original.stale = true;
+    original.fiveHour = UsagePeriod { 63.0, now.addSecs(112 * 60) };
+    original.sevenDay = UsagePeriod { 41.0, std::nullopt };
+
+    const auto restored = json::parseStatus(json::status(original, 75, 90, now));
+    QVERIFY(restored.has_value());
+
+    QVERIFY(restored->fiveHour.has_value());
+    QCOMPARE(restored->fiveHour->percentage, 63.0);
+    QCOMPARE(restored->fiveHour->resetAt->toUTC(), original.fiveHour->resetAt->toUTC());
+
+    QVERIFY(restored->sevenDay.has_value());
+    QCOMPARE(restored->sevenDay->percentage, 41.0);
+    QVERIFY(!restored->sevenDay->resetAt.has_value());
+
+    QCOMPARE(restored->updatedAt.toUTC(), now);
+    QCOMPARE(restored->stale, true);
+
+    // The "nothing to report" payload must not read back as a usable state, or
+    // the CLI would print zeroes instead of saying why it has no data.
+    QVERIFY(!json::parseStatus(json::unavailable(QStringLiteral("not signed in"))).has_value());
+    QVERIFY(!json::parseStatus(QByteArrayLiteral("garbage")).has_value());
+}
+
 void CoreTest::clampsRefreshIntervalToFloor()
 {
     // The rate-limit bucket is per access token and shared with other monitors,
@@ -368,29 +402,29 @@ void CoreTest::roundTripsSettings()
     config.setWarningThreshold(60);
     config.setCriticalThreshold(85);
     config.setNotificationsEnabled(false);
-    config.setShowPercentageInTray(true);
+    config.setTrayStyle(Config::TrayStyle::Gauge);
     config.setTheme(Config::Theme::Dark);
 
     const Config reread;
     QCOMPARE(reread.warningThreshold(), 60);
     QCOMPARE(reread.criticalThreshold(), 85);
     QCOMPARE(reread.notificationsEnabled(), false);
-    QCOMPARE(reread.showPercentageInTray(), true);
+    QVERIFY(reread.trayStyle() == Config::TrayStyle::Gauge);
     QVERIFY(reread.theme() == Config::Theme::Dark);
 }
 
 void CoreTest::defaultsSuitALinuxTray()
 {
-    // Guard the two defaults that were deliberately chosen rather than
-    // inherited: the tray shows the number, because that needs no hover and no
-    // interpretation, and the theme follows the desktop.
+    // Guard the defaults that were deliberately chosen rather than inherited:
+    // the tray shows the number, because that needs no hover and nothing to
+    // interpret, and the theme follows the desktop.
     QStandardPaths::setTestModeEnabled(true);
     QSettings(QSettings::NativeFormat, QSettings::UserScope,
               QStringLiteral("claudometer"), QStringLiteral("claudometer"))
         .clear();
 
     const Config config;
-    QCOMPARE(config.showPercentageInTray(), true);
+    QVERIFY(config.trayStyle() == Config::TrayStyle::Percentage);
     QVERIFY(config.theme() == Config::Theme::System);
     QCOMPARE(config.refreshIntervalSeconds(), Config::kDefaultRefreshSeconds);
     QCOMPARE(config.warningThreshold(), 75);

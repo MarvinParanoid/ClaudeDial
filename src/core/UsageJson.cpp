@@ -78,4 +78,42 @@ QByteArray unavailable(const QString& reason)
     return QJsonDocument(root).toJson(QJsonDocument::Indented);
 }
 
+std::optional<UsagePeriod> parsePeriod(const QJsonValue& value)
+{
+    if (!value.isObject())
+        return std::nullopt;
+    const QJsonObject object = value.toObject();
+    if (!object.value(QStringLiteral("usage")).isDouble())
+        return std::nullopt;
+
+    UsagePeriod period;
+    period.percentage = object.value(QStringLiteral("usage")).toDouble();
+    if (const auto reset = object.value(QStringLiteral("reset_at")); reset.isString()) {
+        if (auto parsed = QDateTime::fromString(reset.toString(), Qt::ISODate); parsed.isValid())
+            period.resetAt = parsed.toUTC();
+    }
+    return period;
+}
+
+std::optional<UsageState> parseStatus(const QByteArray& payload)
+{
+    QJsonParseError error {};
+    const QJsonDocument doc = QJsonDocument::fromJson(payload, &error);
+    if (error.error != QJsonParseError::NoError || !doc.isObject())
+        return std::nullopt;
+
+    const QJsonObject root = doc.object();
+
+    UsageState state;
+    state.fiveHour = parsePeriod(root.value(QStringLiteral("five_hour")));
+    state.sevenDay = parsePeriod(root.value(QStringLiteral("seven_day")));
+    state.stale = root.value(QStringLiteral("stale")).toBool();
+    if (const auto updated = root.value(QStringLiteral("updated_at")); updated.isString())
+        state.updatedAt = QDateTime::fromString(updated.toString(), Qt::ISODate).toUTC();
+
+    if (!state.isValid())
+        return std::nullopt;
+    return state;
+}
+
 } // namespace claudometer::core::json

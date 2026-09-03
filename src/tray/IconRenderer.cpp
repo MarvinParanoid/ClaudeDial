@@ -15,15 +15,19 @@ namespace {
 /// stays crisp instead of being downscaled from one large pixmap.
 constexpr int kSizes[] = { 16, 22, 24, 32, 48, 64 };
 
-/// Ring stroke and digit size, as fractions of the icon.
+/// How much lighter the arc is drawn when it holds a number instead of a needle.
 ///
-/// Settled by rendering the combinations at 16, 20, 22 and 24 px and reading
-/// them in a real panel. The digits have to be comfortable to read when you look
-/// at Claudometer, without being the loudest thing in the whole tray - bigger or
-/// bolder than this and the icon starts reading as a notification badge. There
-/// has to be visible air between the digits and the ring.
-constexpr double kRingThickness = 0.08;
-constexpr double kDigitSize = 0.58;
+/// In the gauge style the arc *is* the reading, so it carries full weight. Here
+/// the number is the reading and the arc is context, so it steps back - and it
+/// has to: a block of two digits is a rectangle inscribed in the arc's circle,
+/// and at full weight the interior radius simply is not large enough to hold one
+/// without the digits colliding with the arc walls.
+constexpr double kNumberArcScale = 0.45;
+
+/// Digit size as a fraction of the icon. Settled by rendering the combinations
+/// at 16, 20, 22 and 24 px: this is the largest that still leaves visible air
+/// between the digits and the arc.
+constexpr double kDigitSize = 0.52;
 
 /// DemiBold rather than Bold: at 16-22 px Bold fills the counters and looks
 /// blunt, while Medium goes thin enough to fade at 16 px, particularly in the
@@ -33,6 +37,10 @@ constexpr QFont::Weight kDigitWeight = QFont::DemiBold;
 /// Three digits do not fit legibly, and "at the limit" is better said than
 /// counted.
 constexpr auto kLimitGlyph = "!";
+
+/// How far the mark fades once the data behind it is stale. Enough to read as
+/// "not current" at a glance, not so far that the number becomes unreadable.
+constexpr double kStaleOpacity = 0.45;
 
 // Breeze-adjacent, so the icon does not look foreign on Plasma while staying
 // legible on GNOME's and XFCE's panels.
@@ -55,23 +63,16 @@ QColor IconRenderer::colorFor(double percentage, const Options& options)
     return options.foreground; // monochrome until something needs attention
 }
 
-void IconRenderer::paintRingWithNumber(QPainter& painter, int size, double percentage,
-                                       const Options& options)
+void IconRenderer::paintNumberInArc(QPainter& painter, int size, double percentage,
+                                    const Options& options)
 {
     const QColor value = colorFor(percentage, options);
-    const double stroke = std::max(1.0, size * kRingThickness);
-    const double inset = stroke / 2.0 + size * 0.02;
-    const QRectF ring = QRectF(0, 0, size, size).adjusted(inset, inset, -inset, -inset);
+    const QRectF bounds(0, 0, size, size);
 
-    QColor track = options.foreground;
-    track.setAlphaF(0.22f);
-
-    painter.setBrush(Qt::NoBrush);
-    painter.setPen(QPen(track, stroke, Qt::SolidLine, Qt::FlatCap));
-    painter.drawEllipse(ring);
-
-    painter.setPen(QPen(value, stroke, Qt::SolidLine, Qt::RoundCap));
-    painter.drawArc(ring, 90 * 16, -static_cast<int>(percentage / 100.0 * 360 * 16));
+    // The same arc as the gauge style, drawn by the same function, with its
+    // middle left for us.
+    gauge::paint(painter, bounds, percentage, { options.foreground, value }, kNumberArcScale,
+                 gauge::Center::Empty);
 
     const QString text = percentage >= 100.0 ? QString::fromLatin1(kLimitGlyph)
                                              : QString::number(qRound(percentage));
@@ -80,7 +81,7 @@ void IconRenderer::paintRingWithNumber(QPainter& painter, int size, double perce
     font.setPixelSize(static_cast<int>(size * kDigitSize));
     painter.setFont(font);
     painter.setPen(QPen(value));
-    painter.drawText(QRectF(0, 0, size, size), Qt::AlignCenter, text);
+    painter.drawText(bounds, Qt::AlignCenter, text);
 }
 
 QPixmap IconRenderer::renderPixmap(int size, std::optional<double> percentage,
@@ -92,11 +93,13 @@ QPixmap IconRenderer::renderPixmap(int size, std::optional<double> percentage,
     QPainter painter(&pixmap);
     painter.setRenderHint(QPainter::Antialiasing, true);
     painter.setRenderHint(QPainter::TextAntialiasing, true);
+    if (options.stale)
+        painter.setOpacity(kStaleOpacity);
 
     // With no data there is no number to show, so both modes fall back to the
     // empty dial - "unknown" looks the same however the icon is configured.
-    if (percentage && options.showPercentage) {
-        paintRingWithNumber(painter, size, std::clamp(*percentage, 0.0, 100.0), options);
+    if (percentage && options.style == core::Config::TrayStyle::Percentage) {
+        paintNumberInArc(painter, size, std::clamp(*percentage, 0.0, 100.0), options);
         return pixmap;
     }
 
