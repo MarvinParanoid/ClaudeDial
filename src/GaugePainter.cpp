@@ -31,6 +31,16 @@ constexpr double kNeedleThickness = 0.12;
 constexpr double kNeedleLength = 0.44; ///< of the dial radius
 constexpr double kTrackAlpha = 0.20;   ///< the unfilled dial must stay quiet
 
+/// Proportions for a logotype rather than an indicator.
+///
+/// The values above are tuned for 16-24 px, where the needle only has to say
+/// which way it points and the fill supplies the context. An application icon is
+/// drawn at 48 px and up with no fill behind it, and at that size the same
+/// stubby needle over a 20%-alpha arc reads as a blob rather than a meter -
+/// which is exactly how the settings window's title bar icon looked.
+constexpr double kLogoNeedleThickness = 0.075;
+constexpr double kLogoNeedleLength = 0.68;
+
 } // namespace
 
 void paint(QPainter& painter, const QRectF& bounds, std::optional<double> percentage,
@@ -51,8 +61,11 @@ void paint(QPainter& painter, const QRectF& bounds, std::optional<double> percen
     painter.setRenderHint(QPainter::Antialiasing, true);
     painter.setBrush(Qt::NoBrush);
 
+    // With a fill on top, the dial is the *unused* part and has to stay quiet.
+    // With no fill it is the mark itself, and must be solid.
     QColor track = colors.dial;
-    track.setAlphaF(static_cast<float>(kTrackAlpha));
+    if (fill == Fill::Usage)
+        track.setAlphaF(static_cast<float>(kTrackAlpha));
     painter.setPen(QPen(track, dialWidth, Qt::SolidLine, Qt::FlatCap));
     painter.drawArc(dial, static_cast<int>(kStartAngle * 16), static_cast<int>(kSweep * 16));
 
@@ -77,12 +90,14 @@ void paint(QPainter& painter, const QRectF& bounds, std::optional<double> percen
 
     // The needle is the identity: it makes the mark a meter rather than a
     // progress ring, and its angle is legible even where the fill is not.
+    const bool asLogo = fill == Fill::None;
     const QPointF centre = dial.center();
     const double radians = qDegreesToRadians(kStartAngle + kSweep * clamped / 100.0);
-    const double length = dial.width() / 2.0 * kNeedleLength;
+    const double length = dial.width() / 2.0 * (asLogo ? kLogoNeedleLength : kNeedleLength);
+    const double needleWidth =
+        size * (asLogo ? kLogoNeedleThickness : kNeedleThickness) * scale;
 
-    painter.setPen(QPen(colors.value, std::max(1.5, size * kNeedleThickness * scale),
-                        Qt::SolidLine, Qt::RoundCap));
+    painter.setPen(QPen(colors.value, std::max(1.5, needleWidth), Qt::SolidLine, Qt::RoundCap));
     painter.drawLine(centre, QPointF(centre.x() + std::cos(radians) * length,
                                      centre.y() - std::sin(radians) * length));
 

@@ -199,8 +199,19 @@ red - a panel icon is on screen permanently and should not be a standing splash
 of colour. The popup uses a longer ramp with an accent step, because it is only
 visible while you are reading it.
 
-Notification thresholds fire once per window at 75%, 90%, 95% and 100%, and
-reset when the window does.
+## Notifications
+
+<img src="docs/images/notification.png" alt="A Claudometer notification" width="347">
+
+Once per window at 75%, 90%, 95% and 100%, reset when the window does - and not
+re-announced after a restart. The title says how bad it is, the first line says
+which threshold was crossed, and the second gives the reset time, which is the
+part you do not already have from the title and the icon. (The icon shows the
+*current* figure, so it can read 96 on a banner about crossing 95%.)
+
+The icon travels with the notification as pixels rather than as an icon name.
+A name only resolves once Claudometer is installed into an icon theme, and until
+then the daemon draws a blank document, which makes the banner look broken.
 
 ## Refresh behaviour
 

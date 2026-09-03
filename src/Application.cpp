@@ -14,6 +14,7 @@
 #include "ui/UsageViewModel.h"
 
 #include <QGuiApplication>
+#include <QImage>
 #include <QPalette>
 #include <QQmlContext>
 #include <QQmlEngine>
@@ -211,9 +212,30 @@ void Application::showSettings()
 
 void Application::onThresholdCrossed(PeriodKind kind, int threshold, double percentage)
 {
-    Q_UNUSED(percentage)
-    if (m_config->notificationsEnabled())
-        m_notifier->notifyThreshold(kind, threshold);
+    if (!m_config->notificationsEnabled())
+        return;
+
+    // The banner carries the mark in the state it is announcing, drawn at a size
+    // where the number is comfortable to read.
+    constexpr int kNotificationIconSize = 48;
+    IconRenderer::Options options;
+    // Always the number here, whatever the tray is set to: a notification is
+    // about one specific figure, and at this size it is plainly legible.
+    options.style = Config::TrayStyle::Percentage;
+    options.foreground = m_panelForeground;
+    options.warningThreshold = m_config->warningThreshold();
+    options.criticalThreshold = m_config->criticalThreshold();
+
+    const QImage icon = IconRenderer::render(percentage, options)
+                            .pixmap(kNotificationIconSize, kNotificationIconSize)
+                            .toImage();
+
+    // The reset time is the part the user does not already have from the title
+    // and the icon.
+    const auto& period = m_service->state().period(kind);
+    const QString reset = period ? core::format::resetSentence(kind, *period) : QString();
+
+    m_notifier->notifyThreshold(kind, threshold, reset, icon);
 }
 
 } // namespace claudometer

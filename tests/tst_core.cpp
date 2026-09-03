@@ -178,6 +178,11 @@ void CoreTest::formatsRelativeReset()
 
     QCOMPARE(format::resetRelative(now.addSecs(112 * 60), now), QStringLiteral("resets in 1h 52m"));
     QCOMPARE(format::resetRelative(now.addSecs(4 * 60), now), QStringLiteral("resets in 4m"));
+
+    // A zero component is noise: "2h", not "2h 0m"; "37m", not "0h 37m".
+    QCOMPARE(format::resetRelative(now.addSecs(120 * 60), now), QStringLiteral("resets in 2h"));
+    QCOMPARE(format::resetRelative(now.addSecs(60 * 60), now), QStringLiteral("resets in 1h"));
+    QCOMPARE(format::resetRelative(now.addSecs(37 * 60), now), QStringLiteral("resets in 37m"));
     QCOMPARE(format::resetRelative(now.addSecs(5), now), QStringLiteral("resets now"));
     QCOMPARE(format::resetRelative(now.addSecs(-60), now), QStringLiteral("resets now"));
 }

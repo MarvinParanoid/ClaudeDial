@@ -33,13 +33,17 @@ QString absoluteWhen(const QDateTime& resetAt, const QDateTime& now)
     return locale.toString(local, QStringLiteral("d MMM HH:mm"));
 }
 
+/// "1h 52m", but "2h" rather than "2h 0m" and "37m" rather than "0h 37m" - a
+/// zero component is noise in a duration.
 QString minutesAndHours(qint64 totalMinutes)
 {
     const qint64 hours = totalMinutes / 60;
     const qint64 minutes = totalMinutes % 60;
-    if (hours > 0)
-        return QStringLiteral("%1h %2m").arg(hours).arg(minutes);
-    return QStringLiteral("%1m").arg(minutes);
+    if (hours == 0)
+        return QStringLiteral("%1m").arg(minutes);
+    if (minutes == 0)
+        return QStringLiteral("%1h").arg(hours);
+    return QStringLiteral("%1h %2m").arg(hours).arg(minutes);
 }
 
 } // namespace
