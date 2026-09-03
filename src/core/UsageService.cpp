@@ -246,6 +246,12 @@ void UsageService::resetFiredThresholds(PeriodKind kind)
 
 void UsageService::persistFiredThresholds(PeriodKind kind)
 {
+    // Simulated numbers must not be written down: a run at 100% would otherwise
+    // record that step as already announced and silence the real notification
+    // when the user genuinely reaches it.
+    if (UsageClient::isSimulating())
+        return;
+
     const QSet<int>& fired = kind == PeriodKind::FiveHour ? m_firedFiveHour : m_firedSevenDay;
     const QDateTime& lastReset = kind == PeriodKind::FiveHour ? m_lastFiveHourReset
                                                               : m_lastSevenDayReset;

@@ -39,12 +39,30 @@ enum class Center {
     Empty,
 };
 
+/// Whether the arc shows a reading at all.
+///
+/// None is for the application icon: a logotype should not appear to be
+/// displaying data, and a partially filled arc does exactly that.
+enum class Fill {
+    Usage,
+    None,
+};
+
 /// `thicknessScale` thins the strokes without changing the dial's radius.
 /// The tray icon uses 1.0 - that weight is what makes it survive at 16-22 px on
 /// an unknown panel. The popup header sits on a calm card next to 14 px text,
 /// where the same weight reads as heavy, so it asks for a lighter one. The
 /// geometry stays shared; only the stroke weight and the colours differ.
 void paint(QPainter& painter, const QRectF& bounds, std::optional<double> percentage,
-           const Colors& colors, double thicknessScale = 1.0, Center center = Center::Needle);
+           const Colors& colors, double thicknessScale = 1.0, Center center = Center::Needle,
+           Fill fill = Fill::Usage);
+
+/// The outer radius of the arc, as a fraction of the icon.
+///
+/// Independent of stroke weight by construction - the inset is half the stroke
+/// plus a fixed margin, so the arc's outer silhouette is identical however
+/// heavily it is drawn. That is what makes the two tray styles the same mark
+/// rather than two marks of similar shape.
+[[nodiscard]] double outerRadiusFraction();
 
 } // namespace claudometer::gauge

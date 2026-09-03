@@ -2,6 +2,8 @@
 
 #include "SingleInstance.h"
 
+#include <optional>
+
 #include "core/Config.h"
 #include "core/Credentials.h"
 #include "core/Format.h"
@@ -75,7 +77,10 @@ int run(int argc, char** argv, bool jsonOutput)
     // bucket is per access token - so a status bar calling this every few
     // seconds would consume it twice over. Take the running instance's answer
     // when there is one, and only reach for the network when there is not.
-    if (const auto shared = SingleInstance::queryStatus()) {
+    // A running instance is not consulted while simulating: an explicit debug
+    // override has to win, or it silently reports the real numbers instead.
+    if (const auto shared = UsageClient::isSimulating() ? std::nullopt
+                                                        : SingleInstance::queryStatus()) {
         if (jsonOutput) {
             out << *shared;
             out.flush();

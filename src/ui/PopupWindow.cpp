@@ -37,11 +37,14 @@ PopupWindow::PopupWindow(QQmlEngine* engine, const QUrl& source)
     }
     syncSize();
 
-    // Dismiss on focus loss, the way a normal tray popup behaves.
-    connect(this, &QWindow::activeChanged, this, [this] {
-        if (!isActive() && isVisible())
-            hide();
-    });
+    // Deliberately no dismiss-on-focus-loss.
+    //
+    // A tray popup conventionally vanishes when it loses focus, and that is what
+    // this did. It is the wrong behaviour here: the compositor decides where the
+    // window lands (a Wayland client cannot place its own top-levels), so the
+    // user has to be able to drag it somewhere useful and leave it there while
+    // working in another window. Closing is explicit instead - the tray icon
+    // toggles it, the close button and Escape shut it.
 }
 
 void PopupWindow::syncSize()

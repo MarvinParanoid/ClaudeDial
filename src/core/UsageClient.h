@@ -43,6 +43,14 @@ public:
     /// Exposed for tests. nullopt for null/absent/unusable windows.
     [[nodiscard]] static std::optional<UsagePeriod> parseWindow(const QJsonValue& value);
 
+    /// True when CLAUDOMETER_SIMULATE is set, in which case no request is made.
+    ///
+    /// A development aid, and the only way to reach the upper end of the scale:
+    /// the 95% and 100% steps are fixed, so without this the colours, the "!"
+    /// glyph and the notifications for those steps cannot be exercised short of
+    /// actually spending a month's limit.
+    [[nodiscard]] static bool isSimulating();
+
 Q_SIGNALS:
     void succeeded(const claudometer::core::UsageState& state);
     void failed(claudometer::core::FetchError error);

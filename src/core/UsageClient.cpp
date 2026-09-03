@@ -9,6 +9,7 @@
 #include <QNetworkReply>
 #include <QLoggingCategory>
 #include <QNetworkRequest>
+#include <QProcessEnvironment>
 #include <QTimeZone>
 
 #include <algorithm>
@@ -39,7 +40,46 @@ void silenceNetworkLogging()
                                                     "qt.network.*.info=false"));
 }
 
+/// Reads CLAUDOMETER_SIMULATE, e.g. "96" or "96,41" - the five-hour and
+/// seven-day percentages to report instead of asking the server.
+std::optional<UsageState> simulatedState()
+{
+    const QString raw =
+        QProcessEnvironment::systemEnvironment().value(QStringLiteral("CLAUDOMETER_SIMULATE"));
+    if (raw.isEmpty())
+        return std::nullopt;
+
+    const QStringList parts = raw.split(QLatin1Char(','), Qt::SkipEmptyParts);
+    if (parts.isEmpty())
+        return std::nullopt;
+
+    const auto window = [](const QString& text, int hoursUntilReset) -> std::optional<UsagePeriod> {
+        bool ok = false;
+        const double value = text.trimmed().toDouble(&ok);
+        if (!ok)
+            return std::nullopt;
+        UsagePeriod period;
+        period.percentage = std::clamp(value, 0.0, 100.0);
+        period.resetAt = QDateTime::currentDateTimeUtc().addSecs(hoursUntilReset * 3600);
+        return period;
+    };
+
+    UsageState state;
+    state.fiveHour = window(parts.at(0), 2);
+    state.sevenDay = parts.size() > 1 ? window(parts.at(1), 4 * 24) : std::nullopt;
+    state.updatedAt = QDateTime::currentDateTimeUtc();
+
+    if (!state.isValid())
+        return std::nullopt;
+    return state;
+}
+
 } // namespace
+
+bool UsageClient::isSimulating()
+{
+    return simulatedState().has_value();
+}
 
 UsageClient::UsageClient(Credentials* credentials, QObject* parent)
     : QObject(parent)
@@ -54,6 +94,13 @@ void UsageClient::fetch()
 {
     if (m_inFlight)
         return;
+
+    // Simulation short-circuits the network entirely, so it costs no request
+    // and works offline.
+    if (const auto simulated = simulatedState()) {
+        Q_EMIT succeeded(*simulated);
+        return;
+    }
 
     switch (m_credentials->status()) {
     case Credentials::Status::Ok:

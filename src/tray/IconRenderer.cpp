@@ -1,6 +1,7 @@
 #include "IconRenderer.h"
 
 #include "GaugePainter.h"
+#include "core/UsageLevel.h"
 
 #include <QFont>
 #include <QPainter>
@@ -19,10 +20,17 @@ constexpr int kSizes[] = { 16, 22, 24, 32, 48, 64 };
 ///
 /// In the gauge style the arc *is* the reading, so it carries full weight. Here
 /// the number is the reading and the arc is context, so it steps back - and it
-/// has to: a block of two digits is a rectangle inscribed in the arc's circle,
-/// and at full weight the interior radius simply is not large enough to hold one
-/// without the digits colliding with the arc walls.
-constexpr double kNumberArcScale = 0.45;
+/// has to. A block of two digits is a rectangle inscribed in the arc's circle,
+/// so the interior radius has to cover half its diagonal, and at full weight it
+/// does not: at 0.45 and even at 0.38, 88 and 99 still touch the arc walls in a
+/// real panel. The arc's outer silhouette is unchanged by this, only its weight,
+/// so the two styles remain one mark.
+constexpr double kNumberArcScale = 0.32;
+
+/// Nudge the digits down a little. Below the centre the arc simply is not there
+/// - the gap is at the bottom - so this is clearance bought for free, and it is
+/// where the top of a two-digit block needs it.
+constexpr double kDigitOffset = 0.03;
 
 /// Digit size as a fraction of the icon. Settled by rendering the combinations
 /// at 16, 20, 22 and 24 px: this is the largest that still leaves visible air
@@ -34,8 +42,12 @@ constexpr double kDigitSize = 0.52;
 /// warning and critical colours.
 constexpr QFont::Weight kDigitWeight = QFont::DemiBold;
 
-/// Three digits do not fit legibly, and "at the limit" is better said than
-/// counted.
+/// At the limit the icon shows this instead of "100".
+///
+/// Three digits were tried, at a reduced size so they would fit. In a real panel
+/// they came out visibly weaker than "99" - the one reading that most needs to
+/// carry. A full red arc around an exclamation mark says "limit reached" more
+/// firmly than a cramped number, and the tooltip still gives the exact figure.
 constexpr auto kLimitGlyph = "!";
 
 /// How far the mark fades once the data behind it is stale. Enough to read as
@@ -45,22 +57,38 @@ constexpr double kStaleOpacity = 0.45;
 // Breeze-adjacent, so the icon does not look foreign on Plasma while staying
 // legible on GNOME's and XFCE's panels.
 //
-// NOTE: the popup uses a longer ramp with an accent step (see Theme.qml). That
-// is deliberate, not an oversight: a panel icon is on screen permanently and
-// must not be a standing splash of colour, whereas the popup is only visible
-// while the user is looking at it.
+// Amber, then orange, then red. Going straight from amber to red at the critical
+// threshold was tried, and in a real panel it read as an abrupt jump - and worse,
+// it made every reading from 90 to 100 look identical, collapsing four distinct
+// states into one colour. The steps here are the same ones the notifications
+// fire on, so what the user sees and what they are told agree.
+//
+// NOTE: the popup's ramp starts with an accent step instead of amber (see
+// Theme.qml). That is deliberate: a panel icon is on screen permanently and must
+// stay monochrome until something needs attention, whereas the popup is only
+// visible while it is being read.
 const QColor kWarning { 0xfd, 0xbc, 0x4b };
-const QColor kCritical { 0xda, 0x44, 0x53 };
+const QColor kCriticalColour { 0xf0, 0x84, 0x2c };
+const QColor kSevere { 0xda, 0x44, 0x53 };
 
 } // namespace
 
 QColor IconRenderer::colorFor(double percentage, const Options& options)
 {
-    if (percentage >= options.criticalThreshold)
-        return kCritical;
-    if (percentage >= options.warningThreshold)
+    // The one definition of the ramp, shared with the popup and with --json.
+    // This used to threshold on its own and collapsed Critical into Severe.
+    switch (core::levelFor(percentage, options.warningThreshold, options.criticalThreshold)) {
+    case core::UsageLevel::Normal:
+        return options.foreground; // monochrome until something needs attention
+    case core::UsageLevel::Warning:
         return kWarning;
-    return options.foreground; // monochrome until something needs attention
+    case core::UsageLevel::Critical:
+        return kCriticalColour;
+    case core::UsageLevel::Severe:
+    case core::UsageLevel::LimitReached:
+        return kSevere;
+    }
+    return options.foreground;
 }
 
 void IconRenderer::paintNumberInArc(QPainter& painter, int size, double percentage,
@@ -76,12 +104,13 @@ void IconRenderer::paintNumberInArc(QPainter& painter, int size, double percenta
 
     const QString text = percentage >= 100.0 ? QString::fromLatin1(kLimitGlyph)
                                              : QString::number(qRound(percentage));
+
     QFont font;
     font.setWeight(kDigitWeight);
     font.setPixelSize(static_cast<int>(size * kDigitSize));
     painter.setFont(font);
     painter.setPen(QPen(value));
-    painter.drawText(bounds, Qt::AlignCenter, text);
+    painter.drawText(bounds.translated(0, size * kDigitOffset), Qt::AlignCenter, text);
 }
 
 QPixmap IconRenderer::renderPixmap(int size, std::optional<double> percentage,
@@ -110,6 +139,25 @@ QPixmap IconRenderer::renderPixmap(int size, std::optional<double> percentage,
     gauge::paint(painter, QRectF(0, 0, size, size), percentage, colors);
 
     return pixmap;
+}
+
+QIcon IconRenderer::logo(const QColor& foreground)
+{
+    // A fixed needle angle and no fill: a partially filled arc in a title bar
+    // looks like the window is reporting something, which a logotype must not.
+    constexpr double kLogoAngle = 62.0;
+
+    QIcon icon;
+    for (const int size : kSizes) {
+        QPixmap pixmap(size, size);
+        pixmap.fill(Qt::transparent);
+        QPainter painter(&pixmap);
+        painter.setRenderHint(QPainter::Antialiasing, true);
+        gauge::paint(painter, QRectF(0, 0, size, size), kLogoAngle, { foreground, foreground },
+                     1.0, gauge::Center::Needle, gauge::Fill::None);
+        icon.addPixmap(pixmap);
+    }
+    return icon;
 }
 
 QIcon IconRenderer::render(std::optional<double> percentage, const Options& options)

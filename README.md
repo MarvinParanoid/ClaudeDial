@@ -5,21 +5,12 @@
 A minimal system tray indicator for Claude Code usage limits, for Linux.
 Glance at the icon, hover for details, click for a small popup, forget about it.
 
-```
-╭────────────────────────────────╮
-│  ◔  Claudometer           ↻  ⚙ │
-│                                │
-│  5 hour limit             63%  │
-│  █████████████░░░░░░░░         │
-│  ◴ resets in 1h 52m            │
-│                                │
-│  7 day limit              41%  │
-│  ████████░░░░░░░░░░░░░         │
-│  ◴ resets Mon 09:00            │
-│                                │
-│  Updated just now              │
-╰────────────────────────────────╯
-```
+<img src="docs/images/tray-styles.png" alt="The tray icon at 8, 23, 75, 88, 99 and 100 percent, in both styles" width="368">
+
+That is the tray icon at 8%, 23%, 75%, 88%, 99% and at the limit - the exact
+figure on top, the needle below. Same arc, two readings. Click it:
+
+<img src="docs/images/popup-dark.png" alt="The Claudometer popup" width="340">
 
 It is not an analytics dashboard, and is not going to become one. No graphs, no
 token history, no accounts, no telemetry, no cloud backend.
@@ -99,6 +90,24 @@ otherwise consume it twice over. A one-shot invocation asks the running instance
 for its last result over a local socket and only reaches for the network when
 nothing is running - so a Waybar `interval` costs nothing, and returns instantly.
 
+## Development
+
+`CLAUDOMETER_SIMULATE` reports a usage figure instead of asking the server:
+
+```console
+$ CLAUDOMETER_SIMULATE=99 claudometer          # tray, popup and notifications
+$ CLAUDOMETER_SIMULATE=63,41 claudometer --json
+```
+
+One or two percentages, five-hour first. It makes no request, so it works
+offline and costs no quota, and it is the only way to reach the top of the scale:
+the 95% and 100% steps are fixed, so without it their colours, the `!` glyph and
+their notifications cannot be exercised short of actually spending a limit.
+Simulated numbers are never recorded as announced, so a run at 100% will not
+silence the real notification later.
+
+Screenshots in this README were taken with it.
+
 ## Building
 
 Needs Qt 6.5+, CMake 3.21+ and a C++20 compiler. No other runtime dependencies -
@@ -145,6 +154,8 @@ the sandbox:
 
 ## Settings
 
+<img src="docs/images/settings.png" alt="The Claudometer settings window" width="381">
+
 Right-click the tray icon, or use the gear in the popup. Start on login, refresh
 interval, notifications, warning and critical thresholds, tray style, and theme
 (system / light / dark). Stored in `~/.config/claudometer/claudometer.conf`;
@@ -164,8 +175,24 @@ variants of one mark rather than two icons. The popup header always shows the
 needle, as the constant logotype. A full ring was tried first and read as a
 notification badge.
 
+At 100% the icon shows `!`. Three digits were tried, shrunk to fit, and in a real
+panel they came out weaker than `99` - the one reading that most needs to carry.
+A full red arc around an exclamation mark says it more firmly, and the tooltip
+still gives the figure.
+
 When the data is stale the whole mark fades, so a glance at the panel tells you
 the number is the last one Claudometer managed to fetch.
+
+Colour steps at the warning threshold, the critical threshold, 95% and 100% -
+the same points the notifications fire on, so what you see and what you are told
+agree. The icon stays monochrome below the warning threshold: a panel icon is on
+screen permanently and should not be a standing splash of colour.
+
+Both themes, and both are the popup's own colours rather than the desktop
+palette - which is what lets the Light and Dark settings work on a desktop whose
+platform theme declines to switch:
+
+<img src="docs/images/popup-light.png" alt="The popup in the light theme" width="340">
 
 The tray icon stays monochrome until the warning threshold, then goes amber, then
 red - a panel icon is on screen permanently and should not be a standing splash

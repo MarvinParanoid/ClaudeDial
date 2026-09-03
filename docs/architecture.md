@@ -116,6 +116,20 @@ scratch are the icon drawing, the D-Bus notification call (three lines more than
 shelling out to `notify-send`, and it buys `replaces_id`), and the logind sleep
 signal.
 
+## Simulation
+
+`CLAUDOMETER_SIMULATE=<5h>[,<7d>]` makes `UsageClient::fetch()` emit a synthetic
+state and return without touching the network. It exists because the 95% and
+100% steps of the ramp are fixed, so their colours, the `!` glyph and their
+notifications are otherwise unreachable without actually spending a limit - and
+because screenshots need stable numbers.
+
+`UsageService` checks `UsageClient::isSimulating()` before persisting which
+thresholds it has announced: a simulated run at 100% must not record that step as
+already announced and silence the real notification later. The CLI checks it too,
+so an explicit override beats the shared-socket shortcut rather than being
+silently ignored while a tray instance is running.
+
 ## What is deliberately absent
 
 No plugin system, no database, no telemetry, no crash reporting, no update

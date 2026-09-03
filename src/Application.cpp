@@ -50,14 +50,8 @@ bool Application::initialize()
     // falls back to a placeholder for our app id until the .desktop file and
     // hicolor icon are installed, which looks like a foreign application in the
     // settings window's title bar.
-    {
-        IconRenderer::Options logo;
-        logo.style = Config::TrayStyle::Gauge; // the mark, not a reading
-        logo.foreground = QGuiApplication::palette().color(QPalette::WindowText);
-        // A fixed reading, so the icon behaves like a logo rather than tracking
-        // usage the way the tray icon does.
-        QGuiApplication::setWindowIcon(IconRenderer::render(68.0, logo));
-    }
+    QGuiApplication::setWindowIcon(
+        IconRenderer::logo(QGuiApplication::palette().color(QPalette::WindowText)));
 
     m_tray = new tray::SystemTrayBackend(this);
 

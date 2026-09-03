@@ -22,6 +22,11 @@ constexpr double kSweep = -240.0;
 /// this thick, and a needle held well clear of it: at a 1.5 px gap the needle
 /// and the fill merge into a single lump at low percentages.
 constexpr double kDialThickness = 0.17;
+
+/// Margin between the arc's outer edge and the icon's edge. Small on purpose:
+/// the arc is the mark, and the panel already surrounds the icon with its own
+/// spacing. Shared by both styles, which is what keeps their silhouettes equal.
+constexpr double kMargin = 0.005;
 constexpr double kNeedleThickness = 0.12;
 constexpr double kNeedleLength = 0.44; ///< of the dial radius
 constexpr double kTrackAlpha = 0.20;   ///< the unfilled dial must stay quiet
@@ -29,7 +34,7 @@ constexpr double kTrackAlpha = 0.20;   ///< the unfilled dial must stay quiet
 } // namespace
 
 void paint(QPainter& painter, const QRectF& bounds, std::optional<double> percentage,
-           const Colors& colors, double thicknessScale, Center center)
+           const Colors& colors, double thicknessScale, Center center, Fill fill)
 {
     const double size = std::min(bounds.width(), bounds.height());
     if (size <= 0)
@@ -37,7 +42,7 @@ void paint(QPainter& painter, const QRectF& bounds, std::optional<double> percen
 
     const double scale = std::max(0.1, thicknessScale);
     const double dialWidth = std::max(1.5, size * kDialThickness * scale);
-    const double inset = dialWidth / 2.0 + size * 0.02;
+    const double inset = dialWidth / 2.0 + size * kMargin;
     const QRectF square(bounds.center().x() - size / 2.0, bounds.center().y() - size / 2.0,
                         size, size);
     const QRectF dial = square.adjusted(inset, inset, -inset, -inset);
@@ -59,7 +64,7 @@ void paint(QPainter& painter, const QRectF& bounds, std::optional<double> percen
     const double clamped = std::clamp(*percentage, 0.0, 100.0);
 
     // The fill is the magnitude cue: at a glance, how much of the dial is used.
-    if (clamped > 0.0) {
+    if (fill == Fill::Usage && clamped > 0.0) {
         painter.setPen(QPen(colors.value, dialWidth, Qt::SolidLine, Qt::RoundCap));
         painter.drawArc(dial, static_cast<int>(kStartAngle * 16),
                         static_cast<int>(kSweep * clamped / 100.0 * 16));
@@ -82,6 +87,11 @@ void paint(QPainter& painter, const QRectF& bounds, std::optional<double> percen
                                      centre.y() - std::sin(radians) * length));
 
     painter.restore();
+}
+
+double outerRadiusFraction()
+{
+    return 0.5 - kMargin;
 }
 
 } // namespace claudometer::gauge

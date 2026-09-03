@@ -1,8 +1,19 @@
 <?xml version="1.0" encoding="UTF-8"?>
+<!--
+  The Claudometer mark: a 240-degree dial with the gap at the bottom, and a
+  needle. Matches what the application draws with QPainter (see GaugePainter),
+  and carries no fill - a logotype should not look like it is reporting a value.
+
+  Only the desktop's icon theme loads this; the application draws its own marks,
+  so no SVG runtime is needed.
+-->
 <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 48 48">
-  <!-- The same ring the tray icon draws: a track, and an arc for usage. -->
-  <circle cx="24" cy="24" r="17" fill="none" stroke="currentColor"
-          stroke-width="6" opacity="0.25"/>
-  <path d="M 24 7 A 17 17 0 0 1 39.7 30.5" fill="none" stroke="currentColor"
-        stroke-width="6" stroke-linecap="round"/>
+  <g fill="none" stroke="currentColor" stroke-width="8.16" stroke-linecap="butt">
+    <!-- 240 degrees, from 210 to -30, i.e. down-left over the top to down-right -->
+    <path d="M 9.94 41.66 A 23.76 23.76 0 1 1 38.06 41.66" opacity="0.9"/>
+  </g>
+  <g stroke="currentColor" stroke-width="4.56" stroke-linecap="round">
+    <!-- needle at 62% of the sweep -->
+    <line x1="24" y1="24" x2="34.06" y2="17.36"/>
+  </g>
 </svg>
