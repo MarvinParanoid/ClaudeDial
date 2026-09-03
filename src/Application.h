@@ -24,6 +24,7 @@ class TrayBackend;
 }
 
 namespace claudometer::ui {
+class Colors;
 class PopupWindow;
 class SettingsViewModel;
 class UsageViewModel;
@@ -67,6 +68,7 @@ private:
     tray::SleepWatcher* m_sleepWatcher;
 
     QQmlEngine* m_engine = nullptr;
+    ui::Colors* m_colors = nullptr;
     ui::UsageViewModel* m_usage = nullptr;
     ui::SettingsViewModel* m_settings = nullptr;
     ui::PopupWindow* m_popup = nullptr;

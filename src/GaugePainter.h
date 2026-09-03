@@ -57,12 +57,6 @@ void paint(QPainter& painter, const QRectF& bounds, std::optional<double> percen
            const Colors& colors, double thicknessScale = 1.0, Center center = Center::Needle,
            Fill fill = Fill::Usage);
 
-/// The outer radius of the arc, as a fraction of the icon.
-///
-/// Independent of stroke weight by construction - the inset is half the stroke
-/// plus a fixed margin, so the arc's outer silhouette is identical however
-/// heavily it is drawn. That is what makes the two tray styles the same mark
-/// rather than two marks of similar shape.
-[[nodiscard]] double outerRadiusFraction();
+/// The canonical numbers behind all of this live in core/GaugeGeometry.h.
 
 } // namespace claudometer::gauge

@@ -2,44 +2,36 @@
 <!--
   The Claudometer application icon.
 
-  Deliberately NOT the tray icon. The tray mark is generated at run time, is
-  usage-dependent, and is tuned stroke by stroke for 16-24 px on an unknown
-  panel; this is a static identity mark that has to hold up in a launcher, a
-  task manager and a title bar, at 16 px and at 256. Handing the same QIcon to
-  both was a mistake: the window decoration renders it through a different path
-  than the panel does, and the tray-weight strokes came out looking hollow.
+  Generated from the canonical gauge geometry in src/core/GaugeGeometry.h, and
+  checked against it by a unit test. Do not adjust these numbers by hand: this
+  file had been hand-copied once and drifted - its centre sat 7.8% lower and its
+  outer edge 5% smaller than every other rendition of the mark, which is exactly
+  why the application icon and the popup's mark stopped looking like the same
+  thing.
 
-  So: the same 240-degree dial and needle, drawn boldly, with the ink filling
-  the box and no reading on it. No percentages, no tick marks, nothing that
-  needs more than a few pixels to survive.
+  It is the same dial as the tray icon, the popup header and the notification
+  icon: same start and end angles, same outer radius, same stroke fraction. Only
+  the content differs - here a needle and no reading, because an identity mark
+  must not appear to be reporting a value.
 
   Terracotta, and monochrome. In blue this sat in a task manager next to VS Code
   looking like one more blue developer tool; in this colour it is picked out
   instantly, and it says which service Claudometer reports on without borrowing
   anyone's logo. One colour rather than a coloured needle, because at 16 px a
-  second hue is just noise.
+  second hue is just noise. No backdrop either: a dark tile forces the mark down
+  to about 78% to leave padding, costing the legibility that matters most at
+  16 px, and on a dark panel it merges into the background while fighting the
+  highlight behind an active task.
 
-  No backdrop, either. A dark tile was tried: it forces the mark down to about
-  78% to leave padding, which costs exactly the legibility that matters at 16
-  px, and on a dark panel the tile merges into the background while fighting the
-  highlight drawn behind an active task.
-
-  This colour is Claudometer's identity only. The window's controls follow the
-  user's own Plasma accent colour, and the usage ramp stays neutral -> amber ->
-  orange -> red; nothing here should spread into either.
-
-  Geometry, for anyone editing it: centre (32, 37), dial radius 25.5, so the
-  arc's outer edge lands 2 px inside the 64-unit box. The arc runs from 210 to
-  -30 degrees, leaving the gap at the bottom. The needle sits at 62% of that
-  sweep - far enough round to read as "measuring something" rather than as
-  empty or full.
+  This colour is Claudometer's identity only. Interactive controls follow the
+  user's own Plasma accent, and usage keeps its own neutral -> amber -> orange
+  -> red ramp. Neither should borrow this one.
 -->
 <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64">
   <g fill="none" stroke="#d97757" stroke-linecap="butt">
-    <path d="M 9.92 49.75 A 25.50 25.50 0 1 1 54.08 49.75" stroke-width="9"/>
+    <path d="M 9.28 45.12 A 26.24 26.24 0 1 1 54.72 45.12" stroke-width="10.88"/>
   </g>
   <g stroke="#d97757" stroke-linecap="round">
-    <line x1="32" y1="37" x2="41.15" y2="20.35" stroke-width="6"/>
+    <line x1="32.00" y1="32.00" x2="40.60" y2="16.36" stroke-width="4.80"/>
   </g>
-  <circle cx="32" cy="37" r="3.5" fill="#d97757"/>
 </svg>

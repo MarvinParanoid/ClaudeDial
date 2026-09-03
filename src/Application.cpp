@@ -10,6 +10,7 @@
 #include "tray/Notifier.h"
 #include "tray/SleepWatcher.h"
 #include "tray/SystemTrayBackend.h"
+#include "ui/Colors.h"
 #include "ui/PopupWindow.h"
 #include "ui/SettingsViewModel.h"
 #include "ui/UsageViewModel.h"
@@ -62,7 +63,8 @@ bool Application::initialize()
 
     m_engine->rootContext()->setContextProperty(QStringLiteral("usage"), m_usage);
     m_engine->rootContext()->setContextProperty(QStringLiteral("settings"), m_settings);
-    m_engine->rootContext()->setContextProperty(QStringLiteral("isDark"), false);
+    m_colors = new ui::Colors(this);
+    m_engine->rootContext()->setContextProperty(QStringLiteral("colors"), m_colors);
 
     m_popup = new ui::PopupWindow(m_engine, QUrl(QStringLiteral("qrc:/qml/Popup.qml")));
     // Exposed only so the header can act as a drag handle. Nothing sensitive
@@ -188,7 +190,9 @@ void Application::applyTheme()
     // System case has to ask, and a late colorSchemeChanged will re-run this.
     const bool dark = theme == Config::Theme::Dark
         || (theme == Config::Theme::System && hints->colorScheme() == Qt::ColorScheme::Dark);
-    m_engine->rootContext()->setContextProperty(QStringLiteral("isDark"), dark);
+    m_colors->setDark(dark);
+    // The desktop's accent can change with the scheme.
+    m_colors->refresh();
 
     updateTray();
 }

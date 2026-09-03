@@ -1,6 +1,7 @@
 qt_add_executable(claudometer
     AppIcon.cpp
     AppIcon.h
+    Brand.h
     Application.cpp
     Application.h
     GaugePainter.cpp
@@ -19,6 +20,8 @@ qt_add_executable(claudometer
     tray/SystemTrayBackend.cpp
     tray/SystemTrayBackend.h
     tray/TrayBackend.h
+    ui/Colors.cpp
+    ui/Colors.h
     ui/GaugeItem.cpp
     ui/GaugeItem.h
     ui/PopupWindow.cpp

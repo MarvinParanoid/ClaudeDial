@@ -43,21 +43,24 @@ Rectangle {
                 onPressed: popupWindow.beginMove()
             }
 
-            // The same mark as the tray icon, drawn by the same function, so the
-            // needle here and the needle in the panel always agree.
+            // The same mark as the application icon: same canonical geometry,
+            // same drawing function.
             Gauge {
                 id: headerGauge
                 width: 20
                 height: 20
-                // Same drawing as the tray icon, drawn a little lighter: the
-                // panel weight reads as heavy next to 14 px text on a calm card.
+                // A little lighter than the panel weight, which reads as heavy
+                // next to 14 px text on a calm card. Same geometry regardless.
                 thicknessScale: 0.85
                 anchors.left: parent.left
                 anchors.verticalCenter: parent.verticalCenter
                 hasValue: usage.fiveHourAvailable
                 percentage: usage.fiveHourPercent
-                dialColor: theme.text
-                valueColor: theme.levelColor(usage.fiveHourLevel)
+                // Always the brand colour, never a usage colour: this is the
+                // logotype. A terracotta icon in the panel and a grey mark here
+                // would read as two identities rather than one.
+                dialColor: theme.brand
+                valueColor: theme.brand
             }
 
             Text {

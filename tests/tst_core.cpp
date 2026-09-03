@@ -1,5 +1,6 @@
 #include "core/Config.h"
 #include "core/Format.h"
+#include "core/GaugeGeometry.h"
 #include "core/UsageClient.h"
 #include "core/UsageJson.h"
 #include "core/UsageLevel.h"
@@ -7,7 +8,10 @@
 
 #include <QJsonDocument>
 #include <QJsonObject>
+#include <QFile>
+#include <QRegularExpression>
 #include <QSettings>
+#include <QtMath>
 
 #include <algorithm>
 #include <QStandardPaths>
@@ -44,6 +48,7 @@ private Q_SLOTS:
     void roundTripsStatusJson();
 
     void clampsRefreshIntervalToFloor();
+    void shippedIconMatchesCanonicalGeometry();
     void storesSettingsAtTheDocumentedPath();
     void roundTripsSettings();
     void defaultsSuitALinuxTray();
@@ -385,6 +390,50 @@ void CoreTest::clampsRefreshIntervalToFloor()
 
     config.setRefreshIntervalSeconds(600);
     QCOMPARE(config.refreshIntervalSeconds(), 600);
+}
+
+void CoreTest::shippedIconMatchesCanonicalGeometry()
+{
+    // The application icon is an SVG, so it cannot share code with the painter -
+    // only numbers. It had been hand-copied once and drifted: centre 7.8% lower,
+    // outer edge 5% smaller, which is what made the identity mark and the tray
+    // mark stop looking like the same thing. This is the guard.
+    using namespace claudometer::core::gaugeGeometry;
+
+    QFile file(QStringLiteral(CLAUDOMETER_SOURCE_DIR
+                              "/data/icons/hicolor/scalable/apps/claudometer.svg"));
+    QVERIFY2(file.open(QIODevice::ReadOnly), qPrintable(file.fileName()));
+    const QString svg = QString::fromUtf8(file.readAll());
+
+    // A custom raw-string delimiter, because the pattern itself contains quotes.
+    static const QRegularExpression arc(QStringLiteral(
+        R"RE(M ([\d.]+) ([\d.]+) A ([\d.]+) [\d.]+ 0 1 1 ([\d.]+) ([\d.]+)" stroke-width="([\d.]+)")RE"));
+    const auto match = arc.match(svg);
+    QVERIFY2(match.hasMatch(), "the arc path is not in the shape this test can read");
+
+    constexpr double kSide = 64.0;
+    const double startX = match.captured(1).toDouble();
+    const double startY = match.captured(2).toDouble();
+    const double radius = match.captured(3).toDouble();
+    const double endX = match.captured(4).toDouble();
+    const double stroke = match.captured(6).toDouble();
+
+    // Stroke and radius must be the canonical fractions of the icon's edge.
+    QVERIFY2(qAbs(stroke / kSide - kDialThickness) < 0.005,
+             qPrintable(QStringLiteral("stroke %1 vs %2").arg(stroke / kSide).arg(kDialThickness)));
+    QVERIFY2(qAbs(radius / kSide - dialRadius(kDialThickness)) < 0.005,
+             qPrintable(QStringLiteral("radius %1 vs %2")
+                            .arg(radius / kSide).arg(dialRadius(kDialThickness))));
+
+    // And the arc must start and end where the canonical angles put it, which is
+    // what pins the centre: a shifted centre moves both endpoints together.
+    const double expectedX = kSide * kCentre + radius * std::cos(qDegreesToRadians(kStartAngle));
+    const double expectedY = kSide * kCentre - radius * std::sin(qDegreesToRadians(kStartAngle));
+    QVERIFY2(qAbs(startX - expectedX) < 0.5,
+             qPrintable(QStringLiteral("start x %1 vs %2").arg(startX).arg(expectedX)));
+    QVERIFY2(qAbs(startY - expectedY) < 0.5,
+             qPrintable(QStringLiteral("start y %1 vs %2").arg(startY).arg(expectedY)));
+    QCOMPARE(qRound((startX + endX) / 2.0), qRound(kSide * kCentre));
 }
 
 void CoreTest::storesSettingsAtTheDocumentedPath()

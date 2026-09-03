@@ -1,5 +1,6 @@
 #include "IconRenderer.h"
 
+#include "Brand.h"
 #include "GaugePainter.h"
 #include "core/UsageLevel.h"
 
@@ -54,41 +55,16 @@ constexpr auto kLimitGlyph = "!";
 /// "not current" at a glance, not so far that the number becomes unreadable.
 constexpr double kStaleOpacity = 0.45;
 
-// Breeze-adjacent, so the icon does not look foreign on Plasma while staying
-// legible on GNOME's and XFCE's panels.
-//
-// Amber, then orange, then red. Going straight from amber to red at the critical
-// threshold was tried, and in a real panel it read as an abrupt jump - and worse,
-// it made every reading from 90 to 100 look identical, collapsing four distinct
-// states into one colour. The steps here are the same ones the notifications
-// fire on, so what the user sees and what they are told agree.
-//
-// NOTE: the popup's ramp starts with an accent step instead of amber (see
-// Theme.qml). That is deliberate: a panel icon is on screen permanently and must
-// stay monochrome until something needs attention, whereas the popup is only
-// visible while it is being read.
-const QColor kWarning { 0xfd, 0xbc, 0x4b };
-const QColor kCriticalColour { 0xf0, 0x84, 0x2c };
-const QColor kSevere { 0xda, 0x44, 0x53 };
-
 } // namespace
 
 QColor IconRenderer::colorFor(double percentage, const Options& options)
 {
-    // The one definition of the ramp, shared with the popup and with --json.
-    // This used to threshold on its own and collapsed Critical into Severe.
-    switch (core::levelFor(percentage, options.warningThreshold, options.criticalThreshold)) {
-    case core::UsageLevel::Normal:
-        return options.foreground; // monochrome until something needs attention
-    case core::UsageLevel::Warning:
-        return kWarning;
-    case core::UsageLevel::Critical:
-        return kCriticalColour;
-    case core::UsageLevel::Severe:
-    case core::UsageLevel::LimitReached:
-        return kSevere;
-    }
-    return options.foreground;
+    // One ramp, one definition, shared with the popup and with --json. The
+    // neutral step is the panel's own foreground: a tray icon stays monochrome
+    // until something needs attention, because it is on screen permanently.
+    return brand::usageColour(
+        core::levelFor(percentage, options.warningThreshold, options.criticalThreshold),
+        options.foreground);
 }
 
 void IconRenderer::paintNumberInArc(QPainter& painter, int size, double percentage,
