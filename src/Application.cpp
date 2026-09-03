@@ -15,6 +15,7 @@
 #include "ui/SettingsViewModel.h"
 #include "ui/UsageViewModel.h"
 
+#include <QEvent>
 #include <QGuiApplication>
 #include <QImage>
 #include <QPalette>
@@ -105,6 +106,8 @@ bool Application::initialize()
     connect(m_tooltipTick, &QTimer::timeout, this, &Application::updateTray);
     m_tooltipTick->start();
 
+    qApp->installEventFilter(this);
+
     applyTheme();
     m_tray->show();
     m_service->start();
@@ -122,6 +125,15 @@ QByteArray Application::statusJson() const
 {
     return core::json::status(m_service->state(), m_config->warningThreshold(),
                               m_config->criticalThreshold());
+}
+
+bool Application::eventFilter(QObject* watched, QEvent* event)
+{
+    // Guarded against our own setColorScheme(), which changes the palette and
+    // would otherwise bring us straight back here.
+    if (event->type() == QEvent::ApplicationPaletteChange && !m_applyingTheme)
+        applyTheme();
+    return QObject::eventFilter(watched, event);
 }
 
 void Application::updateTray()

@@ -53,6 +53,16 @@ public:
     /// process over the local socket.
     [[nodiscard]] QByteArray statusJson() const;
 
+protected:
+    /// Watches the application for palette changes.
+    ///
+    /// Qt has no signal for "the desktop's accent colour changed" - only
+    /// colorSchemeChanged, which fires for light/dark and not for an accent
+    /// swap. Since the settings window's controls follow the user's Plasma
+    /// accent, and the tray icon's neutral colour follows the panel's text
+    /// colour, both have to be re-read when the palette moves under us.
+    bool eventFilter(QObject* watched, QEvent* event) override;
+
 private:
     void updateTray();
     void applyTheme();
