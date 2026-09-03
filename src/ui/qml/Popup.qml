@@ -58,7 +58,9 @@ Rectangle {
                 percentage: usage.fiveHourPercent
                 // Always the brand colour, never a usage colour: this is the
                 // logotype. A terracotta icon in the panel and a grey mark here
-                // would read as two identities rather than one.
+                // would read as two identities rather than one - and a solid
+                // dial, so the identity does not fade when a fetch fails.
+                identity: true
                 dialColor: theme.brand
                 valueColor: theme.brand
             }

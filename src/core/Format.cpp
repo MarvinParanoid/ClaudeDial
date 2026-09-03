@@ -89,7 +89,7 @@ QString resetFor(PeriodKind kind, const UsagePeriod& period, const QDateTime& no
 QString updatedAgo(const QDateTime& updatedAt, const QDateTime& now)
 {
     if (!updatedAt.isValid())
-        return QCoreApplication::translate("format", "never updated");
+        return QCoreApplication::translate("format", "Never updated");
 
     const qint64 seconds = updatedAt.secsTo(now);
     if (seconds < 60)

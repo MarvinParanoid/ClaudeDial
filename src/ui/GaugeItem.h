@@ -21,6 +21,14 @@ class GaugeItem : public QQuickPaintedItem
     Q_PROPERTY(QColor valueColor READ valueColor WRITE setValueColor NOTIFY changed)
     Q_PROPERTY(qreal thicknessScale READ thicknessScale WRITE setThicknessScale NOTIFY changed)
 
+    /// Draw the dial solid, with no usage fill over it.
+    ///
+    /// For the popup's header mark, which is the logotype: an identity must not
+    /// fade because a fetch failed, and with a fill the dial is drawn as the
+    /// *unused* part at 20% alpha - so with no data the mark washed out
+    /// completely. The needle still moves with usage; only the fill goes.
+    Q_PROPERTY(bool identity READ identity WRITE setIdentity NOTIFY changed)
+
 public:
     explicit GaugeItem(QQuickItem* parent = nullptr);
 
@@ -41,6 +49,9 @@ public:
     [[nodiscard]] qreal thicknessScale() const { return m_thicknessScale; }
     void setThicknessScale(qreal scale);
 
+    [[nodiscard]] bool identity() const { return m_identity; }
+    void setIdentity(bool identity);
+
 Q_SIGNALS:
     void changed();
 
@@ -50,6 +61,7 @@ private:
     QColor m_dialColor;
     QColor m_valueColor;
     qreal m_thicknessScale = 1.0;
+    bool m_identity = false;
 };
 
 } // namespace claudometer::ui

@@ -17,7 +17,8 @@ void GaugeItem::paint(QPainter* painter)
     const gauge::Colors colors { m_dialColor, m_valueColor };
     gauge::paint(*painter, QRectF(0, 0, width(), height()),
                  m_hasValue ? std::optional<double>(m_percentage) : std::nullopt, colors,
-                 m_thicknessScale);
+                 m_thicknessScale, gauge::Center::Needle,
+                 m_identity ? gauge::Fill::None : gauge::Fill::Usage);
 }
 
 void GaugeItem::setPercentage(qreal percentage)
@@ -34,6 +35,15 @@ void GaugeItem::setHasValue(bool hasValue)
     if (m_hasValue == hasValue)
         return;
     m_hasValue = hasValue;
+    update();
+    Q_EMIT changed();
+}
+
+void GaugeItem::setIdentity(bool identity)
+{
+    if (m_identity == identity)
+        return;
+    m_identity = identity;
     update();
     Q_EMIT changed();
 }
