@@ -1,5 +1,6 @@
 #include "Application.h"
 
+#include "AppIcon.h"
 #include "core/Config.h"
 #include "core/Credentials.h"
 #include "core/Format.h"
@@ -47,12 +48,11 @@ bool Application::initialize()
     if (!tray::SystemTrayBackend::isAvailable())
         return false;
 
-    // The window icon, drawn from the same mark. Without this the compositor
-    // falls back to a placeholder for our app id until the .desktop file and
-    // hicolor icon are installed, which looks like a foreign application in the
-    // settings window's title bar.
-    QGuiApplication::setWindowIcon(
-        IconRenderer::logo(QGuiApplication::palette().color(QPalette::WindowText)));
+    // The static identity mark - not the tray indicator, which is a different
+    // job with different constraints. Without this the compositor shows a
+    // placeholder for our app id until the .desktop entry and hicolor icon are
+    // installed, which looks like a foreign application in the title bar.
+    QGuiApplication::setWindowIcon(applicationIcon());
 
     m_tray = new tray::SystemTrayBackend(this);
 

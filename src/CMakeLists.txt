@@ -1,4 +1,6 @@
 qt_add_executable(claudometer
+    AppIcon.cpp
+    AppIcon.h
     Application.cpp
     Application.h
     GaugePainter.cpp
@@ -45,9 +47,19 @@ qt_add_resources(claudometer "qml"
         ui/qml/Theme.qml
 )
 
+# The application icon is one SVG, installed into the icon theme and embedded
+# here so a build tree looks right too. Qt6::Svg is what rasterises it; the tray
+# marks are drawn with QPainter and need nothing.
+qt_add_resources(claudometer "appicon"
+    PREFIX "/icons"
+    BASE "../data/icons/hicolor/scalable/apps"
+    FILES ../data/icons/hicolor/scalable/apps/claudometer.svg
+)
+
 target_link_libraries(claudometer PRIVATE
     claudometer_core
     Qt6::DBus
+    Qt6::Svg
     Qt6::Gui
     Qt6::Quick
     Qt6::QuickControls2

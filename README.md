@@ -110,8 +110,9 @@ Screenshots in this README were taken with it.
 
 ## Building
 
-Needs Qt 6.5+, CMake 3.21+ and a C++20 compiler. No other runtime dependencies -
-no Electron, no webview, no Python, no Node.
+Needs Qt 6.5+ (including Qt Svg, for the application icon), CMake 3.21+ and a
+C++20 compiler. No other runtime dependencies - no Electron, no webview, no
+Python, no Node.
 
 ```console
 $ cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
@@ -120,7 +121,7 @@ $ ctest --test-dir build
 $ sudo cmake --install build
 ```
 
-On Arch: `pacman -S qt6-base qt6-declarative cmake ninja`.
+On Arch: `pacman -S qt6-base qt6-declarative qt6-svg cmake ninja`.
 
 ## Desktop support
 

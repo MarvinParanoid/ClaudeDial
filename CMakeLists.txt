@@ -16,7 +16,7 @@ endif()
 
 option(CLAUDOMETER_BUILD_TESTS "Build unit tests" ON)
 
-find_package(Qt6 6.5 REQUIRED COMPONENTS Core Network DBus Gui Widgets Quick QuickControls2)
+find_package(Qt6 6.5 REQUIRED COMPONENTS Core Network DBus Gui Widgets Quick QuickControls2 Svg)
 qt_standard_project_setup(REQUIRES 6.5)
 
 add_compile_options(-Wall -Wextra -Wpedantic)

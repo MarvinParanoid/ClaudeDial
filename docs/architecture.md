@@ -18,6 +18,7 @@ claudometer             the assembly
   Application             wires it together; owns nothing interesting
   SingleInstance          one tray icon; a second launch shows the popup
   GaugePainter            the speedometer mark - one drawing, two hosts
+  AppIcon                 the static identity mark, resolved from the icon theme
   cli/Cli                 --json / --once under QCoreApplication
   tray/TrayBackend        interface (the project's only abstraction)
   tray/SystemTrayBackend  QSystemTrayIcon -> StatusNotifierItem over D-Bus
@@ -70,6 +71,19 @@ zeros, which is the failure mode that makes a usage indicator actively harmful.
 **Notification thresholds reset on `resets_at` moving forward**, not on the
 percentage dropping. Both windows are *rolling*, so their percentages fall
 mid-window as old usage ages out; watching the number would refire warnings.
+
+**The application icon is not the tray icon.** They were briefly the same
+generated `QIcon`, and it went badly: the window decoration renders a window
+icon through a different path than the panel renders a StatusNotifierItem, and
+tray-weight strokes came out looking hollow in the title bar - two thin arcs
+instead of a dial. They are also different jobs. The tray mark is regenerated
+per poll, depends on usage, and is tuned stroke by stroke for 16-24 px against
+unknown panel colours; the application icon is static, bolder, carries no
+reading, and has to hold up in a launcher at 256 px. It is now one hand-drawn
+SVG, installed into `hicolor` for the desktop to find by name and embedded in
+the binary so a build tree looks right too - `Qt6::Svg` rasterises it, and
+`AppIcon` prefers the installed copy because on Wayland that is how the
+compositor resolves a window's icon at all.
 
 **One drawing of the gauge, not two.** The popup header's mark and the tray icon
 are the same `GaugePainter::paint` call, reached from a `QQuickPaintedItem` and

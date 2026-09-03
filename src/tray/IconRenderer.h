@@ -38,10 +38,6 @@ public:
         bool stale = false;
     };
 
-    /// The application's own mark, with no reading on it - for the window icon
-    /// and anywhere else a logotype rather than a measurement is wanted.
-    [[nodiscard]] static QIcon logo(const QColor& foreground);
-
     /// A multi-resolution icon; the panel picks the size it needs.
     /// `percentage` of nullopt renders the "no data" mark - an empty dial, so
     /// the icon never implies 0%.

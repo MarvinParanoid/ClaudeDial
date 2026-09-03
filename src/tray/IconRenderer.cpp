@@ -141,25 +141,6 @@ QPixmap IconRenderer::renderPixmap(int size, std::optional<double> percentage,
     return pixmap;
 }
 
-QIcon IconRenderer::logo(const QColor& foreground)
-{
-    // A fixed needle angle and no fill: a partially filled arc in a title bar
-    // looks like the window is reporting something, which a logotype must not.
-    constexpr double kLogoAngle = 62.0;
-
-    QIcon icon;
-    for (const int size : kSizes) {
-        QPixmap pixmap(size, size);
-        pixmap.fill(Qt::transparent);
-        QPainter painter(&pixmap);
-        painter.setRenderHint(QPainter::Antialiasing, true);
-        gauge::paint(painter, QRectF(0, 0, size, size), kLogoAngle, { foreground, foreground },
-                     1.0, gauge::Center::Needle, gauge::Fill::None);
-        icon.addPixmap(pixmap);
-    }
-    return icon;
-}
-
 QIcon IconRenderer::render(std::optional<double> percentage, const Options& options)
 {
     QIcon icon;

@@ -1,19 +1,30 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-  The Claudometer mark: a 240-degree dial with the gap at the bottom, and a
-  needle. Matches what the application draws with QPainter (see GaugePainter),
-  and carries no fill - a logotype should not look like it is reporting a value.
+  The Claudometer application icon.
 
-  Only the desktop's icon theme loads this; the application draws its own marks,
-  so no SVG runtime is needed.
+  Deliberately NOT the tray icon. The tray mark is generated at run time, is
+  usage-dependent, and is tuned stroke by stroke for 16-24 px on an unknown
+  panel; this is a static identity mark that has to hold up in a launcher, a
+  task manager and a title bar, at 16 px and at 256. Handing the same QIcon to
+  both was a mistake: the window decoration renders it through a different path
+  than the panel does, and the tray-weight strokes came out looking hollow.
+
+  So: the same 240-degree dial and needle, drawn boldly, with the ink filling
+  the box and no reading on it. No percentages, no tick marks, nothing that
+  needs more than a few pixels to survive.
+
+  Geometry, for anyone editing it: centre (32, 37), dial radius 25.5, so the
+  arc's outer edge lands 2 px inside the 64-unit box. The arc runs from 210 to
+  -30 degrees, leaving the gap at the bottom. The needle sits at 62% of that
+  sweep - far enough round to read as "measuring something" rather than as
+  empty or full.
 -->
-<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 48 48">
-  <g fill="none" stroke="currentColor" stroke-width="8.16" stroke-linecap="butt">
-    <!-- 240 degrees, from 210 to -30, i.e. down-left over the top to down-right -->
-    <path d="M 9.94 41.66 A 23.76 23.76 0 1 1 38.06 41.66" opacity="0.9"/>
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64">
+  <g fill="none" stroke="#2b7fd4" stroke-linecap="butt">
+    <path d="M 9.92 49.75 A 25.5 25.5 0 1 1 54.08 49.75" stroke-width="9"/>
   </g>
-  <g stroke="currentColor" stroke-width="4.56" stroke-linecap="round">
-    <!-- needle at 62% of the sweep -->
-    <line x1="24" y1="24" x2="34.06" y2="17.36"/>
+  <g stroke="#2b7fd4" stroke-linecap="round">
+    <line x1="32" y1="37" x2="41.15" y2="20.35" stroke-width="6"/>
   </g>
+  <circle cx="32" cy="37" r="3.5" fill="#2b7fd4"/>
 </svg>
