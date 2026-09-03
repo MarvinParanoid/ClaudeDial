@@ -1,0 +1,125 @@
+#include "Format.h"
+
+#include <QCoreApplication>
+#include <QLocale>
+#include <QStringList>
+
+namespace claudometer::core::format {
+namespace {
+
+QTime truncateToMinute(QTime time)
+{
+    return QTime(time.hour(), time.minute());
+}
+
+/// "Mon 09:00" inside the coming week, "14 Sep 09:00" beyond it.
+///
+/// Rounded to the nearest minute: the 7-day window is rolling, so its reset
+/// timestamp drifts by fractions of a second between calls - enough to flip
+/// 03:59:59.6 to 04:00:00.4 and back, which would show up as the displayed time
+/// flickering between two adjacent minutes.
+QString absoluteWhen(const QDateTime& resetAt, const QDateTime& now)
+{
+    const QDateTime local = resetAt.addSecs(30).toLocalTime();
+    const QLocale locale;
+
+    // Inside a week a weekday reads faster than a date; beyond it, a date is clearer.
+    const qint64 days = now.toLocalTime().date().daysTo(local.date());
+    if (days >= 0 && days < 7) {
+        return QStringLiteral("%1 %2").arg(
+            locale.dayName(local.date().dayOfWeek(), QLocale::ShortFormat),
+            locale.toString(truncateToMinute(local.time()), QStringLiteral("HH:mm")));
+    }
+    return locale.toString(local, QStringLiteral("d MMM HH:mm"));
+}
+
+QString minutesAndHours(qint64 totalMinutes)
+{
+    const qint64 hours = totalMinutes / 60;
+    const qint64 minutes = totalMinutes % 60;
+    if (hours > 0)
+        return QStringLiteral("%1h %2m").arg(hours).arg(minutes);
+    return QStringLiteral("%1m").arg(minutes);
+}
+
+} // namespace
+
+QString resetRelative(const QDateTime& resetAt, const QDateTime& now)
+{
+    const qint64 seconds = now.secsTo(resetAt);
+    if (seconds <= 30)
+        return QCoreApplication::translate("format", "resets now");
+    return QCoreApplication::translate("format", "resets in %1").arg(minutesAndHours((seconds + 30) / 60));
+}
+
+QString resetAbsolute(const QDateTime& resetAt, const QDateTime& now)
+{
+    return QCoreApplication::translate("format", "resets %1").arg(absoluteWhen(resetAt, now));
+}
+
+QString resetSentence(PeriodKind kind, const UsagePeriod& period, const QDateTime& now)
+{
+    if (!period.resetAt)
+        return {};
+
+    if (kind == PeriodKind::FiveHour) {
+        const qint64 seconds = now.secsTo(*period.resetAt);
+        if (seconds <= 30)
+            return QCoreApplication::translate("format", "Resets now");
+        return QCoreApplication::translate("format", "Resets in %1")
+            .arg(minutesAndHours((seconds + 30) / 60));
+    }
+    return QCoreApplication::translate("format", "Resets %1").arg(absoluteWhen(*period.resetAt, now));
+}
+
+QString resetFor(PeriodKind kind, const UsagePeriod& period, const QDateTime& now)
+{
+    if (!period.resetAt)
+        return {};
+    // The 5-hour window is rolling, so a countdown is the honest presentation.
+    // The 7-day window lands on a schedule, so a wall-clock time is more useful.
+    return kind == PeriodKind::FiveHour ? resetRelative(*period.resetAt, now)
+                                        : resetAbsolute(*period.resetAt, now);
+}
+
+QString updatedAgo(const QDateTime& updatedAt, const QDateTime& now)
+{
+    if (!updatedAt.isValid())
+        return QCoreApplication::translate("format", "never updated");
+
+    const qint64 seconds = updatedAt.secsTo(now);
+    if (seconds < 60)
+        return QCoreApplication::translate("format", "Updated just now");
+    if (seconds < 3600)
+        return QCoreApplication::translate("format", "Updated %1 min ago").arg(seconds / 60);
+    if (seconds < 24 * 3600)
+        return QCoreApplication::translate("format", "Updated %1h ago").arg(seconds / 3600);
+    return QCoreApplication::translate("format", "Updated %1d ago").arg(seconds / (24 * 3600));
+}
+
+QString tooltip(const UsageState& state, const QDateTime& now)
+{
+    QStringList lines { QStringLiteral("Claudometer") };
+
+    const auto line = [&](PeriodKind kind, const QString& label) {
+        const auto& period = state.period(kind);
+        if (!period)
+            return;
+        const int percent = qRound(period->percentage);
+        const QString reset = resetFor(kind, *period, now);
+        lines << (reset.isEmpty() ? QStringLiteral("%1  %2%").arg(label).arg(percent)
+                                  : QStringLiteral("%1  %2% · %3").arg(label).arg(percent).arg(reset));
+    };
+
+    line(PeriodKind::FiveHour, QStringLiteral("5h"));
+    line(PeriodKind::SevenDay, QStringLiteral("7d"));
+
+    if (!state.isValid())
+        lines << QCoreApplication::translate("format", "no data");
+    else if (state.stale)
+        lines << QCoreApplication::translate("format", "stale · %1").arg(updatedAgo(state.updatedAt, now));
+
+    return lines.join(QLatin1Char('\n'));
+}
+
+} // namespace claudometer::core::format

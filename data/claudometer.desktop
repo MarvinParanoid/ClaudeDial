@@ -1,0 +1,12 @@
+[Desktop Entry]
+Type=Application
+Name=Claudometer
+GenericName=Claude Code Usage Monitor
+Comment=Claude Code usage at a glance
+Exec=claudometer
+Icon=claudometer
+Terminal=false
+Categories=Utility;Monitor;
+Keywords=claude;usage;limit;monitor;tray;
+StartupNotify=false
+X-GNOME-UsesNotifications=true
