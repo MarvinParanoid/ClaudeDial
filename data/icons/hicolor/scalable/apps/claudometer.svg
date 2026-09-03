@@ -13,6 +13,21 @@
   the box and no reading on it. No percentages, no tick marks, nothing that
   needs more than a few pixels to survive.
 
+  Terracotta, and monochrome. In blue this sat in a task manager next to VS Code
+  looking like one more blue developer tool; in this colour it is picked out
+  instantly, and it says which service Claudometer reports on without borrowing
+  anyone's logo. One colour rather than a coloured needle, because at 16 px a
+  second hue is just noise.
+
+  No backdrop, either. A dark tile was tried: it forces the mark down to about
+  78% to leave padding, which costs exactly the legibility that matters at 16
+  px, and on a dark panel the tile merges into the background while fighting the
+  highlight drawn behind an active task.
+
+  This colour is Claudometer's identity only. The window's controls follow the
+  user's own Plasma accent colour, and the usage ramp stays neutral -> amber ->
+  orange -> red; nothing here should spread into either.
+
   Geometry, for anyone editing it: centre (32, 37), dial radius 25.5, so the
   arc's outer edge lands 2 px inside the 64-unit box. The arc runs from 210 to
   -30 degrees, leaving the gap at the bottom. The needle sits at 62% of that
@@ -20,11 +35,11 @@
   empty or full.
 -->
 <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64">
-  <g fill="none" stroke="#2b7fd4" stroke-linecap="butt">
-    <path d="M 9.92 49.75 A 25.5 25.5 0 1 1 54.08 49.75" stroke-width="9"/>
+  <g fill="none" stroke="#d97757" stroke-linecap="butt">
+    <path d="M 9.92 49.75 A 25.50 25.50 0 1 1 54.08 49.75" stroke-width="9"/>
   </g>
-  <g stroke="#2b7fd4" stroke-linecap="round">
+  <g stroke="#d97757" stroke-linecap="round">
     <line x1="32" y1="37" x2="41.15" y2="20.35" stroke-width="6"/>
   </g>
-  <circle cx="32" cy="37" r="3.5" fill="#2b7fd4"/>
+  <circle cx="32" cy="37" r="3.5" fill="#d97757"/>
 </svg>

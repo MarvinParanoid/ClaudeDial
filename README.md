@@ -184,6 +184,18 @@ still gives the figure.
 When the data is stale the whole mark fades, so a glance at the panel tells you
 the number is the last one Claudometer managed to fetch.
 
+Three colour roles, kept apart on purpose:
+
+| | |
+| --- | --- |
+| **Terracotta** | Claudometer's identity - the application icon, and nothing else |
+| **Your Plasma accent** | the settings window's controls, so they look like the rest of your desktop |
+| **neutral → amber → orange → red** | how much of a limit is spent |
+
+Making the whole application "Claude orange" would be worse than useless: the
+usage ramp would lose its meaning, and the controls would stop matching the
+desktop they sit on. The brand colour earns its place in one artefact.
+
 Colour steps at the warning threshold, the critical threshold, 95% and 100% -
 the same points the notifications fire on, so what you see and what you are told
 agree. The icon stays monochrome below the warning threshold: a panel icon is on
