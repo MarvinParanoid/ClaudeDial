@@ -28,7 +28,7 @@ much care each one gets when a choice cannot serve them all.
 | Xfce, Cinnamon, MATE, LXQt, COSMIC | expected to work; unverified |
 | No tray | the CLI is the interface, not a fallback |
 | Windows | works, lightly tested; personal use |
-| macOS | not attempted — the token is in the Keychain there |
+| macOS | not attempted — four things missing, see below |
 
 ClaudeDial is made of exactly what Plasma is built around — a permanently
 visible tray icon, a small popup on click, settings, notifications, autostart —
@@ -92,6 +92,45 @@ written down rather than guessed at.
 
 It is a row of its own rather than a supported tier because "works when tried
 once" is not the same as tested.
+
+### macOS, and what it would actually take
+
+Worth writing down because the Windows port made the build portable in passing,
+which makes macOS look closer than it is. `if (UNIX AND NOT APPLE)` already
+excludes D-Bus and the XDG install rules, and every use of it is behind
+`CLAUDEDIAL_HAVE_DBUS`, so the tree should compile there today. Compiling is
+not the hard part.
+
+**The token is in the Keychain**, service `Claude Code-credentials`, so the file
+reader finds nothing. This is the one that decides the whole thing, and it
+carries an unknown that cannot be settled from here: a Keychain item has an
+access control list, and whether a *different* binary may read the one Claude
+Code created depends on that ACL and on the user answering a prompt. Reading it
+is perhaps forty lines of `SecItemCopyMatching`; finding out whether it can be
+read at all needs a Mac. And it is new code in the one place the security rules
+say to be most careful, which is the opposite of the Windows case, where the
+token turned out to be a plain file and `core::Credentials` was never touched.
+
+**Autostart currently lies there.** `startOnLogin` branches on `Q_OS_WIN` and
+everything else writes an XDG `.desktop` entry — on macOS into
+`~/Library/Preferences/autostart/`, where nothing will ever read it. The toggle
+would appear to work and do nothing. A `LaunchAgent` plist in
+`~/Library/LaunchAgents` is the real answer, and until it exists the setting
+should refuse rather than pretend.
+
+**Notifications need a bundle.** `QSystemTrayIcon::showMessage` goes through the
+system notification centre, which in practice ignores a bare binary; it wants a
+signed, bundled `.app`. Our fallback path is already in place from the Windows
+work, but it would be delivering into nothing.
+
+**Gatekeeper.** An unsigned build is blocked on first run unless opened through
+the context menu or stripped of its quarantine attribute. Fine for personal
+use, no Developer ID needed — but ad-hoc signing changes the binary's identity
+on every rebuild, which is exactly what a Keychain ACL keys on, so the prompt
+may return after every update.
+
+None of this is hard in isolation. It is unverifiable without a Mac, and the
+credential path is the wrong place to ship code nobody has run.
 
 ## Three tiers of guarantee
 
