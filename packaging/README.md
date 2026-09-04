@@ -18,8 +18,12 @@ What `cmake --install` lays down, which is what every format needs to package:
 /usr/share/icons/hicolor/scalable/apps/claudedial.svg
 ```
 
-Runtime dependencies are only `qt6-base` and `qt6-declarative`. There is no
-Electron, webview, Python or Node runtime to ship.
+Runtime dependencies are `qt6-base`, `qt6-declarative` and `qt6-svg`. The last
+one is easy to talk yourself out of, because `ldd` shows no link against
+`libQt6Svg` - but the application icon is an SVG loaded from a Qt resource, and
+the plugin that renders it (`iconengines/libqsvgicon.so`) is dlopened at
+runtime. Only the *tray* icon is drawn rather than loaded. There is no Electron,
+webview, Python or Node runtime to ship.
 
 ## CPack
 
@@ -127,10 +131,7 @@ hash it.
 
 ## Still to do
 
-- **AppImage** - `linuxdeploy` with the Qt plugin. Needs the `wayland`/`xcb`
-  platform plugins and the QtQuick runtime bundled. The QML is already inside
-  the binary as a Qt resource, and the icons are drawn rather than loaded, so
-  no `qt6-svg`.
+- **AppImage** - done; see Releasing above.
 - **Flatpak** - possible, but note that a sandboxed ClaudeDial needs a
   filesystem override to read `~/.claude/.credentials.json`, which is worth
   thinking about carefully before shipping.
