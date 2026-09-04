@@ -1,6 +1,7 @@
 #pragma once
 
 #include <QIcon>
+#include <QImage>
 #include <QObject>
 #include <QRect>
 #include <QString>
@@ -29,6 +30,14 @@ public:
     /// Empty when the host does not report it - which is the normal case under
     /// StatusNotifierItem, and always the case on Wayland.
     [[nodiscard]] virtual QRect iconGeometry() const = 0;
+
+    /// Show a message from the tray icon itself.
+    ///
+    /// The delivery of last resort, used where there is no notification bus.
+    /// It cannot replace an earlier message the way the D-Bus path can, so a
+    /// second warning stacks - which is the platform's own behaviour.
+    virtual void showMessage(const QString& title, const QString& body, const QImage& icon,
+                             bool critical) = 0;
 
     /// Whether the icon actually reached a panel, asked after show().
     ///

@@ -11,7 +11,36 @@
 
 #include <cstring>
 
+#ifdef Q_OS_WIN
+// After the Qt headers, and with the two macros Windows insists on, or its
+// min/max and its ANSI/Unicode aliases collide with everything.
+#ifndef WIN32_LEAN_AND_MEAN
+#define WIN32_LEAN_AND_MEAN
+#endif
+#ifndef NOMINMAX
+#define NOMINMAX
+#endif
+#include <windows.h>
+
+#include <cstdio>
+#endif
+
 namespace {
+
+#ifdef Q_OS_WIN
+/// Qt links this as a GUI binary, which on Windows means no console at all - so
+/// `claudedial --json` run from a terminal would print into nothing. Borrow the
+/// console that launched us, if there is one. A double-click has none, and then
+/// this does nothing, which is right.
+void borrowParentConsole()
+{
+    if (!AttachConsole(ATTACH_PARENT_PROCESS))
+        return;
+    FILE* stream = nullptr;
+    freopen_s(&stream, "CONOUT$", "w", stdout);
+    freopen_s(&stream, "CONOUT$", "w", stderr);
+}
+#endif
 
 void printUsage(QTextStream& out)
 {
@@ -34,6 +63,13 @@ void printUsage(QTextStream& out)
 
 int main(int argc, char** argv)
 {
+#ifdef Q_OS_WIN
+    // Any flag at all means somebody typed this in a terminal and expects to
+    // read the answer there.
+    if (argc > 1)
+        borrowParentConsole();
+#endif
+
     // Demo mode is resolved first, so that it composes with every other flag:
     // `--demo --json` has to print invented numbers too. It reuses the same
     // environment variable the client already honours rather than threading a

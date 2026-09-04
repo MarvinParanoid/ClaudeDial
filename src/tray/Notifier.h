@@ -8,7 +8,14 @@
 
 namespace claudedial::tray {
 
-/// Desktop notifications over the standard freedesktop.org D-Bus interface.
+/// Desktop notifications.
+///
+/// On a Linux desktop, over the standard freedesktop.org D-Bus interface.
+/// Everywhere else there is no such bus, so the same text and icon go out
+/// through messageRequested() for the tray icon to show - which is what
+/// QSystemTrayIcon::showMessage does natively on Windows and macOS. The wording,
+/// the thresholds and the icon are decided here either way; only the delivery
+/// differs.
 ///
 /// Talking to org.freedesktop.Notifications directly rather than shelling out to
 /// notify-send buys two things that matter: `replaces_id`, so a second warning
@@ -31,6 +38,12 @@ public:
     /// and the icon have both already given.
     void notifyThreshold(core::PeriodKind kind, int threshold, const QString& resetText,
                          const QImage& icon);
+
+Q_SIGNALS:
+    /// Emitted instead of sending, where there is no notification bus. Nothing
+    /// connects to it on Linux, and nothing emits it there.
+    void messageRequested(const QString& title, const QString& body, bool critical,
+                          const QImage& icon);
 
 private:
     void send(core::PeriodKind kind, const QString& title, const QString& body,

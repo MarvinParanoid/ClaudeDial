@@ -86,6 +86,15 @@ bool Application::initialize()
     connect(m_tray, &tray::TrayBackend::settingsRequested, this, &Application::showSettings);
     connect(m_tray, &tray::TrayBackend::quitRequested, qApp, &QCoreApplication::quit);
 
+    // Only ever emitted where there is no notification bus; connected
+    // unconditionally because a signal nobody emits costs nothing, and one
+    // #ifdef fewer is worth more than the connection.
+    connect(m_notifier, &tray::Notifier::messageRequested, this,
+            [this](const QString& title, const QString& body, bool critical, const QImage& icon) {
+                if (m_tray)
+                    m_tray->showMessage(title, body, icon, critical);
+            });
+
     connect(m_usage, &ui::UsageViewModel::settingsRequested, this, [this] {
         m_popup->hide();
         showSettings();

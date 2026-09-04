@@ -24,10 +24,25 @@ option(CLAUDEDIAL_BUILD_TESTS "Build unit tests" ON)
 #   QStyleHints::setColorScheme()   6.8  - the Light/Dark theme setting
 #   QPalette::Accent                6.6  - following the desktop's accent colour
 #   QStyleHints::colorScheme()      6.5
-find_package(Qt6 6.8 REQUIRED COMPONENTS Core Network DBus Gui Widgets Quick QuickControls2)
+set(CLAUDEDIAL_QT_COMPONENTS Core Network Gui Widgets Quick QuickControls2)
+
+# D-Bus is how a Linux desktop does notifications, suspend/resume and the tray
+# host handshake. It is not a portability layer with alternatives behind it -
+# elsewhere those three jobs have entirely different answers - so it is asked
+# for only where it exists, and the code that uses it is compiled only there.
+if (UNIX AND NOT APPLE)
+    list(APPEND CLAUDEDIAL_QT_COMPONENTS DBus)
+    set(CLAUDEDIAL_HAVE_DBUS ON)
+endif()
+
+find_package(Qt6 6.8 REQUIRED COMPONENTS ${CLAUDEDIAL_QT_COMPONENTS})
 qt_standard_project_setup(REQUIRES 6.8)
 
-add_compile_options(-Wall -Wextra -Wpedantic)
+if (MSVC)
+    add_compile_options(/W4 /permissive-)
+else()
+    add_compile_options(-Wall -Wextra -Wpedantic)
+endif()
 
 add_subdirectory(src/core)
 add_subdirectory(src)
@@ -46,8 +61,13 @@ endif()
 include(GNUInstallDirs)
 
 install(TARGETS claudedial RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
-install(FILES data/claudedial.desktop DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/applications)
-install(DIRECTORY data/icons/ DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/icons)
+
+# A .desktop entry and an XDG icon theme are meaningless anywhere else, and
+# installing them would only make a Windows or macOS tree look wrong.
+if (UNIX AND NOT APPLE)
+    install(FILES data/claudedial.desktop DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/applications)
+    install(DIRECTORY data/icons/ DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/icons)
+endif()
 
 # --- packaging ----------------------------------------------------------------
 #

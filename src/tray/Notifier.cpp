@@ -2,11 +2,13 @@
 
 #include "core/UsageLevel.h"
 
+#ifdef CLAUDEDIAL_HAVE_DBUS
 #include <QDBusArgument>
 #include <QDBusConnection>
 #include <QDBusInterface>
 #include <QDBusMetaType>
 #include <QDBusReply>
+#endif
 #include <QVariantMap>
 
 namespace claudedial::tray {
@@ -17,6 +19,8 @@ constexpr auto kPath = "/org/freedesktop/Notifications";
 constexpr auto kInterface = "org.freedesktop.Notifications";
 
 /// The `image-data` hint's wire format: (iiibiiay).
+#ifdef CLAUDEDIAL_HAVE_DBUS
+// The image-data hint's wire format. D-Bus only, and nothing else uses it.
 struct HintImage {
     int width = 0;
     int height = 0;
@@ -67,6 +71,7 @@ HintImage toHintImage(const QImage& source)
                             static_cast<qsizetype>(rgba.sizeInBytes()));
     return image;
 }
+#endif // CLAUDEDIAL_HAVE_DBUS
 
 QString windowName(core::PeriodKind kind)
 {
@@ -80,7 +85,9 @@ QString windowName(core::PeriodKind kind)
 Notifier::Notifier(QObject* parent)
     : QObject(parent)
 {
+#ifdef CLAUDEDIAL_HAVE_DBUS
     qDBusRegisterMetaType<HintImage>();
+#endif
 }
 
 void Notifier::notifyThreshold(core::PeriodKind kind, int threshold, const QString& resetText,
@@ -115,6 +122,15 @@ void Notifier::notifyThreshold(core::PeriodKind kind, int threshold, const QStri
 void Notifier::send(core::PeriodKind kind, const QString& title, const QString& body,
                     bool critical, const QImage& icon)
 {
+#ifndef CLAUDEDIAL_HAVE_DBUS
+    // No notification bus. The tray icon can show a message itself, which loses
+    // replaces_id - a second warning stacks another balloon rather than
+    // updating the first - and that is the platform's behaviour, not something
+    // to emulate.
+    Q_UNUSED(kind)
+    Q_EMIT messageRequested(title, body, critical, icon);
+    return;
+#else
     QDBusInterface interface(QLatin1String(kService), QLatin1String(kPath),
                              QLatin1String(kInterface), QDBusConnection::sessionBus());
     if (!interface.isValid())
@@ -142,6 +158,7 @@ void Notifier::send(core::PeriodKind kind, const QString& title, const QString& 
 
     if (reply.isValid())
         id = reply.value();
+#endif
 }
 
 } // namespace claudedial::tray

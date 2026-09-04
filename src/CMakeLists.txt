@@ -65,11 +65,15 @@ qt_add_resources(claudedial "appicon"
 
 target_link_libraries(claudedial PRIVATE
     claudedial_core
-    Qt6::DBus
     Qt6::Gui
     Qt6::Quick
     Qt6::QuickControls2
     Qt6::Widgets
 )
+
+if (CLAUDEDIAL_HAVE_DBUS)
+    target_link_libraries(claudedial PRIVATE Qt6::DBus)
+    target_compile_definitions(claudedial PRIVATE CLAUDEDIAL_HAVE_DBUS)
+endif()
 
 target_include_directories(claudedial PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})

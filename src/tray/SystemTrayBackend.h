@@ -41,6 +41,8 @@ public:
     void setIcon(const QIcon& icon) override;
     void setToolTip(const QString& tooltip) override;
     void show() override;
+    void showMessage(const QString& title, const QString& body, const QImage& icon,
+                     bool critical) override;
     [[nodiscard]] QRect iconGeometry() const override;
 
 private:

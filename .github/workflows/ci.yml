@@ -15,6 +15,31 @@ on:
 # creeping in unnoticed.
 
 jobs:
+  # Windows is a supported target for personal use, and no contributor has a
+  # cross compiler for it - so it is compiled here, on every push, rather than
+  # discovered to be broken while cutting a release. The tests run too: the core
+  # is plain Qt and there is no reason for them not to.
+  windows:
+    name: Windows (compile and test)
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: jurplel/install-qt-action@v4
+        with:
+          version: '6.8.*'
+          cache: true
+
+      - name: Build
+        shell: pwsh
+        run: |
+          cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+          cmake --build build --config Release
+
+      - name: Test
+        shell: pwsh
+        run: ctest --test-dir build -C Release --output-on-failure
+
   build:
     runs-on: ubuntu-latest
     container: ${{ matrix.container }}

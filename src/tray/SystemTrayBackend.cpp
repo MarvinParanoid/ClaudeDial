@@ -2,10 +2,13 @@
 
 #include <QAction>
 #include <QCoreApplication>
+#ifdef CLAUDEDIAL_HAVE_DBUS
 #include <QDBusConnection>
 #include <QDBusConnectionInterface>
+#endif
 #include <QMenu>
 #include <QStringList>
+#include <QPixmap>
 #include <QSystemTrayIcon>
 
 namespace claudedial::tray {
@@ -68,6 +71,16 @@ bool SystemTrayBackend::isAvailable()
     return QSystemTrayIcon::isSystemTrayAvailable();
 }
 
+void SystemTrayBackend::showMessage(const QString& title, const QString& body,
+                                   const QImage& icon, bool critical)
+{
+    constexpr int kOrdinaryMs = 8000;
+    constexpr int kCriticalMs = 20000;
+    m_tray->showMessage(title, body,
+                        icon.isNull() ? m_tray->icon() : QIcon(QPixmap::fromImage(icon)),
+                        critical ? kCriticalMs : kOrdinaryMs);
+}
+
 bool SystemTrayBackend::hasVisibleIcon() const
 {
     // Positive evidence only, and deliberately weak.
@@ -91,6 +104,7 @@ bool SystemTrayBackend::hasVisibleIcon() const
     // exists. Registration is asynchronous and hosts differ in what they report
     // about it, so anything more specific than this is guesswork dressed as a
     // check.
+#ifdef CLAUDEDIAL_HAVE_DBUS
     const QDBusConnection bus = QDBusConnection::sessionBus();
     if (!bus.isConnected())
         return false;
@@ -98,6 +112,11 @@ bool SystemTrayBackend::hasVisibleIcon() const
     QDBusConnectionInterface* daemon = bus.interface();
     return daemon != nullptr
         && daemon->isServiceRegistered(QStringLiteral("org.kde.StatusNotifierWatcher"));
+#else
+    // No bus to ask. Where Qt has a native tray - Windows, macOS - an empty
+    // geometry is not evidence of anything, so claim nothing rather than warn.
+    return true;
+#endif
 }
 
 void SystemTrayBackend::setIcon(const QIcon& icon)

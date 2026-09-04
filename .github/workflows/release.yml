@@ -9,6 +9,76 @@ permissions:
   contents: write
 
 jobs:
+  # Personal-use Windows build. No installer, no signing, no Store: a folder
+  # with the binary and everything Qt needs beside it, zipped.
+  #
+  # This runs on a tag or on a manual dispatch, and a manual run leaves the zip
+  # as a run artefact - which is how to get a Windows build without spending a
+  # version number. Compilation itself is checked on every push by ci.yml,
+  # because nobody working on this has a cross compiler and a broken Windows
+  # build would otherwise sit unnoticed until release day.
+  windows:
+    name: Windows x86_64
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Qt
+        uses: jurplel/install-qt-action@v4
+        with:
+          version: '6.8.*'
+          cache: true
+
+      - name: Build
+        shell: pwsh
+        run: |
+          cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DCLAUDEDIAL_BUILD_TESTS=OFF
+          cmake --build build --config Release
+
+      # windeployqt copies the Qt runtime, the platform plugin and the QML
+      # modules next to the binary. --qmldir is not optional: without it the
+      # QtQuick modules the popup and the settings window need are left behind
+      # and both windows fail to load, which is the Windows shape of the bug
+      # that shipped in v0.1.0 on Linux.
+      - name: Assemble the runtime
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path dist | Out-Null
+          Copy-Item build/src/Release/claudedial.exe dist/ -ErrorAction SilentlyContinue
+          if (-not (Test-Path dist/claudedial.exe)) {
+            Copy-Item (Get-ChildItem -Recurse -Filter claudedial.exe build | Select-Object -First 1).FullName dist/
+          }
+          windeployqt --release --qmldir src/ui/qml dist/claudedial.exe
+
+      - name: Check what was assembled
+        shell: pwsh
+        run: |
+          $fail = 0
+          foreach ($need in @('Qt6Core.dll','Qt6Gui.dll','Qt6Quick.dll','Qt6Network.dll')) {
+            if (-not (Test-Path "dist/$need")) { Write-Host "MISSING $need"; $fail = 1 }
+          }
+          if (-not (Test-Path 'dist/platforms/qwindows.dll')) {
+            Write-Host 'MISSING the windows platform plugin'; $fail = 1
+          }
+          if (-not (Test-Path 'dist/QtQuick/Controls/Basic')) {
+            Write-Host 'MISSING QtQuick.Controls.Basic - the settings window will not load'; $fail = 1
+          }
+          if (-not (Test-Path 'dist/tls')) {
+            Write-Host 'MISSING the TLS backend - api.anthropic.com will be unreachable'; $fail = 1
+          }
+          Get-ChildItem dist | Select-Object -ExpandProperty Name
+          exit $fail
+
+      - name: Zip it
+        shell: pwsh
+        run: Compress-Archive -Path dist/* -DestinationPath ClaudeDial-windows-x86_64.zip
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: claudedial-windows-run-${{ github.run_id }}
+          path: ClaudeDial-windows-x86_64.zip
+          retention-days: 14
+
   linux:
     name: Linux x86_64
     runs-on: ubuntu-22.04

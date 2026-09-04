@@ -1,12 +1,15 @@
 #include "SleepWatcher.h"
 
+#ifdef CLAUDEDIAL_HAVE_DBUS
 #include <QDBusConnection>
+#endif
 
 namespace claudedial::tray {
 
 SleepWatcher::SleepWatcher(QObject* parent)
     : QObject(parent)
 {
+#ifdef CLAUDEDIAL_HAVE_DBUS
     QDBusConnection::systemBus().connect(
         QStringLiteral("org.freedesktop.login1"),
         QStringLiteral("/org/freedesktop/login1"),
@@ -14,6 +17,7 @@ SleepWatcher::SleepWatcher(QObject* parent)
         QStringLiteral("PrepareForSleep"),
         this,
         SLOT(onPrepareForSleep(bool)));
+#endif
 }
 
 void SleepWatcher::onPrepareForSleep(bool aboutToSleep)

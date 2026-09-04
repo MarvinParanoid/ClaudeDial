@@ -1,5 +1,6 @@
 #include "Config.h"
 
+#include <QCoreApplication>
 #include <QDir>
 #include <QFile>
 #include <QFileInfo>
@@ -30,11 +31,18 @@ QString firedResetKey(const QString& windowKey)
     return QStringLiteral("state/fired_%1_reset").arg(windowKey);
 }
 
+#ifdef Q_OS_WIN
+/// Where Windows keeps per-user startup entries. QSettings reaches the registry
+/// natively, so this needs no platform API of its own.
+constexpr auto kRunKey = R"(HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Run)";
+constexpr auto kRunValue = "ClaudeDial";
+#else
 QString autostartFilePath()
 {
     return QStandardPaths::writableLocation(QStandardPaths::GenericConfigLocation)
         + QStringLiteral("/autostart/claudedial.desktop");
 }
+#endif
 
 } // namespace
 
@@ -195,11 +203,29 @@ void Config::setTheme(Theme theme)
 
 bool Config::startOnLogin() const
 {
+#ifdef Q_OS_WIN
+    return QSettings(QLatin1String(kRunKey), QSettings::NativeFormat)
+        .contains(QLatin1String(kRunValue));
+#else
     return QFile::exists(autostartFilePath());
+#endif
 }
 
 void Config::setStartOnLogin(bool enabled)
 {
+#ifdef Q_OS_WIN
+    QSettings run(QLatin1String(kRunKey), QSettings::NativeFormat);
+    if (enabled) {
+        // Quoted: the path contains spaces on any normal install.
+        run.setValue(QLatin1String(kRunValue),
+                     QStringLiteral("\"%1\"").arg(
+                         QDir::toNativeSeparators(QCoreApplication::applicationFilePath())));
+    } else {
+        run.remove(QLatin1String(kRunValue));
+    }
+    Q_EMIT changed();
+    return;
+#else
     const QString path = autostartFilePath();
 
     if (!enabled) {
@@ -225,6 +251,7 @@ void Config::setStartOnLogin(bool enabled)
         "X-GNOME-Autostart-enabled=true\n");
     file.close();
     Q_EMIT changed();
+#endif
 }
 
 } // namespace claudedial::core
