@@ -56,7 +56,9 @@ void printUsage(QTextStream& out)
            "custom module needs no wrapper script.\n\n"
            "--demo makes no network request and reads no credentials, which is\n"
            "how to check packaging and appearance on a desktop that has never\n"
-           "run Claude Code. It takes optional percentages: --demo=96,41\n";
+           "run Claude Code. It takes optional percentages, either way round:\n"
+           "  claudedial --demo 96,41\n"
+           "  claudedial --demo=96,41\n";
 }
 
 } // namespace
@@ -74,27 +76,51 @@ int main(int argc, char** argv)
     // `--demo --json` has to print invented numbers too. It reuses the same
     // environment variable the client already honours rather than threading a
     // second switch through the core.
+    int demoValueIndex = -1; // consumed, so it is not reported as a stray later
     for (int i = 1; i < argc; ++i) {
         if (std::strncmp(argv[i], "--demo", 6) != 0)
             continue;
         const char tail = argv[i][6];
-        if (tail == '\0')
-            qputenv("CLAUDEDIAL_SIMULATE", "62,41");
-        else if (tail == '=')
+        if (tail == '=') {
             qputenv("CLAUDEDIAL_SIMULATE", argv[i] + 7);
-        else
+        } else if (tail == '\0') {
+            // Accept `--demo 96,41` as well as `--demo=96,41`. Only the equals
+            // form used to work, and the other silently ran the default 62 while
+            // dropping the number the user typed - which looks like the demo
+            // percentages being ignored rather than the argument being.
+            const bool hasValue = i + 1 < argc && argv[i + 1][0] != '-';
+            if (hasValue) {
+                qputenv("CLAUDEDIAL_SIMULATE", argv[i + 1]);
+                demoValueIndex = i + 1;
+            } else {
+                qputenv("CLAUDEDIAL_SIMULATE", "62,41");
+            }
+        } else {
             continue;
+        }
 
         // Refuse an unparseable --demo=... rather than silently falling through
         // to a real request: someone asking for demo numbers has no intention
         // of reaching the network, and may have no credentials at all.
         if (!claudedial::core::UsageClient::isSimulating()) {
             QTextStream err(stderr);
-            err << "claudedial: cannot read demo percentages from '" << argv[i]
+            err << "claudedial: cannot read demo percentages from '"
+                << (demoValueIndex > 0 ? argv[demoValueIndex] : argv[i])
                 << "'.\nExpected one or two numbers, five-hour first: "
-                   "--demo=96 or --demo=96,41\n";
+                   "--demo 96 or --demo=96,41\n";
             return 2;
         }
+    }
+
+    // ClaudeDial takes no positional arguments, so one is always a mistake -
+    // and until this said so, `--demo 10,10` ran happily at 62% with the
+    // number silently discarded. Qt's own switches all begin with a dash, so
+    // this cannot swallow one of those.
+    for (int i = 1; i < argc; ++i) {
+        if (i == demoValueIndex || argv[i][0] == '-')
+            continue;
+        QTextStream err(stderr);
+        err << "claudedial: ignoring unexpected argument '" << argv[i] << "'\n";
     }
 
     // Flags are handled before any application object exists, because --json has
