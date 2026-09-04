@@ -104,6 +104,28 @@ Qt. Pacman then owns the files, which is the point - `pacman -R claudedial-bin`
 removes it cleanly. New versions need the two commands again until the AUR
 package lands and `yay -S claudedial-bin` starts working.
 
+### Windows
+
+Personal-use scaffolding rather than a supported target, and nobody has run it
+on a real desktop yet - but there is a build, and it is not attached to a
+release.
+
+Take it from the latest green run on the [Actions
+tab](https://github.com/MarvinParanoid/ClaudeDial/actions): open the run, and
+the **Artifacts** box at the bottom of its summary page has
+`ClaudeDial-windows-x86_64`. Artifacts only appear once the whole run has
+finished, and GitHub always re-zips them, so there are two layers to unpack.
+
+Run `bin\claudedial.exe`. Qt sits beside it and nothing needs installing. The
+usual flags work from a terminal - the binary borrows the console it was
+launched from, since a GUI binary on Windows has none of its own.
+
+It reads the same credentials Claude Code writes, at
+`%USERPROFILE%\.claude\.credentials.json`. **If your Claude Code runs inside
+WSL, they are in the WSL filesystem instead** and a native build will not find
+them; point `CLAUDE_CONFIG_DIR` at the WSL path or set
+`CLAUDE_CODE_OAUTH_TOKEN`.
+
 ### From source
 
 See [Building](#building).
