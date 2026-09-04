@@ -24,6 +24,11 @@ constexpr auto kUsageUrl = "https://api.anthropic.com/api/oauth/usage?skip_spend
 /// Matches Claude Code's own timeout for this request.
 constexpr int kTimeoutMs = 5000;
 
+/// However long the server asks us to wait, stop honouring it past this. A
+/// header saying "come back in three days" must not freeze the indicator until
+/// the user restarts it; our own backoff takes over instead.
+constexpr int kRetryAfterCapSeconds = 60 * 60;
+
 /// Qt can log request headers, and ours carry the bearer token. A user's
 /// ~/.config/QtProject/qtlogging.ini must not be able to switch that on for
 /// Claudometer, so the rules are forced off here - in the constructor of the
@@ -145,7 +150,10 @@ void UsageClient::fetch()
             return;
         }
         if (http == 429) {
-            Q_EMIT failed(FetchError::RateLimited);
+            // The server says when to come back; guessing when it has told us is
+            // both less correct and less polite.
+            Q_EMIT failed(FetchError::RateLimited,
+                          parseRetryAfter(reply->rawHeader(QByteArrayLiteral("Retry-After"))));
             return;
         }
         if (reply->error() != QNetworkReply::NoError || http != 200) {
@@ -158,6 +166,33 @@ void UsageClient::fetch()
         else
             Q_EMIT failed(FetchError::BadResponse);
     });
+}
+
+int UsageClient::parseRetryAfter(const QByteArray& value, const QDateTime& now)
+{
+    const QByteArray trimmed = value.trimmed();
+    if (trimmed.isEmpty())
+        return 0;
+
+    // Form one: a plain number of seconds.
+    bool ok = false;
+    const qint64 seconds = trimmed.toLongLong(&ok);
+    if (ok)
+        return seconds > 0 ? static_cast<int>(std::min<qint64>(seconds, kRetryAfterCapSeconds)) : 0;
+
+    // Form two: an HTTP date. Qt's RFC 2822 parser wants a numeric zone offset,
+    // while HTTP writes the literal "GMT", so normalise before handing it over.
+    QString text = QString::fromLatin1(trimmed);
+    if (text.endsWith(QLatin1String(" GMT"), Qt::CaseInsensitive))
+        text.replace(text.size() - 4, 4, QLatin1String(" +0000"));
+    const QDateTime when = QDateTime::fromString(text, Qt::RFC2822Date);
+    if (!when.isValid())
+        return 0;
+
+    const qint64 delta = now.secsTo(when.toUTC());
+    if (delta <= 0)
+        return 0;
+    return static_cast<int>(std::min<qint64>(delta, kRetryAfterCapSeconds));
 }
 
 std::optional<UsagePeriod> UsageClient::parseWindow(const QJsonValue& value)

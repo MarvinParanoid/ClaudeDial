@@ -55,7 +55,7 @@ Q_SIGNALS:
 private:
     void scheduleNext();
     void onSucceeded(const UsageState& state);
-    void onFailed(FetchError error);
+    void onFailed(FetchError error, int retryAfterSeconds);
     void evaluateThresholds(const UsageState& previous, const UsageState& current);
     void resetFiredThresholds(PeriodKind kind);
     void persistFiredThresholds(PeriodKind kind);
@@ -73,6 +73,10 @@ private:
 
     /// Consecutive rate-limit responses, driving the 3/6/12/15 minute backoff.
     int m_rateLimitStrikes = 0;
+
+    /// What the server's last Retry-After asked for, in seconds. 0 when it did
+    /// not ask.
+    int m_retryAfterSeconds = 0;
 
     QSet<int> m_firedFiveHour;
     QSet<int> m_firedSevenDay;

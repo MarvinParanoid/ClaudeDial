@@ -97,6 +97,20 @@ applications reach it through an extension. Claudometer's job is to say so
 clearly and to keep working through Tier 2, not to install anything on the
 user's behalf.
 
+**And GNOME has a first-class answer that is not a tray at all.** Someone has
+already built a *GNOME Shell extension* for this problem, rendering two compact
+meters straight into the top panel and never touching the system tray - so it
+inherits none of the tray's limitations. It needs GNOME Shell 49+ and ships as a
+`.shell-extension.zip`.
+
+That generalises the Plasmoid conclusion in `portability.md` §3 into a pattern
+worth stating plainly: **where a desktop has its own panel-widget API, the
+native widget beats an SNI tray icon** - correct placement, no activation
+guessing, no missing tooltip. Both a Plasmoid and a Shell extension are
+front-ends that Claudometer could grow *without touching its core*, because
+`--json` and the local socket already give them everything they need. Neither is
+work for now; both are the right shape when a desktop's tray proves too thin.
+
 **A third toolkit agrees about that row.** [leonardocouy/claudometer][lc], a
 Tauri application solving the same problem, builds its Linux tray on
 `libappindicator3` — GTK AppIndicator, not StatusNotifierItem directly. It

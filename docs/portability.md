@@ -193,18 +193,30 @@ From [gogpu/systray][gogpu], which states the requirements plainly:
 
 We publish 16, 22, 24, 32, 48 and 64, so Linux and Windows are covered.
 
-**macOS is a design problem, not a packaging one.** A template image is
-alpha-only: macOS recolours it for the light or dark menu bar and discards our
-colour. The entire usage ramp — neutral, amber, orange, red — would vanish, and
-with it the reason the icon can be read at a glance. The number would survive;
-the severity would not. That has to be answered before claiming macOS support,
-and the answer is probably a shape change rather than a colour: the fill length
-already carries the magnitude, so the ramp would have to become redundant rather
-than load-bearing.
+**macOS is a design problem, not a packaging one — and it already has an answer,
+which is not ours.** A template image is alpha-only: macOS recolours it for the
+light or dark menu bar and discards our colour, so the entire usage ramp would
+vanish and with it the reason the icon reads at a glance.
+
+The macOS implementations of this same idea sidestep the problem entirely by
+**putting text in the menu bar rather than an icon** — `5h 46% · 7d 12%`, or
+just `46`. That is idiomatic there, it needs no template image, and severity
+moves to notifications instead of colour. Worth knowing before anyone tries to
+port the dial: on macOS the dial is probably the wrong artefact, not a
+differently-coloured one.
+
+Distribution friction to expect there too: those projects ship unnotarised, and
+tell users to right-click on first launch. Notarisation needs a paid Apple
+Developer account.
 
 Windows needs less thought: Qt 6.7+ follows the system dark mode automatically,
 per Syncthing Tray's notes; earlier versions need the Fusion style or a manual
-palette.
+palette. A native Windows implementation of this same design - a ring that fills
+with usage, accent then amber then red - reports two further requirements worth
+noting: **per-monitor DPI awareness**, and **surviving Explorer restarts**, since
+tray icons must re-register when `explorer.exe` comes back. Qt handles both, but
+they are the kind of thing that is only discovered by a Windows user filing a
+bug. Unsigned binaries also trip SmartScreen on first run.
 
 ---
 

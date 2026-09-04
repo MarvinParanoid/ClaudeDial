@@ -167,8 +167,20 @@ that the limit is real and not generous, and that it applies to an honest
 - Claudometer's 5-minute default is well inside that. **Do not offer an interval
   below 60 s**, and expect `--json` invocations from a status bar to count
   against the same bucket as the tray.
-- On `429`: exponential backoff (3 → 6 → 12 → 15 min cap), keep last known state,
-  do not notify.
+- On `429`: **honour `Retry-After` when the server sends it**, and fall back to
+  our own ladder (3 → 6 → 12 → 15 min cap) when it does not. Guessing when the
+  server has told you is both less correct and less polite. Both forms the
+  specification allows are handled - a delay in seconds and an HTTP date - and
+  the value is capped at an hour, so a header asking for three days cannot
+  freeze the indicator until the user restarts it.
+- Keep last known state, do not notify.
+
+That the endpoint is unofficial is not only our reading of it. A Windows
+implementation of the same idea warns its users in the same terms: "Both usage
+endpoints are **unofficial**. Anthropic/OpenAI can change them any time, at
+which point the flyout will tell you it can't parse the response until this app
+is updated." Independent arrival at the same disclosure, and at the same
+lenient-parsing consequence.
 
 ---
 

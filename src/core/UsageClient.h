@@ -43,6 +43,14 @@ public:
     /// Exposed for tests. nullopt for null/absent/unusable windows.
     [[nodiscard]] static std::optional<UsagePeriod> parseWindow(const QJsonValue& value);
 
+    /// Seconds to wait, from an HTTP `Retry-After` header. 0 when absent or
+    /// unusable. Handles both forms the specification allows: a number of
+    /// seconds, and an HTTP date.
+    ///
+    /// Exposed for tests, since the header only ever arrives inside a reply.
+    [[nodiscard]] static int parseRetryAfter(const QByteArray& value,
+                                             const QDateTime& now = QDateTime::currentDateTimeUtc());
+
     /// True when CLAUDOMETER_SIMULATE is set, in which case no request is made.
     ///
     /// A development aid, and the only way to reach the upper end of the scale:
@@ -53,7 +61,9 @@ public:
 
 Q_SIGNALS:
     void succeeded(const claudometer::core::UsageState& state);
-    void failed(claudometer::core::FetchError error);
+
+    /// `retryAfterSeconds` is what the server asked for, or 0 if it did not ask.
+    void failed(claudometer::core::FetchError error, int retryAfterSeconds = 0);
 
 private:
     Credentials* m_credentials;

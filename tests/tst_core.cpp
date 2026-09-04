@@ -33,6 +33,7 @@ private Q_SLOTS:
     void toleratesMissingResetTimestamp();
     void clampsOutOfRangeUtilization();
     void rejectsGarbage();
+    void readsRetryAfterInBothForms();
     void rejectsResponseWithNoUsableWindow();
 
     void formatsRelativeReset();
@@ -175,6 +176,31 @@ void CoreTest::rejectsResponseWithNoUsableWindow()
     const auto state = UsageClient::parseResponse(
         QByteArrayLiteral(R"({"five_hour": null, "seven_day": null})"));
     QVERIFY(!state.has_value());
+}
+
+void CoreTest::readsRetryAfterInBothForms()
+{
+    const QDateTime now(QDate(2026, 9, 4), QTime(12, 0, 0), QTimeZone::UTC);
+
+    // The specification allows a delay in seconds or an absolute date, and a
+    // server that tells us when to come back should be obeyed rather than
+    // guessed at.
+    QCOMPARE(UsageClient::parseRetryAfter(QByteArrayLiteral("120"), now), 120);
+    QCOMPARE(UsageClient::parseRetryAfter(QByteArrayLiteral("  120  "), now), 120);
+    QCOMPARE(UsageClient::parseRetryAfter(
+                 QByteArrayLiteral("Fri, 04 Sep 2026 12:05:00 GMT"), now), 300);
+
+    // Absent, unparseable, or already past: fall back to our own ladder.
+    QCOMPARE(UsageClient::parseRetryAfter(QByteArray(), now), 0);
+    QCOMPARE(UsageClient::parseRetryAfter(QByteArrayLiteral("soon"), now), 0);
+    QCOMPARE(UsageClient::parseRetryAfter(QByteArrayLiteral("0"), now), 0);
+    QCOMPARE(UsageClient::parseRetryAfter(QByteArrayLiteral("-30"), now), 0);
+    QCOMPARE(UsageClient::parseRetryAfter(
+                 QByteArrayLiteral("Fri, 04 Sep 2026 11:00:00 GMT"), now), 0);
+
+    // A header asking for three days must not freeze the indicator until the
+    // user restarts it.
+    QCOMPARE(UsageClient::parseRetryAfter(QByteArrayLiteral("259200"), now), 3600);
 }
 
 void CoreTest::formatsRelativeReset()

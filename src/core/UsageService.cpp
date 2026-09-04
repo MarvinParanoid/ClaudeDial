@@ -160,6 +160,7 @@ void UsageService::onSucceeded(const UsageState& state)
     m_fetching = false;
     m_rateLimitStrikes = 0;
     m_lastError.reset();
+    m_retryAfterSeconds = 0;
 
     const UsageState previous = m_state;
     m_state = state;
@@ -172,10 +173,11 @@ void UsageService::onSucceeded(const UsageState& state)
     scheduleNext();
 }
 
-void UsageService::onFailed(FetchError error)
+void UsageService::onFailed(FetchError error, int retryAfterSeconds)
 {
     m_fetching = false;
     m_lastError = error;
+    m_retryAfterSeconds = retryAfterSeconds;
 
     // A failure never clears good data - it only marks it stale.
     if (m_state.isValid())
@@ -207,6 +209,9 @@ void UsageService::scheduleNext()
         const int index = std::min<int>(m_rateLimitStrikes - 1,
                                         std::size(kRateLimitBackoffMinutes) - 1);
         intervalMs = std::max<qint64>(intervalMs, kRateLimitBackoffMinutes[index] * 60LL * 1000);
+        // Never come back sooner than the server asked, whatever our own ladder
+        // says. The ladder is a guess for when it does not tell us.
+        intervalMs = std::max<qint64>(intervalMs, m_retryAfterSeconds * 1000LL);
     } else {
         // Align to the nearest upcoming reset so the first poll of a new window
         // is prompt, instead of showing a full interval of stale percentages.
