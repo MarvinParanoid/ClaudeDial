@@ -2,8 +2,12 @@
 
 **Claude Code usage at a glance.**
 
-A minimal Linux system tray indicator for Claude Code usage limits.
-Glance at the icon, hover for details, click for a small popup, forget about it.
+A minimal system tray indicator for Claude Code usage limits. Glance at the
+icon, hover for details, click for a small popup, forget about it.
+
+Built for Linux desktops, KDE Plasma first, and there is a Windows build too -
+that one is for personal use rather than a supported target. [Desktop
+support](#desktop-support) says how far each one is taken.
 
 <img src="docs/images/tray-styles.png" alt="The tray icon at 8, 23, 75, 88, 99 and 100 percent, in both styles" width="336">
 
@@ -260,8 +264,10 @@ opens it there too. On Plasma a single click toggles it, as you would expect.
 Start on login, refresh interval, notifications, warning and critical
 thresholds, tray style, tray icon tone, and theme (system / light / dark) are
 all configurable.
-Settings live in `~/.config/claudedial/claudedial.conf`; the `[state]` group in
-that file is ClaudeDial's own bookkeeping, not settings.
+Settings live in `~/.config/claudedial/claudedial.conf`, and on Windows under
+`HKEY_CURRENT_USER\Software\claudedial` in the registry, which is where
+QSettings puts them natively on each. The `[state]` group in the file is
+ClaudeDial's own bookkeeping, not settings.
 
 **Tray style** picks what goes inside the ClaudeDial arc:
 
