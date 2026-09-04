@@ -32,17 +32,19 @@ jobs:
       # desktop the Qt plugin sweeps up third-party plugins from Qt's plugin
       # directory (kimageformats) and fails on their missing dependencies. A
       # clean Qt install has none of them.
-      # qtwayland is a separate module and is NOT part of the default install.
-      # Without it the AppImage carries only the xcb platform plugin, and on a
-      # Wayland session it either falls back to XWayland or refuses to start -
-      # which is what v0.1.0 shipped, on a project whose primary tested desktop
-      # is Plasma on Wayland.
       - name: Install Qt
         uses: jurplel/install-qt-action@v4
         with:
           version: '6.8.*'
-          modules: 'qtwayland'
           cache: true
+
+      # v0.1.0 shipped xcb-only, and the first attempt to fix it guessed at an
+      # aqtinstall module name and failed to install Qt at all. So: look, do not
+      # guess. A Qt application does not link its platform plugin, which is why
+      # linuxdeploy deployed only xcb even though more was almost certainly
+      # sitting right here.
+      - name: List the platform plugins this Qt actually provides
+        run: ls "$QT_ROOT_DIR/plugins/platforms/"
 
       - name: Configure
         run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
