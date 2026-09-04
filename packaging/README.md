@@ -35,6 +35,13 @@ $ cpack -G DEB
 $ cpack -G RPM
 ```
 
+**What the tarball needs on the host.** Qt 6.8 or newer, including QtQuick and
+QtQuick Controls. On Arch that is `qt6-base`, `qt6-declarative` and `qt6-svg`,
+which is what the AUR package depends on; the names differ elsewhere, and
+`ldd claudedial-*/bin/claudedial | grep 'not found'` names whatever is missing
+on a given machine. A Debian box with no Qt stops at
+`libQt6QuickControls2.so.6`.
+
 TGZ builds anywhere, but note what it is: an install tree that links the
 system Qt, not a portable bundle. On a Debian box with no Qt installed it stops
 at `libQt6QuickControls2.so.6`, which is worth saying in release notes because

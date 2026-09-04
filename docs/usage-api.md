@@ -60,10 +60,32 @@ file will be absent or lack `claudeAiOauth`. Claude Code models this internally 
 
 ### Not applicable on Linux
 
-- **macOS** stores this in the login Keychain under service `Claude Code-credentials`.
-  That string does **not** appear in the Linux binary. Corroborated by a shipping
-  application: [leonardocouy/claudometer][lc] reads
-  `~/.claude/.credentials.json` on Linux and the system Keychain on macOS.
+- **macOS: reported, not verified here.** The claim is that Claude Code stores
+  this in the login Keychain, under service `Claude Code-credentials`. Weigh the
+  two halves separately. The *mechanism* is corroborated by a shipping
+  application — [leonardocouy/claudometer][lc] reads
+  `~/.claude/.credentials.json` on Linux and the system Keychain on macOS. The
+  *exact service name* is second-hand: it is not a string we extracted from
+  anything, and by our own note above it does not appear in the Linux binary,
+  so nothing here confirms it.
+
+  Three things a macOS port needs answered before it is designed, and one safe
+  command answers the first two:
+
+  ```console
+  $ security find-generic-password -s "Claude Code-credentials"
+  ```
+
+  It prints the item's *attributes* — whether it exists, its service and its
+  account — and no secret. **Do not add `-w`**, which prints the password
+  itself. If that finds nothing, try `security dump-keychain | grep -i claude`
+  to learn the real service name, again without any flag that reveals a value.
+
+  The third question cannot be answered by inspection: whether a *different*
+  binary may read the item at all. A Keychain item carries an access control
+  list, so the answer depends on how Claude Code created it and on the user
+  accepting a prompt — and an ad-hoc signed build changes identity on every
+  rebuild, which is what such an ACL keys on.
 - `libsecret` appears twice in the binary but is not used for these credentials on Linux —
   Claude Code writes the plain `0600` JSON file. ClaudeDial therefore does not need a
   keyring dependency.

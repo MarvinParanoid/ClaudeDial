@@ -5,9 +5,8 @@
 A minimal system tray indicator for Claude Code usage limits. Glance at the
 icon, hover for details, click for a small popup, forget about it.
 
-Built for Linux desktops, KDE Plasma first, and there is a Windows build too -
-that one is for personal use rather than a supported target. [Desktop
-support](#desktop-support) says how far each one is taken.
+Built for KDE Plasma first. Also runs on other Linux desktops and on Windows -
+[Desktop support](#desktop-support) says how far each one is taken.
 
 <img src="docs/images/tray-styles.png" alt="The tray icon at 8, 23, 75, 88, 99 and 100 percent, in both styles" width="336">
 
@@ -53,93 +52,64 @@ put together: [docs/architecture.md](docs/architecture.md).
 
 ## Installation
 
-Three artefacts are published for each release, plus a source build.
+Three artefacts per release, plus a source build.
 
 ### AppImage
 
-Carries Qt and OpenSSL, so it needs nothing from your distribution but FUSE,
-which is how an AppImage mounts itself.
+Carries Qt and OpenSSL, so it needs nothing from your distribution but FUSE.
 
 ```console
 $ chmod +x ClaudeDial-x86_64.AppImage
 $ ./ClaudeDial-x86_64.AppImage
 ```
 
-On a minimal install that can fail with `No suitable fusermount binary found on
-the $PATH`. Either install FUSE (`fuse3` on Debian) or skip the mount
-altogether, which needs nothing at all:
+If that fails with `No suitable fusermount binary found on the $PATH`, install
+FUSE (`fuse3` on Debian) or skip the mount, which needs nothing at all:
+`./ClaudeDial-x86_64.AppImage --appimage-extract-and-run`.
 
-```console
-$ ./ClaudeDial-x86_64.AppImage --appimage-extract-and-run
-```
-
-Take v0.1.2 or later. The AppImages attached to v0.1.0 and v0.1.1 were built
-without the Qt Wayland platform plugin: the tray icon appears but the popup does
-not, and they need `QT_QPA_PLATFORM=xcb` to be usable.
+Take v0.1.2 or later: the v0.1.0 and v0.1.1 AppImages shipped without the Qt
+Wayland plugin, so their popup never appears.
 
 ### Tarball
 
-`claudedial-<version>-linux-x86_64.tar.gz` from the same release is a hundred
-times smaller because it links your distribution's Qt rather than shipping its
-own. Unpack it over `/usr` or `~/.local`.
+`claudedial-<version>-linux-x86_64.tar.gz` is a hundred times smaller because
+it links your distribution's Qt. Unpack it over `/usr` or `~/.local`.
 
-**It is not standalone.** Qt 6.8 or newer has to be installed, including
-QtQuick and QtQuick Controls; on a Debian install with no Qt it stops at
-`error while loading shared libraries: libQt6QuickControls2.so.6`. The package
-names differ between distributions - on Arch it is `qt6-base`,
-`qt6-declarative` and `qt6-svg`, which is what the AUR package depends on - and
-`ldd claudedial-*/bin/claudedial | grep 'not found'` will name whatever is
-missing on yours. Take the AppImage if you would rather not care.
+**It is not standalone** - it needs Qt 6.8 or newer installed, including
+QtQuick Controls. Take the AppImage if you would rather not care;
+[packaging/README.md](packaging/README.md) lists what to install if you would.
 
 ### Arch Linux
 
-Not in the AUR yet: account registration there is paused while they deal with a
-wave of automated signups. The package is ready regardless, so build it from
-this repository instead.
+Not in the AUR yet: registration there is paused while they handle a wave of
+automated signups. The package is ready, so build it from this repository:
 
 ```console
 $ curl -fLo PKGBUILD https://raw.githubusercontent.com/MarvinParanoid/ClaudeDial/main/packaging/PKGBUILD-bin
 $ makepkg -si
 ```
 
-That file is what the AUR package will be, unchanged: it unpacks the tarball
-above rather than compiling, so the build takes seconds and links your system
-Qt. Pacman then owns the files, which is the point - `pacman -R claudedial-bin`
-removes it cleanly. New versions need the two commands again until the AUR
-package lands and `yay -S claudedial-bin` starts working.
+That is the AUR package unchanged. It unpacks the tarball rather than
+compiling, so it takes seconds, and pacman owns the files afterwards -
+`pacman -R claudedial-bin` removes it cleanly. Repeat the two commands for a
+new version until `yay -S claudedial-bin` starts working.
 
 ### Windows
 
-`ClaudeDial-windows-x86_64.zip` comes with each release from v0.1.6 on.
-Personal-use scaffolding rather than a supported target: it has been run on a
-real desktop and it works, but lightly - see [Desktop
-support](#desktop-support).
+`ClaudeDial-windows-x86_64.zip` ships with each release from v0.1.6. Run
+`bin\claudedial.exe`; Qt sits beside it and nothing needs installing. Flags
+work from a terminal - the binary borrows the console it was launched from.
+Between releases the same zip is on every green [Actions
+run](https://github.com/MarvinParanoid/ClaudeDial/actions), under
+**Artifacts**.
 
-Every push also leaves the same zip on its [Actions
-run](https://github.com/MarvinParanoid/ClaudeDial/actions), which is where to
-get a build between releases: open a green run and take
-`ClaudeDial-windows-x86_64` from the **Artifacts** box at the bottom. Those
-appear only once the whole run has finished, and GitHub re-zips them, so there
-are two layers to unpack - the release asset has one.
-
-Run `bin\claudedial.exe`. Qt sits beside it and nothing needs installing. The
-usual flags work from a terminal - the binary borrows the console it was
-launched from, since a GUI binary on Windows has none of its own.
-
-**The tray icon looks different here, and that is the design.** Windows asks
-for a 16-pixel icon in the notification area, and at that size the dial with a
-number inside it is not legible - so Percentage draws the number at nearly full
-height with a thin usage bar under it instead. Set **Tray style** to **Gauge**
-for the dial: with no number competing for the space it survives 16 px, drawn
-with a heavier stroke. On a display scaled above 100% Windows asks for a larger
-icon and Percentage returns to the dial on its own. The rule is the pixmap
-size, never the desktop.
-
-It reads the same credentials Claude Code writes, at
+It reads the credentials Claude Code writes, at
 `%USERPROFILE%\.claude\.credentials.json`. **If your Claude Code runs inside
-WSL, they are in the WSL filesystem instead** and a native build will not find
-them; point `CLAUDE_CONFIG_DIR` at the WSL path or set
-`CLAUDE_CODE_OAUTH_TOKEN`.
+WSL those are in the WSL filesystem** and a native build will not find them;
+point `CLAUDE_CONFIG_DIR` at the WSL path or set `CLAUDE_CODE_OAUTH_TOKEN`.
+
+The tray icon looks different here by design: Windows asks for a 16-pixel icon,
+which is where the mark switches to its small-size form. See **Tray style**.
 
 ### From source
 
@@ -208,7 +178,7 @@ same care.
 | Xfce, Cinnamon, MATE, LXQt, COSMIC | expected to work | Same StatusNotifierItem path as Plasma. Nobody has run it; the protocol says it should. |
 | **No tray at all** - Sway, Hyprland, a bare session | `claudedial --json` | Not a fallback but the interface for that user. Stable, and free while the tray runs. |
 | **Windows** | works, lightly tested | Run on a real desktop: the tray icon appears, the small-size mark renders, and the CLI works from a terminal. Notifications, autostart and reading real credentials have not been exercised there. Personal-use scaffolding rather than a supported target. |
-| macOS | not attempted | Qt supports it, but the token lives in the Keychain there, which is real work in the one place that must not be got wrong. |
+| macOS | not attempted | Compiles and packages, untried. The token is reported to live in the login Keychain there, which nothing here has verified - see [usage-api.md](docs/usage-api.md) for how to check and why it decides the difficulty. |
 
 The operative rule, when two of those conflict: **Plasma is not made worse to
 make another desktop better.** Where a choice cannot serve both, Plasma gets the
@@ -228,109 +198,58 @@ it works on Plasma out of the box, and on GNOME with the AppIndicator extension.
 Notifications use `org.freedesktop.Notifications`. Autostart is a normal XDG
 entry in `~/.config/autostart`. Refresh-on-resume uses logind's `PrepareForSleep`.
 
-Two known Wayland limitations that ClaudeDial cannot work around reliably:
+Two Wayland limitations ClaudeDial cannot work around, because a client there
+cannot place its own windows:
 
-- **The popup's position is chosen by the compositor.** A Wayland client cannot
-  place its own top-level windows, so `setPosition()` is ignored and the popup
-  appears wherever the compositor decides - typically near the middle of the
-  screen. ClaudeDial asks the panel where its icon is and anchors to it when it
-  gets an answer, but StatusNotifierItem hosts generally do not report icon
-  geometry; Plasma does not. (The anchoring path is reached on X11 with an
-  XEmbed tray - verified on i3, where the popup does open next to the icon.)
+- **The compositor chooses where the popup appears** - typically the middle of
+  the screen, not next to the icon. **Drag it by its header** to move it; on
+  Plasma a window rule can make that stick.
+- **The popup may not receive keyboard focus**, and then it will not dismiss
+  itself when you click elsewhere. Clicking the tray icon again, or the close
+  button, always works.
 
-  **Drag the popup by its header** to move it - that goes through the compositor
-  and works on Wayland. On Plasma you can make the position stick with a window
-  rule: System Settings → Window Management → Window Rules, match window class
-  `claudedial` and window title `ClaudeDial`, then set Position to force the
-  corner you want. Match the title as well as the class, or the rule will also
-  catch the settings window.
-- **The popup may not receive keyboard focus**, in which case it will not
-  dismiss itself when you click elsewhere. Clicking the tray icon again, or the
-  close button, always works.
+[platform-support.md](docs/platform-support.md) has the window rule, and why
+neither of these is a bug we can fix.
 
 ## Settings
-
 
 <img src="docs/images/settings.png" alt="The ClaudeDial settings window" width="381">
 
 Right-click the tray icon for **Show usage**, **Refresh now**, **Settings** and
-**Quit**, or use the gear in the popup.
+**Quit**, or use the gear in the popup. On GNOME a left click opens that menu
+instead of the popup, so **Show usage** is the way in there; on Plasma a single
+click toggles it.
 
-"Show usage" is in that menu for a reason: on GNOME, where the tray comes from
-the AppIndicator extension, a single left click opens the menu rather than
-activating the icon, so the menu is the only route to the popup. A double click
-opens it there too. On Plasma a single click toggles it, as you would expect.
-
-Start on login, refresh interval, notifications, warning and critical
-thresholds, tray style, tray icon tone, and theme (system / light / dark) are
-all configurable.
-Settings live in `~/.config/claudedial/claudedial.conf`, and on Windows under
-`HKEY_CURRENT_USER\Software\claudedial` in the registry, which is where
-QSettings puts them natively on each. The `[state]` group in the file is
+Configurable: start on login, refresh interval, notifications, warning and
+critical thresholds, tray style, tray icon tone, and theme. Settings live in
+`~/.config/claudedial/claudedial.conf`, and on Windows under
+`HKEY_CURRENT_USER\Software\claudedial` - the `[state]` group in the file is
 ClaudeDial's own bookkeeping, not settings.
 
-**Tray style** picks what goes inside the ClaudeDial arc:
+**Tray style** picks what goes inside the arc: **Percentage** (default) shows
+the exact 5-hour figure, `!` at 100%; **Gauge** shows the needle. The arc is
+the same in both and fills with usage either way. Below 17 px the mark changes
+shape, because the dial with a number inside it is not legible that small -
+chosen by the size the panel asks for, never by the desktop.
 
-- **Percentage** (default) - the exact 5-hour figure. Answers the question with
-  no hover and nothing to interpret, which is what a tray indicator is for. At
-  100% it shows `!`, because three digits are not legible at typical tray-icon
-  sizes and the tooltip still gives you the number.
-- **Gauge** - the needle. A reading you take in at a glance as little / half /
-  nearly all, with the exact figure a hover away.
+**Tray icon** sets how light or dark the mark is while usage is below the
+warning threshold. **Auto** reads the panel's colour where Plasma declares one,
+which covers Breeze Twilight, and follows your application colours elsewhere;
+pick **Light** for a dark panel or **Dark** for a light one when it guesses
+wrong. Above the warning threshold the icon is amber, orange or red regardless.
+When the data is stale the whole mark fades.
 
-The arc is the same in both and fills with usage either way, so they are two
-styles of one dial rather than two icons. The popup header always shows the
-needle, as the constant logotype.
-
-**Below 17 px the mark changes shape**, because the design does not survive the
-pixels: Percentage becomes the number at nearly full height with a thin usage
-bar under it, and Gauge keeps the dial with a heavier stroke. Panels that ask
-for a small icon - i3bar asks for 15 - get a legible reading rather than a
-faithful miniature. Plasma asks for 22 or 24 and is unaffected.
-
-**Tray icon** sets how light or dark the icon is drawn while usage is below the
-warning threshold. **Auto** reads the panel's colour where Plasma declares one -
-which covers Breeze Twilight, where the applications are light and the panel is
-not - and follows your application colours elsewhere. Pick **Light** for a dark
-panel or **Dark** for a light one if it still guesses wrong: a panel cannot be
-asked what colour it is, and on most desktops nothing writes it down. Above the
-warning threshold the icon is amber, orange or red regardless, which is legible
-either way.
-
-When the data is stale the whole mark fades, so a glance at the panel tells you
-the number is the last one ClaudeDial managed to fetch.
-
-Under the 5-hour row there is one more line, `Usage 63% · window 60%`. A
-percentage alone says how much is spent but not whether that is a lot: 63% with
-four hours still to run is heavy, 63% with forty minutes left is fine. The two
-numbers sit side by side so you can compare them and draw your own conclusion -
-there is no pace multiplier, no projection and no verdict. The 7-day window does
-not get this: consumption across days is naturally uneven, so "40% through the
-week" would say nothing useful.
-
-That line is experimental. If nobody's eye ever catches it, it will go.
-
-Colour has three separate jobs:
-
-| Role | Meaning |
-| --- | --- |
-| **Terracotta** | ClaudeDial's identity - the application icon and the popup's header mark |
-| **Your Plasma accent** | interactive controls, so they match the rest of your desktop |
-| **neutral → amber → orange → red** | how much of a limit is spent |
-
-The usage ramp steps at your warning threshold, your critical threshold, 95% and
-100% - the same points the notifications fire on. The tray icon stays monochrome
-below the warning threshold, because a panel icon is on screen permanently and
-should not be a standing splash of colour.
-
-Both themes are drawn from the popup's own palette rather than the desktop's,
-which is what lets Light and Dark work even on a desktop whose platform theme
-declines to switch:
+Under the 5-hour row sits one more line, `Usage 63% · window 60%`. A percentage
+alone says how much is spent but not whether that is a lot: 63% with four hours
+to run is heavy, 63% with forty minutes left is fine. Two numbers side by side,
+no projection and no verdict. Experimental, and only for the 5-hour window.
 
 <img src="docs/images/popup-light.png" alt="The popup in the light theme" width="340">
 
-Why any of it looks the way it does, and what was tried and rejected:
-[docs/design.md](docs/design.md).
+Why any of it looks the way it does - the colour roles, the ramp, the tray
+icon's proportions, and what was tried and rejected:
+[docs/design.md](docs/design.md). Where each desktop lands and the measurements
+behind it: [docs/platform-support.md](docs/platform-support.md).
 
 ## Notifications
 
@@ -391,39 +310,24 @@ On Arch: `pacman -S qt6-base qt6-declarative qt6-svg cmake ninja`.
 
 ## Development
 
-`--demo` runs the whole application on invented numbers:
+`--demo` runs the whole application on invented numbers - no network request,
+no credentials read, so it works on a machine that has never seen Claude Code:
 
 ```console
 $ claudedial --demo            # tray, popup, settings, notifications
-$ claudedial --demo=96,41      # one or two percentages, five-hour first
+$ claudedial --demo 96,41      # one or two percentages, five-hour first
 $ claudedial --demo --json
 ```
 
-It makes no network request and reads no credentials, so it runs on a machine
-that has never seen Claude Code. It also takes a single-instance lock of its
-own, so it starts a second tray icon beside a live ClaudeDial rather than
-asking that one to open its popup. That is what makes it the way to check a
-package on another distribution or desktop: install the `.deb`, the AppImage or
-the AUR build in a VM or container, run `claudedial --demo`, and you are
-looking at the real tray icon, the real popup and the real settings window
-without an account or a token anywhere near it.
+It takes a single-instance lock of its own, so it starts a second tray icon
+beside a live ClaudeDial rather than poking that one. That makes it the way to
+check a package on another distribution or desktop, and the only way to reach
+the top of the scale: the 95% and 100% steps cannot otherwise be exercised
+short of spending a limit. Simulated numbers are never recorded as announced,
+so a run at 100% will not silence the real notification later.
 
-`CLAUDEDIAL_SIMULATE` is the same mechanism as an environment variable, which
-is occasionally handier:
-
-```console
-$ CLAUDEDIAL_SIMULATE=99 claudedial
-$ CLAUDEDIAL_SIMULATE=63,41 claudedial --json
-```
-
-One or two percentages, five-hour first. It makes no request, so it works
-offline and costs no quota, and it is the only way to reach the top of the scale:
-the 95% and 100% steps are fixed, so without it their colours, the `!` glyph and
-their notifications cannot be exercised short of actually spending a limit.
-Simulated numbers are never recorded as announced, so a run at 100% will not
-silence the real notification later.
-
-Screenshots in this README were taken with it.
+`CLAUDEDIAL_SIMULATE=96,41` is the same mechanism as an environment variable.
+The screenshots in this README were taken with it.
 
 ## License
 

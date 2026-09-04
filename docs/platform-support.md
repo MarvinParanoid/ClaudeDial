@@ -72,6 +72,11 @@ One Windows-specific wrinkle: Qt links this as a GUI binary, which there means
 no console at all, so `claudedial --json` from a terminal would print into
 nothing. It borrows the parent console when given any flag.
 
+**The macOS build does not compile yet**, contrary to what the section below
+first claimed on the strength of the D-Bus guards alone. CI says the build step
+fails; the reason is not yet known, because Actions logs need admin rights to
+read and there is no cross compiler here. Recorded rather than explained.
+
 **Run on a real Windows desktop, and it works.** Confirmed there: the tray icon
 appears, the CLI prints to the terminal that launched it, and the small-size
 mark renders — Windows asks for a 16-pixel notification-area icon, which trips
@@ -98,8 +103,10 @@ once" is not the same as tested.
 Worth writing down because the Windows port made the build portable in passing,
 which makes macOS look closer than it is. `if (UNIX AND NOT APPLE)` already
 excludes D-Bus and the XDG install rules, and every use of it is behind
-`CLAUDEDIAL_HAVE_DBUS`, so the tree should compile there today. Compiling is
-not the hard part.
+`CLAUDEDIAL_HAVE_DBUS`, from which this document concluded the tree would
+compile there. **It does not** — the first CI run on macOS failed at the build
+step. So even the free-looking part was not free, which is the second time in
+this file that "the mechanism implies it works" has been wrong.
 
 **The token is in the Keychain**, service `Claude Code-credentials`, so the file
 reader finds nothing. This is the one that decides the whole thing, and it
@@ -508,6 +515,30 @@ links the system Qt rather than a portable bundle — it stops at
 **Confirmed as supported:** GNOME on Wayland with the AppIndicator extension —
 tray, popup, notifications and the icon inside the notification all work. Stock
 GNOME without the extension correctly reports no tray and points at `--json`.
+
+### Living with the popup's position on Wayland
+
+A Wayland client cannot place its own top-level windows, so `setPosition()` is
+ignored and the compositor decides — typically the middle of the screen.
+ClaudeDial asks the panel where its icon is and anchors to it when it gets an
+answer, which on Wayland it never does; that path is reached on X11 with an
+XEmbed tray, and was seen working on i3.
+
+Two things that do work, and belong here rather than in a README:
+
+**Drag the popup by its header.** That goes through the compositor, so it moves
+where `setPosition()` cannot.
+
+**On Plasma, a window rule makes it stick.** System Settings → Window
+Management → Window Rules, match window class `claudedial` *and* window title
+`ClaudeDial`, then force Position to the corner you want. Matching the title as
+well as the class matters: on class alone the rule also catches the settings
+window, which is why the popup carries a title at all.
+
+And one that does not: the popup may not receive keyboard focus, and then it
+will not dismiss itself when you click elsewhere. Clicking the tray icon again,
+or the close button, always works. This is the reason focus-out dismissal was
+removed rather than fixed.
 
 ## Degradation
 
