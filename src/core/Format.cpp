@@ -33,10 +33,18 @@ QString absoluteWhen(const QDateTime& resetAt, const QDateTime& now)
     return locale.toString(local, QStringLiteral("d MMM HH:mm"));
 }
 
-/// "1h 52m", but "2h" rather than "2h 0m" and "37m" rather than "0h 37m" - a
-/// zero component is noise in a duration.
-QString minutesAndHours(qint64 totalMinutes)
+/// "37m", "1h 52m", "3d 5h" - two units at most, and never a zero component:
+/// "2h" rather than "2h 0m". The day tier exists because the seven-day window
+/// is shown as a countdown too, and "76h 30m" is not a duration anyone reads.
+QString durationText(qint64 totalMinutes)
 {
+    const qint64 days = totalMinutes / (24 * 60);
+    if (days > 0) {
+        const qint64 hours = (totalMinutes % (24 * 60)) / 60;
+        return hours == 0 ? QStringLiteral("%1d").arg(days)
+                          : QStringLiteral("%1d %2h").arg(days).arg(hours);
+    }
+
     const qint64 hours = totalMinutes / 60;
     const qint64 minutes = totalMinutes % 60;
     if (hours == 0)
@@ -53,7 +61,7 @@ QString resetRelative(const QDateTime& resetAt, const QDateTime& now)
     const qint64 seconds = now.secsTo(resetAt);
     if (seconds <= 30)
         return QCoreApplication::translate("format", "resets now");
-    return QCoreApplication::translate("format", "resets in %1").arg(minutesAndHours((seconds + 30) / 60));
+    return QCoreApplication::translate("format", "resets in %1").arg(durationText((seconds + 30) / 60));
 }
 
 QString resetAbsolute(const QDateTime& resetAt, const QDateTime& now)
@@ -61,29 +69,27 @@ QString resetAbsolute(const QDateTime& resetAt, const QDateTime& now)
     return QCoreApplication::translate("format", "resets %1").arg(absoluteWhen(resetAt, now));
 }
 
-QString resetSentence(PeriodKind kind, const UsagePeriod& period, const QDateTime& now)
+QString resetSentence(PeriodKind, const UsagePeriod& period, const QDateTime& now)
 {
     if (!period.resetAt)
         return {};
 
-    if (kind == PeriodKind::FiveHour) {
-        const qint64 seconds = now.secsTo(*period.resetAt);
-        if (seconds <= 30)
-            return QCoreApplication::translate("format", "Resets now");
-        return QCoreApplication::translate("format", "Resets in %1")
-            .arg(minutesAndHours((seconds + 30) / 60));
-    }
-    return QCoreApplication::translate("format", "Resets %1").arg(absoluteWhen(*period.resetAt, now));
+    // A countdown for both windows, which is what Claude Code itself shows, so
+    // the two readings do not need translating between each other.
+    const qint64 seconds = now.secsTo(*period.resetAt);
+    if (seconds <= 30)
+        return QCoreApplication::translate("format", "Resets now");
+    return QCoreApplication::translate("format", "Resets in %1")
+        .arg(durationText((seconds + 30) / 60));
 }
 
-QString resetFor(PeriodKind kind, const UsagePeriod& period, const QDateTime& now)
+QString resetFor(PeriodKind, const UsagePeriod& period, const QDateTime& now)
 {
     if (!period.resetAt)
         return {};
-    // The 5-hour window is rolling, so a countdown is the honest presentation.
-    // The 7-day window lands on a schedule, so a wall-clock time is more useful.
-    return kind == PeriodKind::FiveHour ? resetRelative(*period.resetAt, now)
-                                        : resetAbsolute(*period.resetAt, now);
+    // Both windows read as a countdown now; the kind is kept in the signature
+    // because callers pass it and the two may diverge again.
+    return resetRelative(*period.resetAt, now);
 }
 
 QString pace(PeriodKind kind, const UsagePeriod& period, const QDateTime& now)

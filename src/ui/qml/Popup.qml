@@ -126,7 +126,7 @@ Rectangle {
             width: parent.width
             visible: usage.available && usage.fiveHourAvailable
             theme: theme
-            label: qsTr("5-hour limit")
+            label: qsTr("Session (5hr)")
             percentage: usage.fiveHourPercent
             reset: usage.fiveHourReset
             pace: usage.fiveHourPace
@@ -137,7 +137,7 @@ Rectangle {
             width: parent.width
             visible: usage.available && usage.sevenDayAvailable
             theme: theme
-            label: qsTr("7-day limit")
+            label: qsTr("Weekly (7 day)")
             percentage: usage.sevenDayPercent
             reset: usage.sevenDayReset
             level: usage.sevenDayLevel

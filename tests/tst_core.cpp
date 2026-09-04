@@ -217,6 +217,15 @@ void CoreTest::formatsRelativeReset()
     QCOMPARE(format::resetRelative(now.addSecs(60 * 60), now), QStringLiteral("resets in 1h"));
     QCOMPARE(format::resetRelative(now.addSecs(37 * 60), now), QStringLiteral("resets in 37m"));
     QCOMPARE(format::resetRelative(now.addSecs(5), now), QStringLiteral("resets now"));
+
+    // Days, because the seven-day window is a countdown too and "76h 30m" is
+    // not a duration anyone reads. Two units at most, no zero component.
+    QCOMPARE(format::resetRelative(now.addSecs(3 * 24 * 3600 + 5 * 3600), now),
+             QStringLiteral("resets in 3d 5h"));
+    QCOMPARE(format::resetRelative(now.addSecs(3 * 24 * 3600), now),
+             QStringLiteral("resets in 3d"));
+    QCOMPARE(format::resetRelative(now.addSecs(24 * 3600 - 60), now),
+             QStringLiteral("resets in 23h 59m"));
     QCOMPARE(format::resetRelative(now.addSecs(-60), now), QStringLiteral("resets now"));
 }
 
@@ -228,12 +237,17 @@ void CoreTest::formatsResetPerWindowKind()
     rolling.percentage = 63;
     rolling.resetAt = now.addSecs(112 * 60);
 
-    // The 5-hour window is rolling, so it gets a countdown.
     QCOMPARE(format::resetFor(PeriodKind::FiveHour, rolling, now),
              QStringLiteral("resets in 1h 52m"));
 
-    // The 7-day window lands on a schedule, so it gets a wall-clock time.
-    QVERIFY(format::resetFor(PeriodKind::SevenDay, rolling, now).startsWith(QStringLiteral("resets ")));
+    // Both windows read as a countdown, which is what Claude Code shows. Pinned
+    // exactly rather than by prefix: a loose check here is what let the seven-day
+    // text change without a single test noticing.
+    UsagePeriod weekly;
+    weekly.percentage = 41;
+    weekly.resetAt = now.addSecs(3 * 24 * 3600 + 5 * 3600);
+    QCOMPARE(format::resetFor(PeriodKind::SevenDay, weekly, now),
+             QStringLiteral("resets in 3d 5h"));
 
     // No timestamp means no reset line at all, rather than an invented one.
     UsagePeriod noReset;
@@ -267,7 +281,7 @@ void CoreTest::buildsTooltip()
     // 1h52m left of a five-hour window puts us 63% through it - which the
     // five-hour row reports and the seven-day row deliberately does not.
     QCOMPARE(lines.at(1), QStringLiteral("5h  63% · 63% through · resets in 1h 52m"));
-    QVERIFY(lines.at(2).startsWith(QStringLiteral("7d  41% · resets ")));
+    QVERIFY(lines.at(2).startsWith(QStringLiteral("7d  41% · resets in ")));
     QVERIFY(!lines.at(2).contains(QStringLiteral("through")));
 }
 
@@ -351,8 +365,11 @@ void CoreTest::capitalisesResetForItsOwnLine()
              QStringLiteral("resets in 1h 52m"));
     QCOMPARE(format::resetSentence(PeriodKind::FiveHour, period, now),
              QStringLiteral("Resets in 1h 52m"));
-    QVERIFY(format::resetSentence(PeriodKind::SevenDay, period, now)
-                .startsWith(QStringLiteral("Resets ")));
+    UsagePeriod weekly;
+    weekly.percentage = 41;
+    weekly.resetAt = now.addSecs(3 * 24 * 3600);
+    QCOMPARE(format::resetSentence(PeriodKind::SevenDay, weekly, now),
+             QStringLiteral("Resets in 3d"));
 
     // No timestamp still means no line at all.
     UsagePeriod noReset;
