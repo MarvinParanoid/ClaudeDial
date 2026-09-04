@@ -14,9 +14,11 @@
 namespace claudedial::tray {
 namespace {
 
+#ifdef CLAUDEDIAL_HAVE_DBUS
 constexpr auto kService = "org.freedesktop.Notifications";
 constexpr auto kPath = "/org/freedesktop/Notifications";
 constexpr auto kInterface = "org.freedesktop.Notifications";
+#endif
 
 /// The `image-data` hint's wire format: (iiibiiay).
 #ifdef CLAUDEDIAL_HAVE_DBUS

@@ -41,7 +41,17 @@ jobs:
   # because somebody has a Mac to try it on.
   macos:
     name: macOS (compile, test, package)
-    runs-on: macos-latest
+    # Not macos-latest, and not by preference. Its Xcode 26 SDK no longer ships
+    # AGL - a legacy OpenGL framework Apple removed - while Qt 6.8 still asks
+    # the linker for it, so the build dies at `ld: framework 'AGL' not found`.
+    # Nothing in ClaudeDial mentions AGL; the reference comes from Qt's own
+    # WrapOpenGL.
+    #
+    # An older image has the framework, and pinning it also lowers the
+    # deployment target, which is the right direction for something another
+    # person runs. The real fix is a Qt that has stopped referencing AGL, and
+    # then this pin can go.
+    runs-on: macos-14
     steps:
       - uses: actions/checkout@v4
 
