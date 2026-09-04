@@ -127,6 +127,21 @@ On Arch: `pacman -S qt6-base qt6-declarative qt6-svg cmake ninja`.
 
 Developed on Arch with KDE Plasma on Wayland; built to work beyond it.
 
+| Desktop | Works via | Notes |
+| --- | --- | --- |
+| KDE Plasma | tray icon, popup, tooltip | the desktop this was developed and tested on |
+| Xfce, Cinnamon, MATE, LXQt | tray icon, popup, tooltip | StatusNotifierItem; not yet verified by anyone |
+| GNOME | tray icon and menu | needs the [AppIndicator extension][appind]; a left click opens the menu, so use **Show usage** or double-click. No tooltips on AppIndicator |
+| Sway, Hyprland, i3 | `claudometer --json` | a text status bar needs no tray at all |
+| Windows, macOS | — | Qt supports them; nobody has tried |
+
+Only the first row has been verified. The rest follows from the protocols
+involved, which is not the same thing — see
+[docs/platform-support.md](docs/platform-support.md) for what is guaranteed,
+what is attempted, and what Claudometer declines to do.
+
+[appind]: https://github.com/ubuntu/gnome-shell-extension-appindicator
+
 The tray uses StatusNotifierItem over D-Bus, via `QSystemTrayIcon` - which means
 it works on Plasma out of the box, and on GNOME with the AppIndicator extension.
 Notifications use `org.freedesktop.Notifications`. Autostart is a normal XDG
