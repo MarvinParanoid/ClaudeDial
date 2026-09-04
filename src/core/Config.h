@@ -51,6 +51,15 @@ public:
 
     explicit Config(QObject* parent = nullptr);
 
+    /// Settings kept somewhere other than the user's own. A test seam, and the
+    /// only way to have one: QStandardPaths test mode redirects files, and
+    /// QSettings::NativeFormat is the registry on Windows and a plist on macOS.
+    /// Without this the tests that write either skipped themselves on those
+    /// platforms - leaving the registry and LaunchAgent code untested - or
+    /// overwrote the settings of whoever ran them.
+    Config(const QString& organisation, const QString& application,
+           QObject* parent = nullptr);
+
     /// Where settings live. Useful in bug reports, and asserted in tests so the
     /// documented path cannot silently drift from the real one - QSettings picks
     /// the extension from the format, which is easy to get wrong.

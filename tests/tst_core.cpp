@@ -68,16 +68,15 @@ void CoreTest::initTestCase()
 
 namespace {
 
-/// Whether QSettings is writing somewhere disposable.
+/// Somewhere disposable for the tests that write.
 ///
-/// Test mode redirects a *file*, which is what QSettings::NativeFormat is on
-/// Linux. On Windows the same format is the registry, and a test that calls
-/// clear() would then wipe the settings of whoever ran it. So the writing tests
-/// ask first instead of assuming the redirection worked.
-bool settingsAreRedirected()
-{
-    return Config().filePath().contains(QLatin1String("qttest"), Qt::CaseInsensitive);
-}
+/// QStandardPaths test mode redirects files, and QSettings::NativeFormat is a
+/// file only on Linux - the registry on Windows, a plist on macOS - so on those
+/// platforms it redirects nothing. These names do instead, on all three, which
+/// is what lets the writing tests run everywhere rather than skipping and
+/// leaving the registry and LaunchAgent code uncovered.
+constexpr auto kTestOrganisation = "claudedial-test";
+constexpr auto kTestApplication = "claudedial-test";
 
 } // namespace
 
@@ -554,11 +553,17 @@ void CoreTest::storesSettingsAtTheDocumentedPath()
     const Config config;
     const QString path = config.filePath();
 
-#ifdef Q_OS_WIN
+#if defined(Q_OS_WIN)
     // NativeFormat is the registry here, so there is no extension to get wrong -
     // but the location is still worth pinning, because it is where someone goes
     // to undo a setting by hand, and because it is not written down anywhere
     // else.
+    QVERIFY2(path.contains(QLatin1String("claudedial"), Qt::CaseInsensitive),
+             qPrintable(path));
+#elif defined(Q_OS_MACOS)
+    // And a plist here: ~/Library/Preferences/com.claudedial.claudedial.plist.
+    // Three formats for one setting, which is why this test exists at all.
+    QVERIFY2(path.endsWith(QStringLiteral(".plist")), qPrintable(path));
     QVERIFY2(path.contains(QLatin1String("claudedial"), Qt::CaseInsensitive),
              qPrintable(path));
 #else
@@ -573,10 +578,7 @@ void CoreTest::storesSettingsAtTheDocumentedPath()
 
 void CoreTest::roundTripsSettings()
 {
-    if (!settingsAreRedirected())
-        QSKIP("QSettings is not redirected here; refusing to write real settings");
-
-    Config config;
+    Config config(kTestOrganisation, kTestApplication);
 
     config.setWarningThreshold(60);
     config.setCriticalThreshold(85);
@@ -584,7 +586,7 @@ void CoreTest::roundTripsSettings()
     config.setTrayStyle(Config::TrayStyle::Gauge);
     config.setTheme(Config::Theme::Dark);
 
-    const Config reread;
+    const Config reread(kTestOrganisation, kTestApplication);
     QCOMPARE(reread.warningThreshold(), 60);
     QCOMPARE(reread.criticalThreshold(), 85);
     QCOMPARE(reread.notificationsEnabled(), false);
@@ -594,18 +596,16 @@ void CoreTest::roundTripsSettings()
 
 void CoreTest::defaultsSuitALinuxTray()
 {
-    if (!settingsAreRedirected())
-        QSKIP("QSettings is not redirected here; refusing to write real settings");
-
     // Guard the defaults that were deliberately chosen rather than inherited:
     // the tray shows the number, because that needs no hover and nothing to
     // interpret, and the theme follows the desktop.
-    QStandardPaths::setTestModeEnabled(true);
+    // Cleared, so an earlier test's writes cannot be mistaken for defaults -
+    // and cleared in the disposable scope, never the user's own.
     QSettings(QSettings::NativeFormat, QSettings::UserScope,
-              QStringLiteral("claudedial"), QStringLiteral("claudedial"))
+              QLatin1String(kTestOrganisation), QLatin1String(kTestApplication))
         .clear();
 
-    const Config config;
+    const Config config(kTestOrganisation, kTestApplication);
     QVERIFY(config.trayStyle() == Config::TrayStyle::Percentage);
     QVERIFY(config.theme() == Config::Theme::System);
     QCOMPARE(config.refreshIntervalSeconds(), Config::kDefaultRefreshSeconds);
@@ -616,20 +616,17 @@ void CoreTest::defaultsSuitALinuxTray()
 
 void CoreTest::remembersAnnouncedThresholdsAcrossRestarts()
 {
-    if (!settingsAreRedirected())
-        QSKIP("QSettings is not redirected here; refusing to write real settings");
-
     // Without this the app re-announces every threshold already crossed in the
     // current window each time it starts, so a login repeats the warning for a
     // window the user is still in.
     const QDateTime reset(QDate(2026, 9, 3), QTime(21, 30, 0), QTimeZone::UTC);
 
     {
-        Config config;
+        Config config(kTestOrganisation, kTestApplication);
         config.setFiredThresholds(QStringLiteral("five_hour"), { 75, 90 }, reset);
     }
 
-    const Config reread;
+    const Config reread(kTestOrganisation, kTestApplication);
     auto restored = reread.firedThresholds(QStringLiteral("five_hour"));
     std::sort(restored.begin(), restored.end());
     QCOMPARE(restored, QList<int>({ 75, 90 }));

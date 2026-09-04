@@ -58,12 +58,19 @@ QString autostartFilePath()
 } // namespace
 
 Config::Config(QObject* parent)
+    : Config(QStringLiteral("claudedial"), QStringLiteral("claudedial"), parent)
+{
+}
+
+Config::Config(const QString& organisation, const QString& application, QObject* parent)
     : QObject(parent)
-    // NativeFormat rather than IniFormat: on Linux it is the same INI text file,
+    // NativeFormat rather than IniFormat. On Linux it is the same INI text file,
     // but at the idiomatic ~/.config/claudedial/claudedial.conf instead of a
-    // .ini. Nothing binary or registry-like is involved.
+    // .ini; on Windows it is the registry and on macOS a plist, which is the
+    // right answer on each and the reason the documented path is asserted per
+    // platform rather than assumed.
     , m_settings(new QSettings(QSettings::NativeFormat, QSettings::UserScope,
-                               QStringLiteral("claudedial"), QStringLiteral("claudedial"), this))
+                               organisation, application, this))
 {
 }
 
