@@ -176,6 +176,13 @@ already announced and silence the real notification later. The CLI checks it too
 so an explicit override beats the shared-socket shortcut rather than being
 silently ignored while a tray instance is running.
 
+## Beyond this desktop
+
+`portability.md` records what a survey of comparable tray applications says
+about desktops other than the one this was developed on - including two findings
+that break the left-click-opens-the-popup model on GNOME, and why a Plasmoid
+rather than layer-shell is the answer to Wayland popup placement.
+
 ## What is deliberately absent
 
 No plugin system, no database, no telemetry, no crash reporting, no update
