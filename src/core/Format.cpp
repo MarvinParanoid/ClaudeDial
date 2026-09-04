@@ -14,10 +14,10 @@ QTime truncateToMinute(QTime time)
 
 /// "Mon 09:00" inside the coming week, "14 Sep 09:00" beyond it.
 ///
-/// Rounded to the nearest minute: the 7-day window is rolling, so its reset
-/// timestamp drifts by fractions of a second between calls - enough to flip
-/// 03:59:59.6 to 04:00:00.4 and back, which would show up as the displayed time
-/// flickering between two adjacent minutes.
+/// Rounded to the nearest minute because the seven-day reset timestamp drifts by
+/// fractions of a second between calls - observed flipping 03:59:59.6 to
+/// 04:00:00.4 and back, which showed up as the displayed time flickering between
+/// two adjacent minutes. Why it drifts is not known; only that it does.
 QString absoluteWhen(const QDateTime& resetAt, const QDateTime& now)
 {
     const QDateTime local = resetAt.addSecs(30).toLocalTime();

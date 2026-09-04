@@ -21,6 +21,11 @@ class SettingsViewModel : public QObject
     Q_PROPERTY(int criticalThreshold READ criticalThreshold WRITE setCriticalThreshold NOTIFY changed)
     Q_PROPERTY(int trayStyleIndex READ trayStyleIndex WRITE setTrayStyleIndex NOTIFY changed)
     Q_PROPERTY(int themeIndex READ themeIndex WRITE setThemeIndex NOTIFY changed)
+    /// Read-only, and the only reason the settings window shows it: a user who
+    /// installed a package has no other way to see which build is running, and
+    /// that is the first thing any bug report needs. --version serves only the
+    /// people already in a terminal.
+    Q_PROPERTY(QString version READ version CONSTANT)
 
 public:
     explicit SettingsViewModel(core::Config* config, QObject* parent = nullptr);
@@ -47,6 +52,7 @@ public:
 
     /// 0 = System, 1 = Light, 2 = Dark - matching the order of the UI selector.
     [[nodiscard]] int themeIndex() const;
+    [[nodiscard]] QString version() const;
     void setThemeIndex(int index);
 
 Q_SIGNALS:

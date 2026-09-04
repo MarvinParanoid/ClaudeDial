@@ -135,5 +135,5 @@ hash it.
 - **Flatpak** - possible, but note that a sandboxed ClaudeDial needs a
   filesystem override to read `~/.claude/.credentials.json`, which is worth
   thinking about carefully before shipping.
-- **GitHub Actions release job** - build on the oldest glibc that is practical,
-  attach the AppImage and the tarball to the tag.
+(The release job is done - see Releasing above. It builds on Ubuntu 22.04 and
+attaches both artefacts to the tag.)

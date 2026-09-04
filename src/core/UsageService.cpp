@@ -276,9 +276,9 @@ void UsageService::evaluateThresholds(const UsageState& previous, const UsageSta
         QDateTime& lastReset = kind == PeriodKind::FiveHour ? m_lastFiveHourReset : m_lastSevenDayReset;
         QSet<int>& fired = kind == PeriodKind::FiveHour ? m_firedFiveHour : m_firedSevenDay;
 
-        // A window began when its reset timestamp moves forward. This is more
-        // reliable than watching for the percentage to drop: the 5-hour window
-        // is rolling, so it also falls mid-window as the window slides.
+        // A window began when its reset timestamp moves forward. That is the
+        // definitive signal; a falling percentage is not one, because the
+        // seven-day figure also drops mid-window as older usage ages out.
         bool windowChanged = false;
         if (period->resetAt) {
             if (lastReset.isValid() && *period->resetAt > lastReset) {

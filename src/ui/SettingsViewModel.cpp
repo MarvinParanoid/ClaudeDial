@@ -81,6 +81,11 @@ void SettingsViewModel::setTrayStyleIndex(int index)
         m_config->setTrayStyle(style);
 }
 
+QString SettingsViewModel::version() const
+{
+    return QStringLiteral(CLAUDEDIAL_VERSION);
+}
+
 int SettingsViewModel::themeIndex() const
 {
     switch (m_config->theme()) {

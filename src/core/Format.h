@@ -16,9 +16,9 @@ QString resetRelative(const QDateTime& resetAt, const QDateTime& now = QDateTime
 /// "resets Mon 09:00" within the next week, "resets 14 Sep 09:00" beyond it.
 QString resetAbsolute(const QDateTime& resetAt, const QDateTime& now = QDateTime::currentDateTimeUtc());
 
-/// The reset wording each window uses: relative for the rolling 5-hour window,
-/// absolute for the 7-day one. Lower case, for use after a separator in the
-/// tooltip. Empty when there is no timestamp.
+/// The reset wording each window uses: a countdown for both, which is what
+/// Claude Code shows. Lower case, for use after a separator in the tooltip.
+/// Empty when there is no timestamp.
 QString resetFor(PeriodKind kind, const UsagePeriod& period,
                  const QDateTime& now = QDateTime::currentDateTimeUtc());
 

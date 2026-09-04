@@ -28,8 +28,8 @@ struct UsagePeriod {
 /// Both windows are optional because the API returns `null` for windows that do
 /// not apply to an account, and because we parse leniently: a renamed or removed
 /// key yields no data rather than a parse failure.
-/// Length of the rolling session window, which is what makes "how far through
-/// it are we" answerable at all.
+/// Length of the session window, which is what makes "how far through it are we"
+/// answerable at all.
 ///
 /// Claude Code's own code uses the same 18000 seconds. Measured to be a *fixed*
 /// boundary rather than a sliding one: two readings 75 s apart reported the same

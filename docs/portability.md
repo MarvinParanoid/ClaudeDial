@@ -44,9 +44,13 @@ desktop, so it is **fixed**:
    and the pair has to be idempotent - otherwise it would open the popup and
    immediately shut it again. Verified: single click still toggles both ways,
    and "Show usage" twice in a row leaves it open.
-3. **Still to do:** put the two percentages in the menu as disabled entries.
-   DBusMenu renders plain items fine, so this works where tooltips do not - see
-   below. This is the actual replacement for the missing tooltip.
+3. **Deliberately waiting on evidence:** put the two percentages in the menu as
+   disabled entries. DBusMenu renders plain items fine, so this works where
+   tooltips do not - see below - and it is the actual replacement for the
+   missing tooltip. Held until GNOME has been run for real, because how badly
+   it is needed depends on how reachable the popup turns out to be there, and
+   guessing that from the protocols is exactly what has been wrong three times
+   in this file's history.
 
 ### The tooltip does not exist on AppIndicator
 

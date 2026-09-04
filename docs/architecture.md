@@ -72,8 +72,10 @@ the previous `UsageState`. There is no code path that replaces good data with
 zeros, which is the failure mode that makes a usage indicator actively harmful.
 
 **Notification thresholds reset on `resets_at` moving forward**, not on the
-percentage dropping. Both windows are *rolling*, so their percentages fall
-mid-window as old usage ages out; watching the number would refire warnings.
+percentage dropping. The seven-day percentage falls mid-window as older usage
+ages out, so watching the number would refire warnings. (The five-hour window
+was measured to have a fixed boundary, so it does not behave this way — but the
+timestamp is the right signal for both regardless.)
 
 **One gauge geometry, in numbers, in core.** Six renditions of the mark - the
 application icon, the popup header, the settings window's icon, both tray styles

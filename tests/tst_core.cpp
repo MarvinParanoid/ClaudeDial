@@ -233,11 +233,11 @@ void CoreTest::formatsResetPerWindowKind()
 {
     const QDateTime now(QDate(2026, 9, 3), QTime(12, 0, 0), QTimeZone::UTC);
 
-    UsagePeriod rolling;
-    rolling.percentage = 63;
-    rolling.resetAt = now.addSecs(112 * 60);
+    UsagePeriod session;
+    session.percentage = 63;
+    session.resetAt = now.addSecs(112 * 60);
 
-    QCOMPARE(format::resetFor(PeriodKind::FiveHour, rolling, now),
+    QCOMPARE(format::resetFor(PeriodKind::FiveHour, session, now),
              QStringLiteral("resets in 1h 52m"));
 
     // Both windows read as a countdown, which is what Claude Code shows. Pinned
@@ -257,7 +257,7 @@ void CoreTest::formatsResetPerWindowKind()
 
 void CoreTest::roundsAbsoluteResetToNearestMinute()
 {
-    // The rolling 7-day reset drifts sub-second between calls. Without rounding
+    // The 7-day reset drifts sub-second between calls. Without rounding
     // the displayed time flickers between two adjacent minutes.
     const QDateTime now(QDate(2026, 9, 3), QTime(12, 0, 0), QTimeZone::UTC);
     const QDateTime justUnder(QDate(2026, 9, 8), QTime(3, 59, 59, 600), QTimeZone::UTC);

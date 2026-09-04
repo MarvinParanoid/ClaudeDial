@@ -274,7 +274,7 @@ Both fields are nullable. `resets_at` carries fractional seconds and a `+00:00` 
 
 | Key | Meaning | ClaudeDial |
 | --- | --- | --- |
-| `five_hour` | rolling 5-hour session window | **primary** — drives the tray icon |
+| `five_hour` | 5-hour session window, fixed boundary (measured) | **primary** — drives the tray icon |
 | `seven_day` | 7-day, all models | **primary** — second popup row |
 | `seven_day_opus` | 7-day, Opus only | ignore for now |
 | `seven_day_sonnet` | 7-day, Sonnet only | ignore for now |
@@ -522,8 +522,8 @@ an acceptable trade for never being able to log the user out.
   duration.
 - **`seven_day.resets_at` drifts between calls, by fractions of a second.**
   Observed: consecutive responses reporting the same weekly boundary as
-  `03:59:59.6…` and `04:00:00.4…`. It is a rolling window too, so its reset moves
-  as the oldest usage ages out. Consequence for the UI: an absolute time rendered
+  `03:59:59.6…` and `04:00:00.4…`. The cause was not established — do not assume
+  a sliding window from this alone. Consequence for the UI: an absolute time rendered
   by truncation flickers between two adjacent minutes on successive polls. **Round
   to the nearest minute before formatting** - ClaudeDial does this in
   `core::format::resetAbsolute`, with a regression test.
@@ -681,8 +681,8 @@ A failure never clears a good `UsageState`. `stale` is a display flag, not a dat
 
 Thresholds 75 / 90 / 95 / 100 %, fired once per window per crossing. Reset the fired-flags
 when `resets_at` moves forward — that is the reliable signal a new window began, and it is
-more robust than watching the percentage drop (which also happens mid-window as a rolling
-window slides).
+more robust than watching the percentage drop (which also happens mid-window for the
+seven-day figure, as older usage ages out).
 
 Use `QDBusConnection::sessionBus()` against `org.freedesktop.Notifications` directly rather
 than shelling out to `notify-send`, so notifications can be replaced in place by

@@ -132,5 +132,27 @@ Rectangle {
                 onActivated: function(index) { settings.themeIndex = index }
             }
         }
+
+        // --- footer -----------------------------------------------------------
+        //
+        // A line, not an About dialog. The only thing such a dialog would carry
+        // is this string, and it belongs where someone already goes to look.
+        Item {
+            width: 1
+            height: 10
+        }
+
+        Rectangle {
+            width: parent.width
+            height: 1
+            color: theme.separator
+        }
+
+        Text {
+            topPadding: 10
+            text: qsTr("ClaudeDial %1").arg(settings.version)
+            color: theme.subtext
+            font.pixelSize: 11
+        }
     }
 }
