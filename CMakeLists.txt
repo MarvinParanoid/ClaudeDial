@@ -69,6 +69,24 @@ if (UNIX AND NOT APPLE)
     install(DIRECTORY data/icons/ DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/icons)
 endif()
 
+# On Windows there is no system Qt to link against, so an install tree has to
+# carry the runtime with it. Qt's own script rather than a hand-written
+# windeployqt call: the first attempt at the latter deployed every DLL and the
+# platform plugin and then no QML modules at all, and this is the path Qt
+# supports for a QML application.
+#
+# --qmldir is still needed. The QML lives in the binary as a resource, so there
+# is nothing for the import scanner to find unless it is pointed at the sources.
+if (WIN32)
+    qt_generate_deploy_qml_app_script(
+        TARGET claudedial
+        OUTPUT_SCRIPT CLAUDEDIAL_DEPLOY_SCRIPT
+        NO_UNSUPPORTED_PLATFORM_ERROR
+        DEPLOY_TOOL_OPTIONS --qmldir "${CMAKE_CURRENT_SOURCE_DIR}/src/ui/qml"
+    )
+    install(SCRIPT ${CLAUDEDIAL_DEPLOY_SCRIPT})
+endif()
+
 # --- packaging ----------------------------------------------------------------
 #
 # Only three files are installed, and the QML lives inside the binary as a Qt
