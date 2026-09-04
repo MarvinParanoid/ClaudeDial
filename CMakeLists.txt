@@ -69,20 +69,42 @@ if (UNIX AND NOT APPLE)
     install(DIRECTORY data/icons/ DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/icons)
 endif()
 
-# On Windows there is no system Qt to link against, so an install tree has to
-# carry the runtime with it. Qt's own script rather than a hand-written
+# On Windows and macOS there is no system Qt to link against, so an install tree
+# has to carry the runtime with it. Qt's own script rather than a hand-written
 # windeployqt call: the first attempt at the latter deployed every DLL and the
 # platform plugin and then no QML modules at all, and this is the path Qt
 # supports for a QML application.
 #
 # --qmldir is still needed. The QML lives in the binary as a resource, so there
 # is nothing for the import scanner to find unless it is pointed at the sources.
-if (WIN32)
+# A menu-bar utility, not a windowed application: LSUIElement in our own
+# Info.plist is what keeps it out of the Dock.
+if (APPLE)
+    set_target_properties(claudedial PROPERTIES
+        MACOSX_BUNDLE_INFO_PLIST "${CMAKE_CURRENT_SOURCE_DIR}/data/Info.plist.in"
+        MACOSX_BUNDLE_GUI_IDENTIFIER "io.github.marvinparanoid.claudedial"
+        MACOSX_BUNDLE_BUNDLE_NAME "ClaudeDial"
+        MACOSX_BUNDLE_SHORT_VERSION_STRING "${PROJECT_VERSION}"
+        MACOSX_BUNDLE_BUNDLE_VERSION "${PROJECT_VERSION}"
+    )
+endif()
+
+if (WIN32 OR APPLE)
+    # Two tools, two spellings of the same option: windeployqt takes
+    # `--qmldir <dir>` and macdeployqt takes `-qmldir=<dir>`. Passing the wrong
+    # one is silently ignored, and the symptom is a deployment with no QML
+    # modules in it - which is how the Windows build failed the first time.
+    if (WIN32)
+        set(CLAUDEDIAL_DEPLOY_OPTIONS --qmldir "${CMAKE_CURRENT_SOURCE_DIR}/src/ui/qml")
+    else()
+        set(CLAUDEDIAL_DEPLOY_OPTIONS "-qmldir=${CMAKE_CURRENT_SOURCE_DIR}/src/ui/qml")
+    endif()
+
     qt_generate_deploy_qml_app_script(
         TARGET claudedial
         OUTPUT_SCRIPT CLAUDEDIAL_DEPLOY_SCRIPT
         NO_UNSUPPORTED_PLATFORM_ERROR
-        DEPLOY_TOOL_OPTIONS --qmldir "${CMAKE_CURRENT_SOURCE_DIR}/src/ui/qml"
+        DEPLOY_TOOL_OPTIONS ${CLAUDEDIAL_DEPLOY_OPTIONS}
     )
     install(SCRIPT ${CLAUDEDIAL_DEPLOY_SCRIPT})
 endif()

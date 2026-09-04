@@ -36,6 +36,17 @@ QString firedResetKey(const QString& windowKey)
 /// natively, so this needs no platform API of its own.
 constexpr auto kRunKey = R"(HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Run)";
 constexpr auto kRunValue = "ClaudeDial";
+#elif defined(Q_OS_MACOS)
+/// A LaunchAgent, which is how macOS starts something at login.
+///
+/// Not the XDG autostart entry the branch below writes: on macOS that would
+/// land in ~/Library/Preferences/autostart, where nothing reads it, and the
+/// toggle would appear to work while doing nothing at all.
+QString autostartFilePath()
+{
+    return QDir::homePath()
+        + QStringLiteral("/Library/LaunchAgents/io.github.marvinparanoid.claudedial.plist");
+}
 #else
 QString autostartFilePath()
 {
@@ -239,6 +250,30 @@ void Config::setStartOnLogin(bool enabled)
     if (!file.open(QIODevice::WriteOnly | QIODevice::Truncate))
         return;
 
+#ifdef Q_OS_MACOS
+    // Dropped into ~/Library/LaunchAgents, this takes effect at the next login
+    // without launchctl. The path is the running binary's, which inside a
+    // bundle is Contents/MacOS/claudedial - launching that directly is correct
+    // for an LSUIElement app.
+    file.write(QStringLiteral(
+                   "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
+                   "<!DOCTYPE plist PUBLIC \"-//Apple//DTD PLIST 1.0//EN\" "
+                   "\"http://www.apple.com/DTDs/PropertyList-1.0.dtd\">\n"
+                   "<plist version=\"1.0\">\n"
+                   "<dict>\n"
+                   "    <key>Label</key>\n"
+                   "    <string>io.github.marvinparanoid.claudedial</string>\n"
+                   "    <key>ProgramArguments</key>\n"
+                   "    <array>\n"
+                   "        <string>%1</string>\n"
+                   "    </array>\n"
+                   "    <key>RunAtLoad</key>\n"
+                   "    <true/>\n"
+                   "</dict>\n"
+                   "</plist>\n")
+                   .arg(QCoreApplication::applicationFilePath())
+                   .toUtf8());
+#else
     file.write(
         "[Desktop Entry]\n"
         "Type=Application\n"
@@ -249,6 +284,7 @@ void Config::setStartOnLogin(bool enabled)
         "Terminal=false\n"
         "Categories=Utility;\n"
         "X-GNOME-Autostart-enabled=true\n");
+#endif
     file.close();
     Q_EMIT changed();
 #endif

@@ -34,6 +34,66 @@ jobs:
           path: ClaudeDial-windows-x86_64.zip
           retention-days: 30
 
+  # macOS is not in a release and is not a supported tier: the token lives in
+  # the Keychain there, so until that is read this build is usable only with
+  # CLAUDE_CODE_OAUTH_TOKEN set. Compiled, tested and packaged here anyway,
+  # because the alternative is discovering the port has rotted later, and
+  # because somebody has a Mac to try it on.
+  macos:
+    name: macOS (compile, test, package)
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: jurplel/install-qt-action@v4
+        with:
+          version: '6.8.*'
+          cache: true
+
+      - name: Build
+        run: |
+          cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+          cmake --build build
+
+      - name: Test
+        run: ctest --test-dir build --output-on-failure
+
+      - name: Assemble the bundle
+        run: cmake --install build --prefix "$PWD/dist"
+
+      # Printed rather than only asserted, for the same reason as the Windows
+      # job: Actions logs need admin rights to read, so a failure would
+      # otherwise be diagnosed by guesswork.
+      - name: Show what was assembled
+        run: find dist -maxdepth 6 | sed "s|^dist||"
+
+      - name: Check what was assembled
+        run: |
+          fail=0
+          app=$(find dist -maxdepth 2 -name 'claudedial.app' -print -quit)
+          [ -n "$app" ] || { echo 'MISSING claudedial.app'; fail=1; }
+          if [ -n "$app" ]; then
+            [ -x "$app/Contents/MacOS/claudedial" ] || { echo 'MISSING the executable inside the bundle'; fail=1; }
+            grep -q LSUIElement "$app/Contents/Info.plist" \
+              || { echo 'MISSING LSUIElement - it would take a Dock icon'; fail=1; }
+            [ -d "$app/Contents/Frameworks/QtQuick.framework" ] \
+              || { echo 'MISSING QtQuick - nothing would render'; fail=1; }
+            find "$app" -type d -name Basic -path '*Controls*' | grep -q . \
+              || { echo 'MISSING QtQuick.Controls.Basic - the settings window will not load'; fail=1; }
+            find "$app" -name 'libqsecuretransportbackend*' -o -name 'libqopensslbackend*' | grep -q . \
+              || { echo 'MISSING a TLS backend - api.anthropic.com will be unreachable'; fail=1; }
+          fi
+          exit $fail
+
+      - name: Zip it
+        run: ditto -c -k --sequesterRsrc --keepParent dist ClaudeDial-macos.zip
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ClaudeDial-macos
+          path: ClaudeDial-macos.zip
+          retention-days: 30
+
   build:
     runs-on: ubuntu-latest
     container: ${{ matrix.container }}
