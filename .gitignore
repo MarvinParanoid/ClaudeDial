@@ -3,3 +3,9 @@ build-*/
 *.user
 .cache/
 compile_commands.json
+
+# The AUR package is a separate repository with its own remote and history, and
+# belongs beside this tree rather than inside it. Ignored so that cloning it
+# here by mistake cannot end up committed as a stray nested repository.
+claudedial-bin/
+claudedial/

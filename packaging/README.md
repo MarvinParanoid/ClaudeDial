@@ -70,18 +70,34 @@ CI and not on a developer machine.
 `PKGBUILD-bin` has been run through `makepkg` locally and installs the right
 four files. What remains is per-release:
 
+Clone it **beside this repository, not inside it**: the AUR package is a separate
+git repository with its own remote and history, and its root must contain only
+`PKGBUILD` and `.SRCINFO`. A nested clone would either be committed here by
+accident or refused as a stray repository.
+
 ```console
+$ cd ..
 $ git clone ssh://aur@aur.archlinux.org/claudedial-bin.git
-$ cp packaging/PKGBUILD-bin claudedial-bin/PKGBUILD
+$ cp ClaudeDial/packaging/PKGBUILD-bin claudedial-bin/PKGBUILD
+$ cp ClaudeDial/packaging/.SRCINFO     claudedial-bin/
 $ cd claudedial-bin
-$ updpkgsums                          # replaces the SKIP checksums
-$ makepkg --printsrcinfo > .SRCINFO   # the AUR requires this, and requires it current
-$ git add PKGBUILD .SRCINFO && git commit && git push
+$ git add PKGBUILD .SRCINFO && git commit -m "Initial import" && git push
+```
+
+The clone prints `warning: you appear to have cloned an empty repository` for a
+package that does not exist yet. That is expected.
+
+`PKGBUILD-bin` and `.SRCINFO` in this directory are the master copies and carry
+the real checksums for the current release, so nothing needs regenerating for a
+first import. **For each later release**, refresh both before copying:
+
+```console
+$ updpkgsums PKGBUILD-bin              # or sha256sum the two published files
+$ makepkg --printsrcinfo > .SRCINFO    # the AUR requires this, and requires it current
 ```
 
 `updpkgsums` needs the release to exist first, since it downloads the tarball to
-hash it. The `SKIP` values in the committed file are placeholders and must never
-be published to the AUR.
+hash it.
 
 ## Still to do
 
