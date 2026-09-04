@@ -68,6 +68,21 @@ void CoreTest::initTestCase()
 
 namespace {
 
+/// Whether QSettings is writing somewhere disposable.
+///
+/// Test mode redirects a *file*, which is what QSettings::NativeFormat is on
+/// Linux. On Windows the same format is the registry, and a test that calls
+/// clear() would then wipe the settings of whoever ran it. So the writing tests
+/// ask first instead of assuming the redirection worked.
+bool settingsAreRedirected()
+{
+    return Config().filePath().contains(QLatin1String("qttest"), Qt::CaseInsensitive);
+}
+
+} // namespace
+
+namespace {
+
 /// The shape observed live, trimmed. See docs/usage-api.md section 3.
 QByteArray realResponse()
 {
@@ -536,19 +551,31 @@ void CoreTest::shippedIconMatchesCanonicalGeometry()
 
 void CoreTest::storesSettingsAtTheDocumentedPath()
 {
+    const Config config;
+    const QString path = config.filePath();
+
+#ifdef Q_OS_WIN
+    // NativeFormat is the registry here, so there is no extension to get wrong -
+    // but the location is still worth pinning, because it is where someone goes
+    // to undo a setting by hand, and because it is not written down anywhere
+    // else.
+    QVERIFY2(path.contains(QLatin1String("claudedial"), Qt::CaseInsensitive),
+             qPrintable(path));
+#else
     // The README and the packaging notes both promise
     // ~/.config/claudedial/claudedial.conf. QSettings derives the extension
     // from the format, so IniFormat would quietly produce a .ini instead and
     // every hand-written config file would be ignored.
-    const Config config;
-    const QString path = config.filePath();
-
     QVERIFY2(path.endsWith(QStringLiteral(".conf")), qPrintable(path));
     QVERIFY2(path.contains(QStringLiteral("/claudedial/claudedial.")), qPrintable(path));
+#endif
 }
 
 void CoreTest::roundTripsSettings()
 {
+    if (!settingsAreRedirected())
+        QSKIP("QSettings is not redirected here; refusing to write real settings");
+
     Config config;
 
     config.setWarningThreshold(60);
@@ -567,6 +594,9 @@ void CoreTest::roundTripsSettings()
 
 void CoreTest::defaultsSuitALinuxTray()
 {
+    if (!settingsAreRedirected())
+        QSKIP("QSettings is not redirected here; refusing to write real settings");
+
     // Guard the defaults that were deliberately chosen rather than inherited:
     // the tray shows the number, because that needs no hover and nothing to
     // interpret, and the theme follows the desktop.
@@ -586,6 +616,9 @@ void CoreTest::defaultsSuitALinuxTray()
 
 void CoreTest::remembersAnnouncedThresholdsAcrossRestarts()
 {
+    if (!settingsAreRedirected())
+        QSKIP("QSettings is not redirected here; refusing to write real settings");
+
     // Without this the app re-announces every threshold already crossed in the
     // current window each time it starts, so a login repeats the warning for a
     // window the user is still in.
