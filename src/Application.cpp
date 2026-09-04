@@ -6,7 +6,6 @@
 #include "core/Format.h"
 #include "core/UsageJson.h"
 #include "core/UsageService.h"
-#include "tray/IconDiagnostic.h" // TEMPORARY
 #include "tray/IconRenderer.h"
 #include "tray/Notifier.h"
 #include "tray/SleepWatcher.h"
@@ -193,20 +192,7 @@ void Application::updateTray()
         ? std::optional<double>(state.fiveHour->percentage)
         : std::nullopt;
 
-    // TEMPORARY: see tray/IconDiagnostic.h. Off unless the environment asks.
-    const auto diagnostic = tray::diagnostic::requested();
-    if (diagnostic == tray::diagnostic::Mode::Mono)
-        options.foreground = tray::diagnostic::monoColour();
-
-    const QIcon icon = diagnostic == tray::diagnostic::Mode::Solid
-            || diagnostic == tray::diagnostic::Mode::Alpha
-        ? tray::diagnostic::icon(diagnostic)
-        : IconRenderer::render(percentage, options);
-
-    if (diagnostic != tray::diagnostic::Mode::Off)
-        tray::diagnostic::report(diagnostic, m_panelForeground, icon);
-
-    m_tray->setIcon(icon);
+    m_tray->setIcon(IconRenderer::render(percentage, options));
 
     const QString tooltip = state.isValid() ? core::format::tooltip(state)
                                             : QStringLiteral("ClaudeDial\n%1").arg(

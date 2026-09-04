@@ -84,7 +84,7 @@ in this project.
 | Cinnamon, MATE, LXQt, DDE | SNI | unknown | likely | no |
 | GNOME | needs the [AppIndicator extension][appind] | n/a — reached from the menu | **no** | no |
 | COSMIC | SNI, menu only reported elsewhere | unknown | unknown | no |
-| i3 + an XEmbed tray | XEmbed | **anchored to the icon** — *measured* | n/a | **partly** — on an isolated display |
+| i3 + an XEmbed tray | XEmbed | **anchored to the icon** — *measured* | n/a | **yes** — Debian 13, i3bar |
 | Sway, Hyprland, Awesome | Waybar/i3blocks via `--json` | n/a | n/a | no |
 | Windows, macOS | Qt supports it; we have not tried | anchoring should work | — | no |
 
@@ -192,6 +192,44 @@ aesthetic one — WebKitGTK's 4.0/4.1 split has broken Tauri applications across
 distributions repeatedly. Our runtime dependencies are three Qt packages.
 
 ---
+
+### What a real i3 session added
+
+Run on Debian 13 with i3 on X11, and it confirmed the isolated-display result:
+Qt's XEmbed path docks correctly, `xwininfo` showing the 15x15 tray window in
+the right place in i3bar. No separate i3 support is needed.
+
+It also found a bug that no synthetic harness would have — the icon was
+invisible below 75%, and visible at or above it. 75% is the warning threshold,
+which is precisely where the brand colours take over from the neutral, so the
+neutral was the invisible part.
+
+The neutral came from `QPalette::WindowText`. Measured under xcb:
+
+| `XDG_CURRENT_DESKTOP` | `WindowText` | `colorScheme()` |
+| --- | --- | --- |
+| `KDE` | `#fcfcfc` | Dark |
+| `GNOME` | `#fcfcfc` | Dark |
+| `i3` | `#000000` | **Unknown** |
+| `sway` | `#000000` | **Unknown** |
+
+Pure black is not a light desktop. It is Qt's built-in default with no desktop
+integration to fill it in — and i3bar's background is black, so ClaudeDial was
+drawing black on black.
+
+The panel itself stays unknowable: neither a StatusNotifierItem host nor an
+XEmbed one can be asked what it looks like. So the rule is not about the colour
+but about whether the proxy carries information at all. Where `colorScheme()` is
+Unknown, `Application::trayForeground()` assumes a dark panel — the default for
+i3bar, polybar and waybar alike. That is a guess, chosen because it fails
+visibly rather than invisibly: a light mark on a light panel is faint, a black
+mark on a black panel is nothing.
+
+**Still open:** a user whose panel is light and whose desktop tells Qt nothing
+gets a faint icon and no way to say so. An explicit override would settle it —
+a setting, or an environment variable for the crowd this affects, who are the
+same people editing status-bar configs. Not added yet, because no such report
+exists and the guess covers every default in the list above.
 
 ## Degradation
 
