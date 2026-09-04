@@ -1,0 +1,41 @@
+# Maintainer: Alexey Demidov <worialhat@gmail.com>
+#
+# The claudometer-bin AUR package: unpacks the prebuilt tarball from a GitHub
+# release rather than compiling.
+#
+# The tarball is built against Qt 6.8 on Ubuntu 22.04 but depends on Arch's own
+# Qt, which is fine in both directions: Qt 6 keeps ABI compatibility across
+# minor versions, and a binary built against glibc 2.35 runs on newer glibc.
+#
+# After tagging a release, refresh the checksum:
+#     cd packaging && updpkgsums PKGBUILD-bin
+pkgname=claudometer-bin
+_pkgname=claudometer
+pkgver=0.1.0
+pkgrel=1
+pkgdesc="Claude Code usage at a glance - minimal system tray indicator"
+arch=('x86_64')
+url="https://github.com/MarvinParanoid/Claudometer"
+license=('MIT')
+depends=('qt6-base>=6.8' 'qt6-declarative' 'qt6-svg')
+# makepkg strips and splits debug symbols by default. Neither is right for a
+# binary we did not build here: stripping alters upstream's artefact, and the
+# resulting claudometer-bin-debug package would contain symbols for a build that
+# no longer matches anything.
+options=('!strip' '!debug')
+provides=("$_pkgname")
+conflicts=("$_pkgname")
+source=("$_pkgname-$pkgver.tar.gz::$url/releases/download/v$pkgver/$_pkgname-$pkgver-linux-x86_64.tar.gz"
+        "LICENSE-$pkgver::$url/raw/v$pkgver/LICENSE")
+sha256sums=('SKIP'
+            'SKIP')
+
+package() {
+  local src="$srcdir/$_pkgname-$pkgver-linux-x86_64"
+  install -Dm755 "$src/bin/$_pkgname" "$pkgdir/usr/bin/$_pkgname"
+  install -Dm644 "$src/share/applications/$_pkgname.desktop" \
+    "$pkgdir/usr/share/applications/$_pkgname.desktop"
+  install -Dm644 "$src/share/icons/hicolor/scalable/apps/$_pkgname.svg" \
+    "$pkgdir/usr/share/icons/hicolor/scalable/apps/$_pkgname.svg"
+  install -Dm644 "$srcdir/LICENSE-$pkgver" "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
+}

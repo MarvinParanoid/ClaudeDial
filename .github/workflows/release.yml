@@ -1,0 +1,102 @@
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  linux:
+    name: Linux x86_64
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+
+      # 22.04, not 24.04, and deliberately: the runner's glibc becomes the
+      # floor for everyone who downloads these artefacts. 22.04 is glibc 2.35;
+      # 24.04 would raise it to 2.39 and lock out Debian 12 and RHEL 9 users
+      # for nothing.
+      - name: Install build tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            cmake ninja-build g++ \
+            libgl-dev libxkbcommon-dev libfuse2 file
+
+      # No GitHub runner has Qt 6.8 in apt - 22.04 is on 6.2, 24.04 on 6.4 -
+      # so Qt comes from the official archives. Building the AppImage here also
+      # avoids the trap found while validating the recipe locally: on a full KDE
+      # desktop the Qt plugin sweeps up third-party plugins from Qt's plugin
+      # directory (kimageformats) and fails on their missing dependencies. A
+      # clean Qt install has none of them.
+      - name: Install Qt
+        uses: jurplel/install-qt-action@v4
+        with:
+          version: '6.8.*'
+          cache: true
+
+      - name: Configure
+        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build
+        run: cmake --build build
+
+      - name: Test
+        run: ctest --test-dir build --output-on-failure
+
+      # The plain tarball: what claudometer-bin in the AUR consumes. Links
+      # against the system Qt, which is safe because Qt 6 keeps ABI
+      # compatibility across minor versions.
+      - name: Build the tarball
+        working-directory: build
+        run: cpack -G TGZ
+
+      - name: Fetch linuxdeploy
+        run: |
+          base=https://github.com/linuxdeploy
+          curl -sSLO $base/linuxdeploy/releases/download/continuous/linuxdeploy-x86_64.AppImage
+          curl -sSLO $base/linuxdeploy-plugin-qt/releases/download/continuous/linuxdeploy-plugin-qt-x86_64.AppImage
+          chmod +x linuxdeploy*.AppImage
+
+      # cmake --install already lays down exactly what linuxdeploy expects: the
+      # binary, the .desktop entry and the hicolor icon. Verified locally - it
+      # needed no -d or -i overrides.
+      - name: Build the AppImage
+        env:
+          OUTPUT: Claudometer-x86_64.AppImage
+          QML_SOURCES_PATHS: src/ui/qml
+        run: |
+          DESTDIR="$PWD/AppDir" cmake --install build --prefix /usr
+          ./linuxdeploy-x86_64.AppImage --appdir AppDir --plugin qt --output appimage
+
+      # --version needs no credentials, no network and no display, which makes
+      # it the one thing that can smoke-test a packaged GUI application in CI.
+      - name: Check the AppImage runs
+        run: |
+          chmod +x Claudometer-x86_64.AppImage
+          ./Claudometer-x86_64.AppImage --version
+          ./Claudometer-x86_64.AppImage --help
+
+      # Whether Qt links OpenSSL or loads it at run time depends on how Qt was
+      # built. On the Qt used locally it was linked and therefore bundled; if
+      # this ever prints nothing, the AppImage will fail to reach
+      # api.anthropic.com on hosts whose OpenSSL differs, and libssl/libcrypto
+      # have to be added with linuxdeploy's --library.
+      - name: Report whether OpenSSL got bundled
+        run: |
+          ./Claudometer-x86_64.AppImage --appimage-extract > /dev/null
+          find squashfs-root -name 'libssl*' -o -name 'libcrypto*' | sort
+          echo "--- QML modules bundled ---"
+          find squashfs-root -maxdepth 4 -type d -name 'QtQuick*' | sort | head
+
+      - name: Publish
+        uses: softprops/action-gh-release@v2
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          files: |
+            build/claudometer-*-linux-x86_64.tar.gz
+            Claudometer-x86_64.AppImage
+          generate_release_notes: true

@@ -38,6 +38,51 @@ Ubuntu's 64-bit time_t transition renamed them again. Without `dpkg` on PATH
 CPack still emits a `.deb`, but one with no dependency metadata and a guessed
 architecture, which must not be published. RPM needs `rpmbuild`.
 
+## Releasing
+
+One tag drives it. `.github/workflows/release.yml` builds on Ubuntu 22.04 -
+chosen so the runner's glibc 2.35 becomes the floor rather than 24.04's 2.39 -
+and attaches two artefacts:
+
+```
+claudometer-<version>-linux-x86_64.tar.gz   links the system Qt; what claudometer-bin consumes
+Claudometer-x86_64.AppImage                 self-contained
+```
+
+```console
+$ git tag -a v0.1.0 -m "..." && git push origin v0.1.0
+```
+
+The workflow reports two things worth reading in its log rather than asserting
+them, because both depend on how the Qt it downloaded was built: whether
+OpenSSL ended up bundled in the AppImage, and whether QtQuick's QML modules
+did. If OpenSSL is absent the AppImage will fail to reach api.anthropic.com on
+hosts whose OpenSSL differs, and `linuxdeploy --library` has to add it.
+
+**Do not build the AppImage on a working KDE desktop.** Verified the hard way:
+linuxdeploy's Qt plugin deploys everything in Qt's plugin directory, including
+third-party plugins such as kimageformats, and then fails on their missing
+dependencies. A clean Qt install has none of them, which is why this happens in
+CI and not on a developer machine.
+
+## Submitting to the AUR
+
+`PKGBUILD-bin` has been run through `makepkg` locally and installs the right
+four files. What remains is per-release:
+
+```console
+$ git clone ssh://aur@aur.archlinux.org/claudometer-bin.git
+$ cp packaging/PKGBUILD-bin claudometer-bin/PKGBUILD
+$ cd claudometer-bin
+$ updpkgsums                          # replaces the SKIP checksums
+$ makepkg --printsrcinfo > .SRCINFO   # the AUR requires this, and requires it current
+$ git add PKGBUILD .SRCINFO && git commit && git push
+```
+
+`updpkgsums` needs the release to exist first, since it downloads the tarball to
+hash it. The `SKIP` values in the committed file are placeholders and must never
+be published to the AUR.
+
 ## Still to do
 
 - **AppImage** - `linuxdeploy` with the Qt plugin. Needs the `wayland`/`xcb`
