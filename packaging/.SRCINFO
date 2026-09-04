@@ -1,0 +1,20 @@
+pkgbase = claudedial-bin
+	pkgdesc = Claude Code usage at a glance - minimal system tray indicator
+	pkgver = 0.1.2
+	pkgrel = 1
+	url = https://github.com/MarvinParanoid/ClaudeDial
+	arch = x86_64
+	license = MIT
+	depends = qt6-base>=6.8
+	depends = qt6-declarative
+	depends = qt6-svg
+	provides = claudedial
+	conflicts = claudedial
+	options = !strip
+	options = !debug
+	source = claudedial-0.1.2.tar.gz::https://github.com/MarvinParanoid/ClaudeDial/releases/download/v0.1.2/claudedial-0.1.2-linux-x86_64.tar.gz
+	source = LICENSE-0.1.2::https://github.com/MarvinParanoid/ClaudeDial/raw/v0.1.2/LICENSE
+	sha256sums = b6bb92775b8464f804f45c9a143917aa5be9d377d235ad20b376559a4dac6864
+	sha256sums = 4698a8696649196be7bb4e7b24a8ed90865cc8933efe8f199415bb634dbf4630
+
+pkgname = claudedial-bin
