@@ -5,7 +5,7 @@
 A minimal Linux system tray indicator for Claude Code usage limits.
 Glance at the icon, hover for details, click for a small popup, forget about it.
 
-<img src="docs/images/tray-styles.png" alt="The tray icon at 8, 23, 75, 88, 99 and 100 percent, in both styles" width="368">
+<img src="docs/images/tray-styles.png" alt="The tray icon at 8, 23, 75, 88, 99 and 100 percent, in both styles" width="336">
 
 That is the tray icon at 8%, 23%, 75%, 88%, 99% and at the limit - the exact
 figure on top, the needle below. Same dial, two styles. Click it:
@@ -106,7 +106,7 @@ $ claudedial --json
     "updated_at": "2026-09-03T18:17:54Z",
     "stale": false,
     "text": "10%",
-    "tooltip": "ClaudeDial\n5h  10% · resets in 3h 12m\n7d  27% · resets Tue 06:00",
+    "tooltip": "ClaudeDial\n5h  10% · resets in 3h 12m\n7d  27% · resets in 4d 9h",
     "class": "normal"
 }
 ```
@@ -252,7 +252,7 @@ Why any of it looks the way it does, and what was tried and rejected:
 ## Notifications
 
 
-<img src="docs/images/notification.png" alt="A ClaudeDial notification" width="347">
+<img src="docs/images/notification.png" alt="A ClaudeDial notification" width="343">
 
 Once per window at 75%, 90%, 95% and 100%, reset when the window does - and not
 re-announced after a restart. The title says how bad it is, the first line says

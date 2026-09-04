@@ -70,7 +70,9 @@ HintImage toHintImage(const QImage& source)
 
 QString windowName(core::PeriodKind kind)
 {
-    return kind == core::PeriodKind::FiveHour ? Notifier::tr("5-hour") : Notifier::tr("7-day");
+    // The same words the popup and Claude Code use, so a banner read on its own
+    // names the window the same way the app does.
+    return kind == core::PeriodKind::FiveHour ? Notifier::tr("Session") : Notifier::tr("Weekly");
 }
 
 } // namespace
