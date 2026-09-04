@@ -12,6 +12,7 @@ qt_add_executable(claudedial
     cli/Cli.cpp
     cli/Cli.h
     tray/IconRenderer.cpp
+    tray/IconDiagnostic.cpp   # TEMPORARY - see the header
     tray/IconRenderer.h
     tray/Notifier.cpp
     tray/Notifier.h
