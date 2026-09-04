@@ -317,7 +317,9 @@ $ claudedial --demo --json
 ```
 
 It makes no network request and reads no credentials, so it runs on a machine
-that has never seen Claude Code. That is what makes it the way to check a
+that has never seen Claude Code. It also takes a single-instance lock of its
+own, so it starts a second tray icon beside a live ClaudeDial rather than
+asking that one to open its popup. That is what makes it the way to check a
 package on another distribution or desktop: install the `.deb`, the AppImage or
 the AUR build in a VM or container, run `claudedial --demo`, and you are
 looking at the real tray icon, the real popup and the real settings window

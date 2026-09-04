@@ -18,16 +18,25 @@ namespace {
 QString socketName()
 {
     const auto env = QProcessEnvironment::systemEnvironment();
+
+    // A demo run takes a lock of its own, so it starts a tray icon of its own
+    // beside a live instance. Sharing the lock made `--demo` look broken in the
+    // worst way: the second launch asked the *real* instance to show its popup
+    // and exited, so the invented numbers never appeared and real usage did.
+    const bool simulating =
+        !env.value(QStringLiteral("CLAUDEDIAL_SIMULATE")).isEmpty();
+    const QString flavour = simulating ? QStringLiteral("-demo") : QString();
+
     QString session = env.value(QStringLiteral("WAYLAND_DISPLAY"));
     if (session.isEmpty())
         session = env.value(QStringLiteral("DISPLAY"));
     if (session.isEmpty())
-        return QStringLiteral("claudedial");
+        return QStringLiteral("claudedial") + flavour;
 
     // A display name may hold characters a socket name cannot.
     static const QRegularExpression unsafe(QStringLiteral("[^A-Za-z0-9_-]"));
     session.replace(unsafe, QStringLiteral("_"));
-    return QStringLiteral("claudedial-%1").arg(session);
+    return QStringLiteral("claudedial-%1%2").arg(session, flavour);
 }
 
 constexpr int kConnectTimeoutMs = 300;
