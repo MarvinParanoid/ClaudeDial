@@ -256,6 +256,19 @@ any other usage monitor you run, and this endpoint does return 429 if you push
 it. A failure never clears good data - the last known usage stays on screen,
 marked stale.
 
+## Known issue in the AppImage
+
+Up to and including v0.1.1 the AppImage carries no Wayland client buffer
+integration, so on a native Wayland session the tray icon appears but the popup
+does not. Until you are on a later build, run it under XWayland:
+
+```console
+$ QT_QPA_PLATFORM=xcb ./ClaudeDial-x86_64.AppImage
+```
+
+The tarball and a distribution package are unaffected - they use the system Qt,
+which has the plugin.
+
 ## If TLS fails from the AppImage
 
 The AppImage bundles OpenSSL, because distributions ship incompatible versions

@@ -43,8 +43,13 @@ jobs:
       # guess. A Qt application does not link its platform plugin, which is why
       # linuxdeploy deployed only xcb even though more was almost certainly
       # sitting right here.
-      - name: List the platform plugins this Qt actually provides
-        run: ls "$QT_ROOT_DIR/plugins/platforms/"
+      - name: List the plugins this Qt actually provides
+        run: |
+          ls "$QT_ROOT_DIR/plugins/platforms/"
+          echo "--- wayland-related plugin directories ---"
+          for d in "$QT_ROOT_DIR"/plugins/wayland-*; do
+            echo "$(basename "$d"): $(ls "$d" 2>/dev/null | tr '\n' ' ')"
+          done
 
       - name: Configure
         run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
@@ -90,6 +95,20 @@ jobs:
           EXTRA_QT_PLUGINS: 'wayland-decoration-client;wayland-graphics-integration-client;wayland-shell-integration'
         run: |
           DESTDIR="$PWD/AppDir" cmake --install build --prefix /usr
+
+          # Copied in before linuxdeploy runs, rather than named through
+          # EXTRA_QT_PLUGINS, which produced an empty directory in v0.1.1.
+          # linuxdeploy resolves the dependencies of whatever it finds already
+          # in the AppDir, so placing them first is the reliable route.
+          #
+          # This one is not optional: without a client buffer integration
+          # QtQuick cannot present a surface, and v0.1.1's popup did not appear
+          # at all on a native Wayland session - only under XWayland.
+          mkdir -p AppDir/usr/plugins
+          for d in "$QT_ROOT_DIR"/plugins/wayland-*; do
+            [ -d "$d" ] && cp -r "$d" AppDir/usr/plugins/
+          done
+
           ssl=$(dirname "$(ldconfig -p | awk '/libssl\.so\.3/{print $NF; exit}')")
           ./linuxdeploy-x86_64.AppImage --appdir AppDir --plugin qt \
             --library "$ssl/libssl.so.3" --library "$ssl/libcrypto.so.3" \
@@ -125,6 +144,11 @@ jobs:
             find squashfs-root -name "$l" | grep -q . \
               || { echo "MISSING library: $l - HTTPS will fail on hosts whose OpenSSL differs"; fail=1; }
           done
+
+          echo "--- Wayland client buffer integration ---"
+          ls squashfs-root/usr/plugins/wayland-graphics-integration-client/ 2>/dev/null
+          [ -n "$(ls -A squashfs-root/usr/plugins/wayland-graphics-integration-client/ 2>/dev/null)" ] \
+            || { echo "MISSING client buffer integration - QtQuick cannot present a surface on Wayland, so the popup will not appear"; fail=1; }
 
           echo "--- QML runtime (our own QML is in the binary; QtQuick's is not) ---"
           find squashfs-root -maxdepth 5 -type d -name QtQuick

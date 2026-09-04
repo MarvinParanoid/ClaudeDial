@@ -65,3 +65,28 @@ jobs:
 
       - name: Show what would be packaged
         run: find staged -type f | sort
+
+      # QML resolves properties at run time, so a token removed from Theme.qml
+      # leaves a dangling reference that compiles, links, packages and ships.
+      # Exactly that happened: theme.warning was removed when the colour ramp
+      # moved into C++, Popup.qml kept referencing it, and the "Stale" label
+      # rendered with no colour. A warm QML cache hid it locally; only a
+      # packaged build with a cold cache showed the error.
+      - name: Check every theme token referenced in QML exists
+        run: |
+          python3 - <<'EOF'
+          import re, pathlib, sys
+          theme = pathlib.Path('src/ui/qml/Theme.qml').read_text()
+          defined = set(re.findall(r'property (?:color|int|bool) (\w+)', theme)) | {'levelColor'}
+          missing = {}
+          for f in sorted(pathlib.Path('src/ui/qml').glob('*.qml')):
+              if f.name == 'Theme.qml':
+                  continue
+              used = set(re.findall(r'\btheme\.(\w+)', f.read_text()))
+              gap = used - defined
+              if gap:
+                  missing[f.name] = sorted(gap)
+          for name, tokens in missing.items():
+              print(f"{name}: references undefined theme tokens {tokens}")
+          sys.exit(1 if missing else 0)
+          EOF

@@ -23,6 +23,14 @@ QtObject {
     readonly property color brand:  colors.brand
     readonly property color accent: colors.accent
 
+    // The stale marker. Not a usage level - it is a statement about the data's
+    // age - but it borrows the warning step, because that is what it means.
+    // This existed, was removed when the ramp moved into `colors`, and the
+    // reference in Popup.qml was left dangling: the label rendered with no
+    // colour at all. Only a cold QML cache surfaced it, which is why it took a
+    // packaged build to notice.
+    readonly property color warning: colors.usageWarning
+
     readonly property int radius: 10
     readonly property int padding: 16
     readonly property int gap: 14

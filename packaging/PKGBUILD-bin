@@ -11,7 +11,7 @@
 #     cd packaging && updpkgsums PKGBUILD-bin
 pkgname=claudedial-bin
 _pkgname=claudedial
-pkgver=0.1.1
+pkgver=0.1.2
 pkgrel=1
 pkgdesc="Claude Code usage at a glance - minimal system tray indicator"
 arch=('x86_64')
