@@ -67,6 +67,9 @@ private:
     void updateTray();
     void applyTheme();
 
+    /// The neutral the tray icon draws with while nothing needs attention.
+    [[nodiscard]] QColor trayForeground() const;
+
     /// Says so on stderr when the icon never appeared, instead of running
     /// invisibly and silently. Retried once, because a panel may register late.
     void verifyTrayVisible(int attempt);
@@ -99,6 +102,11 @@ private:
     /// because the Theme setting may override that, and the tray icon must not
     /// follow it - see applyTheme().
     QColor m_panelForeground;
+
+    /// Whether the platform told us anything about the desktop's colours.
+    /// Sampled once, before any Theme override, because our own override sets a
+    /// colour scheme and would otherwise make the answer look like a yes.
+    bool m_panelSchemeKnown = true;
 };
 
 } // namespace claudedial
