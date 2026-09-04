@@ -27,7 +27,8 @@ much care each one gets when a choice cannot serve them all.
 | i3 / X11 with a tray | supported, best effort — must work; cosmetic compromises accepted |
 | Xfce, Cinnamon, MATE, LXQt, COSMIC | expected to work; unverified |
 | No tray | the CLI is the interface, not a fallback |
-| Windows, macOS | not attempted |
+| Windows | builds and self-tests in CI; nobody has run it |
+| macOS | not attempted — the token is in the Keychain there |
 
 ClaudeDial is made of exactly what Plasma is built around — a permanently
 visible tray icon, a small popup on click, settings, notifications, autostart —
@@ -44,6 +45,39 @@ tried first, and it made Plasma worse for no one's benefit.
 Note what the rule does *not* license. GNOME reporting a false failure, or i3
 tiling a settings form into a column, are bugs at "supported" level and were
 fixed as such — the licence is for polish, not for defects.
+
+### Windows, as far as it has got
+
+Personal use, so: no installer, no signing, no Store. The release workflow
+assembles the Qt runtime with `windeployqt` and zips it; a manual run leaves
+that zip as an artefact, which is how to get a build without spending a version
+number.
+
+The expensive part turned out not to exist. Claude Code keeps the token in a
+plain file there as on Linux — `%USERPROFILE%\.claude\.credentials.json`,
+honouring `CLAUDE_CONFIG_DIR` — corroborated by the native Windows tray
+surveyed in [usage-api.md](usage-api.md). `QDir::homePath()` resolves to
+`%USERPROFILE%`, so `core::Credentials` is untouched and nothing is written
+against DPAPI or the Credential Manager. macOS is the opposite case, and is why
+it stays unattempted: the Keychain would mean new credential code in the one
+place that must not be got wrong.
+
+Three things a Linux desktop answers through D-Bus needed another answer:
+notifications go out through the tray icon itself, which is native there and
+loses only `replaces_id`; suspend and resume simply never fire, already the
+documented degradation where logind is absent; and autostart is a value under
+the registry's `Run` key, reached through `QSettings`.
+
+One Windows-specific wrinkle: Qt links this as a GUI binary, which there means
+no console at all, so `claudedial --json` from a terminal would print into
+nothing. It borrows the parent console when given any flag.
+
+**Nobody has run it on a real Windows desktop.** Compilation and the tests are
+checked in CI on every push — which is not the same thing, and is the reason
+this is a row of its own rather than a supported tier. Two things to look at
+first when someone does: whether the tray icon appears at all, and, if Claude
+Code is running inside WSL, that the credentials are then in the WSL filesystem
+where a native build will not find them.
 
 ## Three tiers of guarantee
 

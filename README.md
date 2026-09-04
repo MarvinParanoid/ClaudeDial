@@ -170,7 +170,8 @@ same care.
 | **i3 / X11** with a tray | supported, best effort | Tray, popup, settings and CLI must work. i3bar asks for a 15x15 icon, where the mark switches to its small-size form - legible rather than faithful. Verified on Debian 13. |
 | Xfce, Cinnamon, MATE, LXQt, COSMIC | expected to work | Same StatusNotifierItem path as Plasma. Nobody has run it; the protocol says it should. |
 | **No tray at all** - Sway, Hyprland, a bare session | `claudedial --json` | Not a fallback but the interface for that user. Stable, and free while the tray runs. |
-| Windows, macOS | not attempted | Qt supports them. The credential store and autostart would both need real work first. |
+| **Windows** | builds, untried | Compiles and passes the tests in CI, and there is a zip. Nobody has run it on a real desktop yet, so treat it as personal-use scaffolding rather than a supported target. |
+| macOS | not attempted | Qt supports it, but the token lives in the Keychain there, which is real work in the one place that must not be got wrong. |
 
 The operative rule, when two of those conflict: **Plasma is not made worse to
 make another desktop better.** Where a choice cannot serve both, Plasma gets the
