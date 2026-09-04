@@ -73,12 +73,20 @@ own. Unpack it over `/usr` or `~/.local`.
 
 ### Arch Linux
 
+Not in the AUR yet: account registration there is paused while they deal with a
+wave of automated signups. The package is ready regardless, so build it from
+this repository instead.
+
 ```console
-$ yay -S claudedial-bin
+$ curl -fLo PKGBUILD https://raw.githubusercontent.com/MarvinParanoid/ClaudeDial/main/packaging/PKGBUILD-bin
+$ makepkg -si
 ```
 
-Not in the AUR yet - the package is prepared in
-[packaging/PKGBUILD-bin](packaging/PKGBUILD-bin) and consumes the tarball above.
+That file is what the AUR package will be, unchanged: it unpacks the tarball
+above rather than compiling, so the build takes seconds and links your system
+Qt. Pacman then owns the files, which is the point - `pacman -R claudedial-bin`
+removes it cleanly. New versions need the two commands again until the AUR
+package lands and `yay -S claudedial-bin` starts working.
 
 ### From source
 

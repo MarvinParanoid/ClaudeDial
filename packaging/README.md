@@ -67,6 +67,32 @@ CI and not on a developer machine.
 
 ## Submitting to the AUR
 
+**Blocked upstream, not on our side.** AUR account registration is paused while
+they handle a wave of automated account creation; the page answers HTTP 503 and
+asks explicitly that nobody script retries against it. Reopening is announced on
+`aur-general` and the Arch news feed, and nothing here will know sooner.
+
+Until then Arch users install by downloading `PKGBUILD-bin` from this repository
+and running `makepkg -si`, which the README documents and which is verified to
+produce the same package the AUR would serve.
+
+Two prerequisites, and only the first is visible from the error message if it is
+missing. `ssh` must be told which key to offer - AUR takes no default and
+`Permission denied (publickey)` is all it says, with no `Offering public key`
+line in `ssh -v` output:
+
+```
+Host aur.archlinux.org
+    HostName aur.archlinux.org
+    User aur
+    IdentityFile ~/.ssh/aur
+    IdentitiesOnly yes
+```
+
+Second, that public key has to be pasted into the AUR account's *SSH Public Key*
+field. `ssh aur@aur.archlinux.org` answers `Welcome to AUR, <user>!` and closes
+when both are right; there is no shell there, so that is success.
+
 `PKGBUILD-bin` has been run through `makepkg` locally and installs the right
 four files. What remains is per-release:
 
