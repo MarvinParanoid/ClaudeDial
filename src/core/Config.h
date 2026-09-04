@@ -35,6 +35,20 @@ public:
         Percentage, ///< the exact number
     };
 
+    /// How light or dark the tray icon's neutral is drawn.
+    ///
+    /// This exists because the panel is unknowable and guessing was wrong in
+    /// both directions. QPalette describes the *application* colours, which on
+    /// Plasma is a setting separate from the panel's, and on a desktop with no
+    /// Qt integration it is a built-in default rather than information. A fixed
+    /// mid-tone was tried instead and read as washed out on light panels and on
+    /// dark ones alike. So the one bit we cannot derive is asked for.
+    enum class TrayTone {
+        Auto,  ///< follow the application palette; assume a dark panel when unknown
+        Light, ///< a light mark, for a dark panel
+        Dark,  ///< a dark mark, for a light panel
+    };
+
     explicit Config(QObject* parent = nullptr);
 
     /// Where settings live. Useful in bug reports, and asserted in tests so the
@@ -56,6 +70,9 @@ public:
 
     [[nodiscard]] TrayStyle trayStyle() const;
     void setTrayStyle(TrayStyle style);
+
+    [[nodiscard]] TrayTone trayTone() const;
+    void setTrayTone(TrayTone tone);
 
     [[nodiscard]] Theme theme() const;
     void setTheme(Theme theme);

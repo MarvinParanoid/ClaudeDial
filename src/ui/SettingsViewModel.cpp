@@ -74,6 +74,28 @@ int SettingsViewModel::trayStyleIndex() const
     return m_config->trayStyle() == Config::TrayStyle::Gauge ? 0 : 1;
 }
 
+int SettingsViewModel::trayToneIndex() const
+{
+    switch (m_config->trayTone()) {
+    case Config::TrayTone::Auto:
+        return 0;
+    case Config::TrayTone::Light:
+        return 1;
+    case Config::TrayTone::Dark:
+        return 2;
+    }
+    return 0;
+}
+
+void SettingsViewModel::setTrayToneIndex(int index)
+{
+    const auto tone = index == 1 ? Config::TrayTone::Light
+        : index == 2             ? Config::TrayTone::Dark
+                                 : Config::TrayTone::Auto;
+    if (tone != m_config->trayTone())
+        m_config->setTrayTone(tone);
+}
+
 void SettingsViewModel::setTrayStyleIndex(int index)
 {
     const auto style = index == 0 ? Config::TrayStyle::Gauge : Config::TrayStyle::Percentage;

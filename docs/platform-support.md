@@ -239,29 +239,43 @@ useless. Chasing it further would mean reading `plasmarc`, resolving an unset
 value through the look-and-feel package's defaults, and deciding whether a
 Plasma theme name implies a dark panel — four fragile hops, for one desktop.
 
-**The neutral is now a fixed mid-tone, `brand::kTrayNeutral`, and no panel
-colour is consulted at all.** Contrast ratios against a dark panel, a light
-panel and i3bar's black:
+**A fixed mid-tone was tried next, and rejected on a report.** Contrast ratios
+against a dark panel, a light panel and i3bar's black:
 
 | mark | dark | light | i3bar |
 | --- | --- | --- | --- |
 | near-black `#232629` | **1.0** | 13.3 | **1.4** |
 | light grey `#dcdcdc` | 11.1 | **1.2** | 15.3 |
-| mid grey `#9a9a9a` | 5.4 | 2.5 | 7.5 |
+| mid grey `#9a9a9a` | 5.4 | 2.47 | 7.5 |
+| best possible grey `#7c7c7c` | 3.64 | 3.66 | 5.0 |
 | `kUsageWarning` | 5.8 | 2.3 | 8.0 |
 
-Either extreme is invisible somewhere. The mid-tone never is, and its worst
-case is no worse than the warning colour, which has shipped without complaint —
-which is also why the icon appeared at 75% and above in both reports. Thresholds
-and the warning/critical/severe steps are untouched.
+Either extreme is invisible somewhere, so `#9a9a9a` shipped — and came back as
+faint on a light panel, then faint on a dark one too. That is not a bad choice
+of grey. `#7c7c7c` is the grey that maximises the worse of the two Plasma
+panels, and 3.64 is the ceiling for *any* single colour: a fixed neutral can be
+balanced or crisp, never both. Terracotta scores comparably (4.9 / 2.7) and also
+shares a hue with the warning step, which would blunt the escalation.
 
-Terracotta scores comparably and was rejected: it shares a hue with the warning
-step and would blunt the escalation.
+**So the tone is a setting.** `core::Config::TrayTone` — Auto, Light, Dark —
+with `brand::kTrayNeutralLight` (`#dcdcdc`, 11.1 on a dark panel) and
+`kTrayNeutralDark` (`#232629`, 13.3 on a light one). Both crisp, because each is
+chosen for a known background rather than hedged across two.
 
-**Accepted cost:** on a light panel the neutral is fainter than a
-palette-derived near-black would have been. That is deliberate — a faint mark
-is a nuisance, an invisible one is a bug, and the palette cannot tell the two
-situations apart.
+Auto keeps the palette, which is right wherever the panel follows the
+applications — stock Breeze and Breeze Dark — and assumes a dark panel where
+the platform reports no colour scheme at all. Auto is wrong wherever the panel
+is themed independently, which is precisely what the explicit tones are for.
+
+Thresholds and the warning/critical/severe steps were never touched by any of
+this.
+
+Two notes for whoever tests this next. The notification icon takes the same
+tone, on the assumption that a notification daemon and a panel are themed
+together; nobody has checked that. And redirecting `XDG_CONFIG_HOME` to isolate
+a test config also hides `kdeglobals` from Qt, so Auto measured that way
+reports a palette the desktop is not using — the explicit tones are unaffected,
+which is how that was noticed.
 
 ## Degradation
 

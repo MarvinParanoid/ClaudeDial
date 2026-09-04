@@ -197,7 +197,8 @@ activating the icon, so the menu is the only route to the popup. A double click
 opens it there too. On Plasma a single click toggles it, as you would expect.
 
 Start on login, refresh interval, notifications, warning and critical
-thresholds, tray style, and theme (system / light / dark) are all configurable.
+thresholds, tray style, tray icon tone, and theme (system / light / dark) are
+all configurable.
 Settings live in `~/.config/claudedial/claudedial.conf`; the `[state]` group in
 that file is ClaudeDial's own bookkeeping, not settings.
 
@@ -213,6 +214,15 @@ that file is ClaudeDial's own bookkeeping, not settings.
 The arc is the same in both and fills with usage either way, so they are two
 styles of one dial rather than two icons. The popup header always shows the
 needle, as the constant logotype.
+
+**Tray icon** sets how light or dark the icon is drawn while usage is below the
+warning threshold. **Auto** follows your application colours, which is right
+when your panel matches them. Pick **Light** for a dark panel or **Dark** for a
+light one when it does not: a panel cannot be asked what colour it is, and on
+KDE it is a separate setting from the application colour scheme - Breeze
+Twilight pairs light applications with a dark panel. Above the warning
+threshold the icon is amber, orange or red regardless, which is legible either
+way.
 
 When the data is stale the whole mark fades, so a glance at the panel tells you
 the number is the last one ClaudeDial managed to fetch.

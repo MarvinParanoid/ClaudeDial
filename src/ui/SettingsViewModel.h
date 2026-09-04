@@ -20,6 +20,7 @@ class SettingsViewModel : public QObject
     Q_PROPERTY(int warningThreshold READ warningThreshold WRITE setWarningThreshold NOTIFY changed)
     Q_PROPERTY(int criticalThreshold READ criticalThreshold WRITE setCriticalThreshold NOTIFY changed)
     Q_PROPERTY(int trayStyleIndex READ trayStyleIndex WRITE setTrayStyleIndex NOTIFY changed)
+    Q_PROPERTY(int trayToneIndex READ trayToneIndex WRITE setTrayToneIndex NOTIFY changed)
     Q_PROPERTY(int themeIndex READ themeIndex WRITE setThemeIndex NOTIFY changed)
     /// Read-only, and the only reason the settings window shows it: a user who
     /// installed a package has no other way to see which build is running, and
@@ -48,7 +49,9 @@ public:
 
     /// 0 = Gauge, 1 = Percentage - matching the order of the UI selector.
     [[nodiscard]] int trayStyleIndex() const;
+    [[nodiscard]] int trayToneIndex() const;
     void setTrayStyleIndex(int index);
+    void setTrayToneIndex(int index);
 
     /// 0 = System, 1 = Light, 2 = Dark - matching the order of the UI selector.
     [[nodiscard]] int themeIndex() const;

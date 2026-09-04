@@ -28,28 +28,25 @@ namespace claudedial::brand {
 /// Claude's terracotta.
 inline const QColor kIdentity { 0xd9, 0x77, 0x57 };
 
-/// The tray mark's neutral, while nothing needs attention.
+/// The tray mark's neutral, while nothing needs attention - one for a dark
+/// panel, one for a light one.
 ///
-/// A fixed mid-tone, and deliberately not the panel's own foreground. There is
-/// no way to learn what a panel looks like: not from a StatusNotifierItem host,
-/// not from an XEmbed one, and not from QPalette - which describes the
-/// *application* colours and is a separate setting from the panel's. Two
-/// independent reports proved the proxy wrong in mainstream configurations, and
-/// in opposite ways. On i3, QPalette::WindowText is #000000 with colorScheme
-/// Unknown, against i3bar's black. On KDE's shipped Breeze Twilight, the
-/// palette is honest and still useless: ColorScheme=BreezeLight for
-/// applications, plasmarc Theme=breeze-dark for the panel, so a correctly
-/// sampled near-black landed on a dark panel. In both, the icon was invisible
-/// below 75% and appeared above it - exactly where these usage colours take
-/// over from the neutral.
+/// Which to use cannot be derived. QPalette describes the *application*
+/// colours, and on Plasma the panel is a separate setting: Breeze Twilight
+/// ships ColorScheme=BreezeLight with plasmarc Theme=breeze-dark. On a desktop
+/// with no Qt integration - i3, sway - the palette is a built-in default
+/// (#000000) rather than information, against i3bar's black. Both were reported
+/// as an icon invisible below 75% and visible above it, which is exactly where
+/// the usage colours take over from this neutral.
 ///
-/// Contrast ratios decided the value. Against a dark panel, a light panel and
-/// i3bar's black: near-black gives 1.0 / 13.3 / 1.4 and light grey 11.1 / 1.2 /
-/// 15.3 - each invisible somewhere. This grey gives 5.4 / 2.5 / 7.5, never
-/// invisible anywhere, and its worst case is no worse than kUsageWarning's 2.3,
-/// which has shipped without complaint. Terracotta scores similarly but shares
-/// a hue with the warning step and would blunt the escalation.
-inline const QColor kTrayNeutral { 0x9a, 0x9a, 0x9a };
+/// A single mid-tone was tried and rejected on evidence: #9a9a9a scored 5.4
+/// against a dark panel and 2.47 against a light one, and #7c7c7c balances at
+/// 3.64/3.66 - the best any one grey can do - which was reported as washed out
+/// on both. Contrast has a ceiling for a fixed colour, so the tone is a setting
+/// (core::Config::TrayTone) and these are its two ends. Each is crisp: 11.1 on
+/// a dark panel, 13.3 on a light one.
+inline const QColor kTrayNeutralLight { 0xdc, 0xdc, 0xdc };
+inline const QColor kTrayNeutralDark { 0x23, 0x26, 0x29 };
 
 inline const QColor kUsageWarning { 0xfd, 0xbc, 0x4b };
 inline const QColor kUsageCritical { 0xf0, 0x84, 0x2c };

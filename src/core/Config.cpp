@@ -16,6 +16,7 @@ constexpr auto kNotifications = "notificationsEnabled";
 constexpr auto kWarning = "warningThreshold";
 constexpr auto kCritical = "criticalThreshold";
 constexpr auto kTrayStyle = "trayStyle";
+constexpr auto kTrayTone = "trayTone";
 constexpr auto kTheme = "theme";
 
 /// Grouped separately from the settings proper - see Config.h.
@@ -143,6 +144,26 @@ Config::TrayStyle Config::trayStyle() const
     const QString value = m_settings->value(QLatin1String(kTrayStyle),
                                             QStringLiteral("percentage")).toString();
     return value == QLatin1String("gauge") ? TrayStyle::Gauge : TrayStyle::Percentage;
+}
+
+Config::TrayTone Config::trayTone() const
+{
+    const QString value =
+        m_settings->value(QLatin1String(kTrayTone), QStringLiteral("auto")).toString();
+    if (value == QLatin1String("light"))
+        return TrayTone::Light;
+    if (value == QLatin1String("dark"))
+        return TrayTone::Dark;
+    return TrayTone::Auto;
+}
+
+void Config::setTrayTone(TrayTone tone)
+{
+    m_settings->setValue(QLatin1String(kTrayTone),
+                         tone == TrayTone::Light ? QStringLiteral("light")
+                             : tone == TrayTone::Dark ? QStringLiteral("dark")
+                                                      : QStringLiteral("auto"));
+    Q_EMIT changed();
 }
 
 void Config::setTrayStyle(TrayStyle style)

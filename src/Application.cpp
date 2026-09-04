@@ -173,9 +173,7 @@ void Application::updateTray()
 
     IconRenderer::Options options;
     options.style = m_config->trayStyle();
-    // A fixed mid-tone rather than the panel's colour, which cannot be learned.
-    // See brand::kTrayNeutral for the two reports and the contrast figures.
-    options.foreground = brand::kTrayNeutral;
+    options.foreground = trayNeutral();
     options.warningThreshold = m_config->warningThreshold();
     options.criticalThreshold = m_config->criticalThreshold();
     options.stale = state.stale;
@@ -190,6 +188,32 @@ void Application::updateTray()
                                             : QStringLiteral("ClaudeDial\n%1").arg(
                                                   m_service->unavailableReason());
     m_tray->setToolTip(tooltip);
+}
+
+QColor Application::trayNeutral() const
+{
+    switch (m_config->trayTone()) {
+    case Config::TrayTone::Light:
+        return brand::kTrayNeutralLight;
+    case Config::TrayTone::Dark:
+        return brand::kTrayNeutralDark;
+    case Config::TrayTone::Auto:
+        break;
+    }
+
+    // Auto follows the application palette, which is right wherever the panel
+    // follows the applications - the stock Breeze and Breeze Dark case. Where
+    // the platform reports no colour scheme at all, Qt has no desktop to ask
+    // and the palette is its own default: measured as #000000 on i3 and sway,
+    // against i3bar's black. Assume a dark panel there, which is how i3bar,
+    // polybar and waybar all default.
+    //
+    // Auto is wrong wherever the panel is themed independently of the
+    // applications. That is what the explicit tones are for.
+    if (QGuiApplication::styleHints()->colorScheme() == Qt::ColorScheme::Unknown)
+        return brand::kTrayNeutralLight;
+
+    return QGuiApplication::palette().color(QPalette::WindowText);
 }
 
 void Application::applyTheme()
@@ -256,7 +280,7 @@ void Application::onThresholdCrossed(PeriodKind kind, int threshold, double perc
     // Always the number here, whatever the tray is set to: a notification is
     // about one specific figure, and at this size it is plainly legible.
     options.style = Config::TrayStyle::Percentage;
-    options.foreground = brand::kTrayNeutral;
+    options.foreground = trayNeutral();
     options.warningThreshold = m_config->warningThreshold();
     options.criticalThreshold = m_config->criticalThreshold();
 

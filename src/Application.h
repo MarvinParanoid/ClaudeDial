@@ -67,6 +67,9 @@ private:
     void updateTray();
     void applyTheme();
 
+    /// The tray icon's neutral, from the TrayTone setting.
+    [[nodiscard]] QColor trayNeutral() const;
+
     /// Says so on stderr when the icon never appeared, instead of running
     /// invisibly and silently. Retried once, because a panel may register late.
     void verifyTrayVisible(int attempt);

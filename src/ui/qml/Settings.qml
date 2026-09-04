@@ -54,6 +54,21 @@ Rectangle {
             }
         }
 
+        // The panel's own colour cannot be read, and guessing it was wrong in
+        // both directions, so this asks.
+        SettingRow {
+            width: parent.width
+            theme: theme
+            label: qsTr("Tray icon")
+
+            Segmented {
+                theme: theme
+                options: [qsTr("Auto"), qsTr("Light"), qsTr("Dark")]
+                currentIndex: settings.trayToneIndex
+                onActivated: function(index) { settings.trayToneIndex = index }
+            }
+        }
+
         SectionHeader {
             theme: theme
             text: qsTr("Notifications")
