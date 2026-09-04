@@ -60,11 +60,27 @@ endif()
 # --- installation -------------------------------------------------------------
 include(GNUInstallDirs)
 
-# Split rather than one call with both destinations. Given both, the bundle
-# landed in bin/ - and Qt's deploy tool runs `macdeployqt claudedial.app` from
-# the install prefix, so it looked in the prefix root, did not find it, and
-# failed after everything else had installed. The prefix root is the convention
-# Qt documents for a macOS bundle; being explicit is what makes it hold.
+# Before the install rules, and that ordering is the whole point: install(TARGETS)
+# decides which kind of artifact it is looking at when it is called. With
+# MACOSX_BUNDLE set afterwards, the target counted as RUNTIME, BUNDLE DESTINATION
+# was ignored, and the bundle went to the default bin/ - where Qt's deploy tool,
+# which runs `macdeployqt claudedial.app` from the install prefix, could not find
+# it. Configure the target, then install it.
+#
+# A menu-bar utility, not a windowed application: LSUIElement in our own
+# Info.plist is what keeps it out of the Dock.
+if (APPLE)
+    set_target_properties(claudedial PROPERTIES
+        MACOSX_BUNDLE TRUE
+        MACOSX_BUNDLE_INFO_PLIST "${CMAKE_CURRENT_SOURCE_DIR}/data/Info.plist.in"
+        MACOSX_BUNDLE_GUI_IDENTIFIER "io.github.marvinparanoid.claudedial"
+        MACOSX_BUNDLE_BUNDLE_NAME "ClaudeDial"
+        MACOSX_BUNDLE_SHORT_VERSION_STRING "${PROJECT_VERSION}"
+        MACOSX_BUNDLE_BUNDLE_VERSION "${PROJECT_VERSION}"
+    )
+endif()
+
+# The prefix root is the convention Qt documents for a macOS bundle.
 if (APPLE)
     install(TARGETS claudedial BUNDLE DESTINATION .)
 else()
@@ -86,23 +102,6 @@ endif()
 #
 # --qmldir is still needed. The QML lives in the binary as a resource, so there
 # is nothing for the import scanner to find unless it is pointed at the sources.
-# A menu-bar utility, not a windowed application: LSUIElement in our own
-# Info.plist is what keeps it out of the Dock.
-if (APPLE)
-    set_target_properties(claudedial PROPERTIES
-        # Bundling has to be asked for. The MACOSX_BUNDLE_* properties below are
-        # inert without it, and Qt's deployment then declines the target with
-        # "Executable targets have to be app bundles to use this command on
-        # Apple platforms" - having installed a bare binary and no Qt at all.
-        MACOSX_BUNDLE TRUE
-        MACOSX_BUNDLE_INFO_PLIST "${CMAKE_CURRENT_SOURCE_DIR}/data/Info.plist.in"
-        MACOSX_BUNDLE_GUI_IDENTIFIER "io.github.marvinparanoid.claudedial"
-        MACOSX_BUNDLE_BUNDLE_NAME "ClaudeDial"
-        MACOSX_BUNDLE_SHORT_VERSION_STRING "${PROJECT_VERSION}"
-        MACOSX_BUNDLE_BUNDLE_VERSION "${PROJECT_VERSION}"
-    )
-endif()
-
 if (WIN32 OR APPLE)
     # Two tools, two spellings of the same option: windeployqt takes
     # `--qmldir <dir>` and macdeployqt takes `-qmldir=<dir>`. Passing the wrong
