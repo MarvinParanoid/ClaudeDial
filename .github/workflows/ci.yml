@@ -40,6 +40,51 @@ jobs:
         shell: pwsh
         run: ctest --test-dir build -C Release --output-on-failure
 
+      # windeployqt copies the Qt runtime, the platform plugin and the QML
+      # modules next to the binary. --qmldir is not optional: the QML lives in
+      # the binary as a resource, so there is nothing for windeployqt to scan
+      # unless it is pointed at the sources, and without it the popup and the
+      # settings window both fail to load - the Windows shape of the omission
+      # that shipped twice in Linux AppImages.
+      - name: Assemble the runtime
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path dist | Out-Null
+          $exe = Get-ChildItem -Recurse -Filter claudedial.exe build | Select-Object -First 1
+          if (-not $exe) { throw 'claudedial.exe was not built' }
+          Copy-Item $exe.FullName dist/
+          windeployqt --release --qmldir src/ui/qml dist/claudedial.exe
+
+      - name: Check what was assembled
+        shell: pwsh
+        run: |
+          $fail = 0
+          foreach ($need in @('Qt6Core.dll','Qt6Gui.dll','Qt6Quick.dll','Qt6Network.dll')) {
+            if (-not (Test-Path "dist/$need")) { Write-Host "MISSING $need"; $fail = 1 }
+          }
+          if (-not (Test-Path 'dist/platforms/qwindows.dll')) {
+            Write-Host 'MISSING the windows platform plugin'; $fail = 1
+          }
+          if (-not (Test-Path 'dist/QtQuick/Controls/Basic')) {
+            Write-Host 'MISSING QtQuick.Controls.Basic - the settings window will not load'; $fail = 1
+          }
+          if (-not (Test-Path 'dist/tls')) {
+            Write-Host 'MISSING the TLS backend - api.anthropic.com will be unreachable'; $fail = 1
+          }
+          exit $fail
+
+      - name: Zip it
+        shell: pwsh
+        run: Compress-Archive -Path dist/* -DestinationPath ClaudeDial-windows-x86_64.zip
+
+      # Attached to every run, so getting a Windows build is a download rather
+      # than a manual workflow dispatch or a spent version number.
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ClaudeDial-windows-x86_64
+          path: ClaudeDial-windows-x86_64.zip
+          retention-days: 30
+
   build:
     runs-on: ubuntu-latest
     container: ${{ matrix.container }}
