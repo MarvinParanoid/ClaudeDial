@@ -407,7 +407,7 @@ void CoreTest::rampsLevelsMonotonically()
     // A critical threshold above the fixed severe mark, and a warning threshold
     // above the critical one, are both allowed by the settings UI. Neither may
     // produce a ramp that goes backwards as the percentage rises.
-    for (const auto thresholds : { std::pair { 75, 98 }, std::pair { 90, 80 } }) {
+    for (const auto& thresholds : { std::pair { 75, 98 }, std::pair { 90, 80 } }) {
         UsageLevel previous = UsageLevel::Normal;
         for (double percentage = 0; percentage <= 100; percentage += 0.5) {
             const UsageLevel level = levelFor(percentage, thresholds.first, thresholds.second);

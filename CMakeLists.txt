@@ -60,7 +60,12 @@ endif()
 # --- installation -------------------------------------------------------------
 include(GNUInstallDirs)
 
-install(TARGETS claudedial RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
+# BUNDLE is what an app bundle installs as, and is ignored elsewhere. Without
+# it a macOS install writes nothing at all.
+install(TARGETS claudedial
+    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+    BUNDLE DESTINATION .
+)
 
 # A .desktop entry and an XDG icon theme are meaningless anywhere else, and
 # installing them would only make a Windows or macOS tree look wrong.
@@ -81,6 +86,11 @@ endif()
 # Info.plist is what keeps it out of the Dock.
 if (APPLE)
     set_target_properties(claudedial PROPERTIES
+        # Bundling has to be asked for. The MACOSX_BUNDLE_* properties below are
+        # inert without it, and Qt's deployment then declines the target with
+        # "Executable targets have to be app bundles to use this command on
+        # Apple platforms" - having installed a bare binary and no Qt at all.
+        MACOSX_BUNDLE TRUE
         MACOSX_BUNDLE_INFO_PLIST "${CMAKE_CURRENT_SOURCE_DIR}/data/Info.plist.in"
         MACOSX_BUNDLE_GUI_IDENTIFIER "io.github.marvinparanoid.claudedial"
         MACOSX_BUNDLE_BUNDLE_NAME "ClaudeDial"
