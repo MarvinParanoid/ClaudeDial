@@ -5,18 +5,46 @@ on:
     branches: [main]
   pull_request:
 
+# Claudometer needs Qt 6.8 (QStyleHints::setColorScheme), and no GitHub-hosted
+# runner ships that in apt - ubuntu-24.04 is on Qt 6.4. So the build runs in
+# containers instead, which also makes the toolchain explicit rather than
+# whatever the runner image happens to have this month.
+#
+# Two of them on purpose: the newest Qt catches nothing on its own, and a
+# container pinned near our declared floor is what stops a 6.9-only API from
+# creeping in unnoticed.
+
 jobs:
   build:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-latest
+    container: ${{ matrix.container }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: "Arch (newest Qt)"
+            container: archlinux:latest
+            install: |
+              pacman -Syu --noconfirm --needed \
+                base-devel cmake ninja git \
+                qt6-base qt6-declarative qt6-svg
+          - name: "Fedora 41 (near the declared Qt floor)"
+            container: fedora:41
+            install: |
+              dnf -y install \
+                gcc-c++ cmake ninja-build git \
+                qt6-qtbase-devel qt6-qtdeclarative-devel qt6-qtsvg-devel \
+                mesa-libGL-devel
+
+    name: ${{ matrix.name }}
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install Qt and build tools
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y --no-install-recommends \
-            cmake ninja-build g++ \
-            qt6-base-dev qt6-declarative-dev libgl1-mesa-dev
+      - name: Install toolchain
+        run: ${{ matrix.install }}
+
+      - name: Report the Qt version actually in use
+        run: cmake --version && (qmake6 -query QT_VERSION || true)
 
       - name: Configure
         run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
@@ -24,6 +52,16 @@ jobs:
       - name: Build
         run: cmake --build build
 
-      # The core is deliberately headless-testable; no Xvfb needed.
+      # The core is deliberately headless-testable: QTEST_GUILESS_MAIN, no
+      # QGuiApplication, no display. If this ever needs Xvfb, something has
+      # leaked out of core.
       - name: Test
         run: ctest --test-dir build --output-on-failure
+
+      # Catches the classic packaging failure: a file that builds here because
+      # it exists locally but was never committed.
+      - name: Install into a staging root
+        run: DESTDIR="$PWD/staged" cmake --install build --prefix /usr
+
+      - name: Show what would be packaged
+        run: find staged -type f | sort

@@ -6,8 +6,9 @@ something worth releasing.
 
 What is here:
 
-- `PKGBUILD` - Arch source package. The AUR target is `claudometer-bin`, which
-  will consume the release tarball from GitHub instead of building from source.
+- `PKGBUILD` - Arch source package, built from a release tarball.
+- `PKGBUILD-bin` - the `claudometer-bin` AUR package, which unpacks the
+  prebuilt binary tarball from a GitHub release instead of compiling.
 
 What `cmake --install` lays down, which is what every format needs to package:
 

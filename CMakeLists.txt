@@ -16,8 +16,16 @@ endif()
 
 option(CLAUDOMETER_BUILD_TESTS "Build unit tests" ON)
 
-find_package(Qt6 6.5 REQUIRED COMPONENTS Core Network DBus Gui Widgets Quick QuickControls2 Svg)
-qt_standard_project_setup(REQUIRES 6.5)
+# 6.8, not 6.5, and the difference is not cosmetic. Declaring 6.5 while using
+# newer APIs means a build on 6.5 fails deep in a translation unit with an
+# unhelpful error instead of stopping at find_package with a clear one.
+#
+# What actually sets the floor:
+#   QStyleHints::setColorScheme()   6.8  - the Light/Dark theme setting
+#   QPalette::Accent                6.6  - following the desktop's accent colour
+#   QStyleHints::colorScheme()      6.5
+find_package(Qt6 6.8 REQUIRED COMPONENTS Core Network DBus Gui Widgets Quick QuickControls2 Svg)
+qt_standard_project_setup(REQUIRES 6.8)
 
 add_compile_options(-Wall -Wextra -Wpedantic)
 
@@ -49,7 +57,7 @@ install(DIRECTORY data/icons/ DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/icons)
 set(CPACK_PACKAGE_NAME claudometer)
 set(CPACK_PACKAGE_VENDOR "Claudometer contributors")
 set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "${PROJECT_DESCRIPTION}")
-set(CPACK_PACKAGE_HOMEPAGE_URL "https://github.com/OWNER/claudometer")
+set(CPACK_PACKAGE_HOMEPAGE_URL "https://github.com/MarvinParanoid/Claudometer")
 set(CPACK_PACKAGE_CONTACT "Claudometer contributors")
 set(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_CURRENT_SOURCE_DIR}/LICENSE")
 set(CPACK_PACKAGE_FILE_NAME "claudometer-${PROJECT_VERSION}-linux-x86_64")
