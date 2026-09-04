@@ -60,12 +60,16 @@ endif()
 # --- installation -------------------------------------------------------------
 include(GNUInstallDirs)
 
-# BUNDLE is what an app bundle installs as, and is ignored elsewhere. Without
-# it a macOS install writes nothing at all.
-install(TARGETS claudedial
-    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
-    BUNDLE DESTINATION .
-)
+# Split rather than one call with both destinations. Given both, the bundle
+# landed in bin/ - and Qt's deploy tool runs `macdeployqt claudedial.app` from
+# the install prefix, so it looked in the prefix root, did not find it, and
+# failed after everything else had installed. The prefix root is the convention
+# Qt documents for a macOS bundle; being explicit is what makes it hold.
+if (APPLE)
+    install(TARGETS claudedial BUNDLE DESTINATION .)
+else()
+    install(TARGETS claudedial RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
+endif()
 
 # A .desktop entry and an XDG icon theme are meaningless anywhere else, and
 # installing them would only make a Windows or macOS tree look wrong.

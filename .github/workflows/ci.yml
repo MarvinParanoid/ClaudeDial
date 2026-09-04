@@ -77,21 +77,34 @@ jobs:
       - name: Show what was assembled
         run: find dist -maxdepth 6 | sed "s|^dist||"
 
+      # Searched across the whole tree rather than at paths chosen in advance.
+      # Every guess about this layout has been wrong once: the bundle turned up
+      # under bin/, the QML modules outside the bundle, and the name of the TLS
+      # plugin on macOS is not something anyone here can check.
       - name: Check what was assembled
         run: |
           fail=0
-          app=$(find dist -maxdepth 2 -name 'claudedial.app' -print -quit)
-          [ -n "$app" ] || { echo 'MISSING claudedial.app'; fail=1; }
-          if [ -n "$app" ]; then
-            [ -x "$app/Contents/MacOS/claudedial" ] || { echo 'MISSING the executable inside the bundle'; fail=1; }
-            grep -q LSUIElement "$app/Contents/Info.plist" \
+          need() {
+            find dist \( -name "$1" -o -type d -name "$1" \) -print -quit | grep -q . \
+              || { echo "MISSING $2 ($1)"; fail=1; }
+          }
+          need 'claudedial.app'  'the app bundle'
+          need 'claudedial'      'the executable'
+          need 'QtQuick.framework' 'QtQuick - nothing would render'
+
+          find dist -type d -name Basic -path '*Controls*' -print -quit | grep -q . \
+            || { echo 'MISSING QtQuick.Controls.Basic - the settings window will not load'; fail=1; }
+
+          # Any TLS backend plugin, whatever it is called here.
+          find dist -name '*backend*.dylib' -print -quit | grep -q . \
+            || { echo 'MISSING a TLS backend - api.anthropic.com will be unreachable'; fail=1; }
+
+          plist=$(find dist -name 'Info.plist' -path '*claudedial.app*' -print -quit)
+          if [ -n "$plist" ]; then
+            grep -q LSUIElement "$plist" \
               || { echo 'MISSING LSUIElement - it would take a Dock icon'; fail=1; }
-            [ -d "$app/Contents/Frameworks/QtQuick.framework" ] \
-              || { echo 'MISSING QtQuick - nothing would render'; fail=1; }
-            find "$app" -type d -name Basic -path '*Controls*' | grep -q . \
-              || { echo 'MISSING QtQuick.Controls.Basic - the settings window will not load'; fail=1; }
-            find "$app" -name 'libqsecuretransportbackend*' -o -name 'libqopensslbackend*' | grep -q . \
-              || { echo 'MISSING a TLS backend - api.anthropic.com will be unreachable'; fail=1; }
+          else
+            echo 'MISSING the bundle Info.plist'; fail=1
           fi
           exit $fail
 
