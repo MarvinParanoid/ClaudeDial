@@ -380,13 +380,38 @@ rule:
 for_window [class="claudedial" title="ClaudeDial"] floating enable
 ```
 
-**The 15x15 icon has no padding to reclaim.** The report suspected internal
-padding; measured, the ink already spans the full pixmap width at every size:
-at 15 px it is 15x12 with margins L0 R0 T0 B3. The three rows at the bottom are
-the dial's own opening, not spare room. Rendering the mark larger would mean
-changing its proportions, which are frozen. What *would* help a panel asking
-for an unusual size is a scalable icon engine instead of six baked pixmaps,
-since 15 is not among them and Qt scales 16 down to reach it. Not done.
+**The 15x15 icon has a level of detail now.** The first measurement was right
+— there is no outer padding to reclaim, the ink already spans the full pixmap
+width at every size. What was actually wrong is that the *design* does not
+survive the pixels: a number that has to fit inside a 240-degree arc ends up at
+a fraction of the box, reported from GNOME as "an icon inside an icon" and from
+i3 as the arc turning to grey noise.
+
+Enlarging the digits inside the arc was tried and is worse, not better: at 15 px
+the two collide and both go muddy. Rendered side by side at 15 px, magnified
+without interpolation, the only variant that reads is the one that gives up the
+dial: the number at 0.86 of the box with a two-pixel usage bar beneath it,
+pixel-aligned and unantialiased. For the gauge style, which has no number
+competing for the space, the answer is the opposite — keep the dial and make
+the stroke heavier, 0.55 against 0.32, because weight is what survives few
+pixels. A one-pixel arc with antialiasing off was also tried, and turns visibly
+polygonal.
+
+So below 17 px both styles draw something simpler, and that is chosen **by the
+size of the pixmap, never by the desktop**. Which needs one caveat about the
+protocols: a StatusNotifierItem host is never asked what size it wants. We
+publish every size in `kSizes` — verified on the bus: 16, 22, 24, 32, 48, 64,
+now with 15 added for i3bar's exact request — and the host picks one and scales
+it as it likes. Baking the simpler mark into the small entries is therefore the
+only way to reach a host with a small panel at all, GNOME's included.
+
+Plasma is untouched, and by proof rather than by inspection: rendering both
+styles at 22, 24, 32, 48 and 64 hashes byte-for-byte identically before and
+after the change.
+
+*Superseded, kept because the measurement stands:* the ink already spans the
+full pixmap width at every size — 15x12 with margins L0 R0 T0 B3 at 15 px —
+and the gap at the bottom is the dial's own opening.
 
 **Packaging, now documented:** the AppImage needs FUSE on the host unless run
 with `--appimage-extract-and-run`, and the tarball is an install tree that

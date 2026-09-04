@@ -167,7 +167,7 @@ same care.
 | --- | --- | --- |
 | **KDE Plasma / Wayland** | primary | Polished and tested. Appearance is settled here, and this is the desktop a visual decision is made on. |
 | **GNOME / Wayland** + [AppIndicator][appind] | supported | Must work, without bugs, and look reasonable. Verified: tray, popup, notifications. A left click opens the menu, so use **Show usage** or double-click, and AppIndicator has no tooltips at all. |
-| **i3 / X11** with a tray | supported, best effort | Tray, popup, settings and CLI must work. Cosmetic compromises are accepted: i3bar asks for a 15x15 icon, and it will not look as good as it does at 22 px. Verified on Debian 13. |
+| **i3 / X11** with a tray | supported, best effort | Tray, popup, settings and CLI must work. i3bar asks for a 15x15 icon, where the mark switches to its small-size form - legible rather than faithful. Verified on Debian 13. |
 | Xfce, Cinnamon, MATE, LXQt, COSMIC | expected to work | Same StatusNotifierItem path as Plasma. Nobody has run it; the protocol says it should. |
 | **No tray at all** - Sway, Hyprland, a bare session | `claudedial --json` | Not a fallback but the interface for that user. Stable, and free while the tray runs. |
 | Windows, macOS | not attempted | Qt supports them. The credential store and autostart would both need real work first. |
@@ -241,6 +241,12 @@ that file is ClaudeDial's own bookkeeping, not settings.
 The arc is the same in both and fills with usage either way, so they are two
 styles of one dial rather than two icons. The popup header always shows the
 needle, as the constant logotype.
+
+**Below 17 px the mark changes shape**, because the design does not survive the
+pixels: Percentage becomes the number at nearly full height with a thin usage
+bar under it, and Gauge keeps the dial with a heavier stroke. Panels that ask
+for a small icon - i3bar asks for 15 - get a legible reading rather than a
+faithful miniature. Plasma asks for 22 or 24 and is unaffected.
 
 **Tray icon** sets how light or dark the icon is drawn while usage is below the
 warning threshold. **Auto** reads the panel's colour where Plasma declares one -

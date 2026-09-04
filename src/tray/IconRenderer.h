@@ -49,6 +49,10 @@ private:
                                               const Options& options);
     static void paintNumberInArc(QPainter& painter, int size, double percentage,
                                  const Options& options);
+    /// The small-size variant: the number at nearly full height with a usage
+    /// bar, because the dial does not survive 15 px with a number inside it.
+    static void paintSmallNumber(QPainter& painter, int size, double percentage,
+                                 const Options& options);
 };
 
 } // namespace claudedial::tray
