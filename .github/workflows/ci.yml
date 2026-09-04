@@ -75,7 +75,10 @@ jobs:
       # job: Actions logs need admin rights to read, so a failure would
       # otherwise be diagnosed by guesswork.
       - name: Show what was assembled
-        run: find dist -maxdepth 6 | sed "s|^dist||"
+        run: |
+          find dist -maxdepth 6 | sed "s|^dist||"
+          echo '--- the bundle Info.plist, which decides the Dock icon ---'
+          cat "$(find dist -name Info.plist -path '*claudedial.app/Contents/Info.plist' -print -quit)" || true
 
       # Searched across the whole tree rather than at paths chosen in advance.
       # Every guess about this layout has been wrong once: the bundle turned up

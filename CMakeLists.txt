@@ -60,26 +60,6 @@ endif()
 # --- installation -------------------------------------------------------------
 include(GNUInstallDirs)
 
-# Before the install rules, and that ordering is the whole point: install(TARGETS)
-# decides which kind of artifact it is looking at when it is called. With
-# MACOSX_BUNDLE set afterwards, the target counted as RUNTIME, BUNDLE DESTINATION
-# was ignored, and the bundle went to the default bin/ - where Qt's deploy tool,
-# which runs `macdeployqt claudedial.app` from the install prefix, could not find
-# it. Configure the target, then install it.
-#
-# A menu-bar utility, not a windowed application: LSUIElement in our own
-# Info.plist is what keeps it out of the Dock.
-if (APPLE)
-    set_target_properties(claudedial PROPERTIES
-        MACOSX_BUNDLE TRUE
-        MACOSX_BUNDLE_INFO_PLIST "${CMAKE_CURRENT_SOURCE_DIR}/data/Info.plist.in"
-        MACOSX_BUNDLE_GUI_IDENTIFIER "io.github.marvinparanoid.claudedial"
-        MACOSX_BUNDLE_BUNDLE_NAME "ClaudeDial"
-        MACOSX_BUNDLE_SHORT_VERSION_STRING "${PROJECT_VERSION}"
-        MACOSX_BUNDLE_BUNDLE_VERSION "${PROJECT_VERSION}"
-    )
-endif()
-
 # The prefix root is the convention Qt documents for a macOS bundle.
 if (APPLE)
     install(TARGETS claudedial BUNDLE DESTINATION .)

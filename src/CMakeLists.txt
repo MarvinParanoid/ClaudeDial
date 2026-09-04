@@ -32,6 +32,25 @@ qt_add_executable(claudedial
     ui/UsageViewModel.h
 )
 
+# Set here, next to the target, and not in the top-level file after
+# add_subdirectory: Qt finalises the target at the end of this directory, and a
+# bundle property set later was ignored - the app got Qt's default Info.plist,
+# without the LSUIElement that keeps a menu-bar utility out of the Dock.
+#
+# MACOSX_BUNDLE itself also has to be set before install(TARGETS) is called, or
+# the target counts as RUNTIME and the bundle lands in bin/ where Qt's deploy
+# tool cannot find it.
+if (APPLE)
+    set_target_properties(claudedial PROPERTIES
+        MACOSX_BUNDLE TRUE
+        MACOSX_BUNDLE_INFO_PLIST "${CMAKE_CURRENT_SOURCE_DIR}/../data/Info.plist.in"
+        MACOSX_BUNDLE_GUI_IDENTIFIER "io.github.marvinparanoid.claudedial"
+        MACOSX_BUNDLE_BUNDLE_NAME "ClaudeDial"
+        MACOSX_BUNDLE_SHORT_VERSION_STRING "${PROJECT_VERSION}"
+        MACOSX_BUNDLE_BUNDLE_VERSION "${PROJECT_VERSION}"
+    )
+endif()
+
 # Plain Qt resources rather than a QML module: this is one small app with five
 # QML files, and the module machinery would only add moving parts.
 qt_add_resources(claudedial "qml"
