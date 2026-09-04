@@ -86,6 +86,17 @@ QString resetFor(PeriodKind kind, const UsagePeriod& period, const QDateTime& no
                                         : resetAbsolute(*period.resetAt, now);
 }
 
+QString pace(PeriodKind kind, const UsagePeriod& period, const QDateTime& now)
+{
+    const auto through = windowProgress(kind, period, now);
+    if (!through)
+        return {};
+
+    return QCoreApplication::translate("format", "Usage %1% · window %2%")
+        .arg(qRound(period.percentage))
+        .arg(qRound(*through));
+}
+
 QString updatedAgo(const QDateTime& updatedAt, const QDateTime& now)
 {
     if (!updatedAt.isValid())
@@ -110,9 +121,12 @@ QString tooltip(const UsageState& state, const QDateTime& now)
         if (!period)
             return;
         const int percent = qRound(period->percentage);
-        const QString reset = resetFor(kind, *period, now);
-        lines << (reset.isEmpty() ? QStringLiteral("%1  %2%").arg(label).arg(percent)
-                                  : QStringLiteral("%1  %2% · %3").arg(label).arg(percent).arg(reset));
+        QStringList bits { QStringLiteral("%1%").arg(percent) };
+        if (const auto through = windowProgress(kind, *period, now))
+            bits << QCoreApplication::translate("format", "%1% through").arg(qRound(*through));
+        if (const QString reset = resetFor(kind, *period, now); !reset.isEmpty())
+            bits << reset;
+        lines << QStringLiteral("%1  %2").arg(label, bits.join(QStringLiteral(" · ")));
     };
 
     line(PeriodKind::FiveHour, QStringLiteral("5h"));

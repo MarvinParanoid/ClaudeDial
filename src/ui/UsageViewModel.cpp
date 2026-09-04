@@ -80,6 +80,12 @@ QString UsageViewModel::fiveHourLevel() const
         core::levelFor(period->percentage, m_config->warningThreshold(), m_config->criticalThreshold()));
 }
 
+QString UsageViewModel::fiveHourPace() const
+{
+    const auto& period = m_service->state().fiveHour;
+    return period ? format::pace(PeriodKind::FiveHour, *period) : QString();
+}
+
 bool UsageViewModel::sevenDayAvailable() const
 {
     return m_service->state().sevenDay.has_value();

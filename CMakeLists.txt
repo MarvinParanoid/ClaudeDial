@@ -24,7 +24,7 @@ option(CLAUDEDIAL_BUILD_TESTS "Build unit tests" ON)
 #   QStyleHints::setColorScheme()   6.8  - the Light/Dark theme setting
 #   QPalette::Accent                6.6  - following the desktop's accent colour
 #   QStyleHints::colorScheme()      6.5
-find_package(Qt6 6.8 REQUIRED COMPONENTS Core Network DBus Gui Widgets Quick QuickControls2 Svg)
+find_package(Qt6 6.8 REQUIRED COMPONENTS Core Network DBus Gui Widgets Quick QuickControls2)
 qt_standard_project_setup(REQUIRES 6.8)
 
 add_compile_options(-Wall -Wextra -Wpedantic)

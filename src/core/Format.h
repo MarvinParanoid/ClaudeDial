@@ -29,6 +29,19 @@ QString resetFor(PeriodKind kind, const UsagePeriod& period,
 QString resetSentence(PeriodKind kind, const UsagePeriod& period,
                       const QDateTime& now = QDateTime::currentDateTimeUtc());
 
+/// "Usage 63% · window 60%", or empty when the window position is unknown.
+///
+/// Deliberately two bare numbers with no interpretation. A percentage alone
+/// answers "how much is spent" but not "is that a lot": 63% with four hours to
+/// go is heavy, 63% with forty minutes left is fine. Putting the two side by
+/// side lets the reader see 63 against 60 and draw their own conclusion, which
+/// is as far as ClaudeDial goes - no pace multiplier, no projection, no verdict.
+///
+/// Experimental. If it turns out nobody's eye ever catches this line, it should
+/// go; it is one line and one function, deliberately easy to remove.
+QString pace(PeriodKind kind, const UsagePeriod& period,
+             const QDateTime& now = QDateTime::currentDateTimeUtc());
+
 /// "just now", "2 minutes ago", "1 hour ago".
 QString updatedAgo(const QDateTime& updatedAt, const QDateTime& now = QDateTime::currentDateTimeUtc());
 

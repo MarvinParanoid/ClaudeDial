@@ -209,6 +209,17 @@ needle, as the constant logotype.
 When the data is stale the whole mark fades, so a glance at the panel tells you
 the number is the last one ClaudeDial managed to fetch.
 
+Under the 5-hour row there is one more line, `Usage 63% · window 60%`. A
+percentage alone says how much is spent but not whether that is a lot: 63% with
+four hours still to run is heavy, 63% with forty minutes left is fine. The two
+numbers sit side by side so you can compare them and draw your own conclusion -
+there is no pace multiplier, no projection and no verdict. The 7-day window does
+not get this: consumption across days is naturally uneven, so "40% through the
+week" would say nothing useful.
+
+That line is experimental. If nobody's eye ever catches it, it will go. (The
+popup screenshot above predates it.)
+
 Colour has three separate jobs:
 
 | Role | Meaning |

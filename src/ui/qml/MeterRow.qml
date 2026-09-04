@@ -8,6 +8,7 @@ Item {
     property alias label: labelText.text
     property int percentage: 0
     property string reset: ""
+    property string pace: ""
     property string level: "normal"
     property Theme theme
 
@@ -71,6 +72,18 @@ Item {
                 text: root.reset
                 visible: root.reset !== ""
                 color: root.theme.subtext
+                font.pixelSize: 11
+            }
+
+            // Experimental, and only the five-hour row supplies it. Two bare
+            // numbers side by side so the reader can compare them; quieter than
+            // the reset line above, because it is the more speculative of the
+            // two facts.
+            Text {
+                text: root.pace
+                visible: root.pace !== ""
+                color: root.theme.subtext
+                opacity: 0.75
                 font.pixelSize: 11
             }
         }

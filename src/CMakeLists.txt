@@ -51,8 +51,12 @@ qt_add_resources(claudedial "qml"
 )
 
 # The application icon is one SVG, installed into the icon theme and embedded
-# here so a build tree looks right too. Qt6::Svg is what rasterises it; the tray
-# marks are drawn with QPainter and need nothing.
+# here so a build tree looks right too.
+#
+# Note what is *not* here: Qt6::Svg. Nothing calls QtSvg's API - QIcon
+# rasterises the file through Qt's SVG *image-format plugin*, which is loaded at
+# run time. So the qt6-svg package stays a dependency while the link line does
+# not mention it, and listing it here only misled anyone reading this file.
 qt_add_resources(claudedial "appicon"
     PREFIX "/icons"
     BASE "../data/icons/hicolor/scalable/apps"
@@ -62,7 +66,6 @@ qt_add_resources(claudedial "appicon"
 target_link_libraries(claudedial PRIVATE
     claudedial_core
     Qt6::DBus
-    Qt6::Svg
     Qt6::Gui
     Qt6::Quick
     Qt6::QuickControls2

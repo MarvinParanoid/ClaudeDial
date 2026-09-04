@@ -129,6 +129,7 @@ Rectangle {
             label: qsTr("5-hour limit")
             percentage: usage.fiveHourPercent
             reset: usage.fiveHourReset
+            pace: usage.fiveHourPace
             level: usage.fiveHourLevel
         }
 

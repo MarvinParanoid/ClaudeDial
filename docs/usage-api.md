@@ -503,8 +503,23 @@ an acceptable trade for never being able to log the user out.
 - **Quantisation.** Server sends floats (`6.0`), Desktop's cache stores integers. Round
   once, at the display layer.
 - **Per-token rate limiting.** Multiple monitors on the same machine share the bucket.
-- **`five_hour` is a rolling window.** `resets_at` moves as the window slides; it is not
-  a fixed schedule. Recompute "resets in …" from the timestamp, never cache the duration.
+- **`five_hour` has a *fixed* end, not a sliding one.** This document said the
+  opposite until it was measured: two readings 75 s apart reported the same
+  `resets_at` to within sub-second jitter, where a sliding window would have
+  moved it forward by 75 s. The window is a five-hour block whose boundary stays
+  put until it resets.
+
+  That matters, because it makes `resets_at − 5h` a usable window start, and so
+  makes "how far through the window are we" answerable — which is the second
+  number a bare percentage needs. ClaudeDial shows it for this window only.
+
+  The five-hour length is Claude Code's own figure (18000 seconds appears in its
+  code). It is still an assumption about an undocumented endpoint, so the
+  calculation is guarded: if a reset time ever lands outside the window, the
+  figure is withheld rather than shown wrong.
+
+  Recompute "resets in …" from the timestamp regardless, and never cache the
+  duration.
 - **`seven_day.resets_at` drifts between calls, by fractions of a second.**
   Observed: consecutive responses reporting the same weekly boundary as
   `03:59:59.6…` and `04:00:00.4…`. It is a rolling window too, so its reset moves

@@ -32,6 +32,7 @@ class UsageViewModel : public QObject
     Q_PROPERTY(int fiveHourPercent READ fiveHourPercent NOTIFY changed)
     Q_PROPERTY(QString fiveHourReset READ fiveHourReset NOTIFY changed)
     Q_PROPERTY(QString fiveHourLevel READ fiveHourLevel NOTIFY changed)
+    Q_PROPERTY(QString fiveHourPace READ fiveHourPace NOTIFY changed)
 
     Q_PROPERTY(bool sevenDayAvailable READ sevenDayAvailable NOTIFY changed)
     Q_PROPERTY(int sevenDayPercent READ sevenDayPercent NOTIFY changed)
@@ -51,6 +52,7 @@ public:
     [[nodiscard]] int fiveHourPercent() const;
     [[nodiscard]] QString fiveHourReset() const;
     [[nodiscard]] QString fiveHourLevel() const;
+    [[nodiscard]] QString fiveHourPace() const;
 
     [[nodiscard]] bool sevenDayAvailable() const;
     [[nodiscard]] int sevenDayPercent() const;

@@ -40,6 +40,8 @@ private Q_SLOTS:
     void formatsResetPerWindowKind();
     void roundsAbsoluteResetToNearestMinute();
     void buildsTooltip();
+    void measuresPositionWithinTheFiveHourWindow();
+    void refusesToGuessTheWindowWhenItCannotKnow();
     void formatsUpdatedAgoWithoutPluralPlaceholders();
     void capitalisesResetForItsOwnLine();
     void rampsLevelsMonotonically();
@@ -262,8 +264,59 @@ void CoreTest::buildsTooltip()
     const QStringList lines = format::tooltip(state, now).split(QLatin1Char('\n'));
     QCOMPARE(lines.size(), 3);
     QCOMPARE(lines.at(0), QStringLiteral("ClaudeDial"));
-    QCOMPARE(lines.at(1), QStringLiteral("5h  63% · resets in 1h 52m"));
+    // 1h52m left of a five-hour window puts us 63% through it - which the
+    // five-hour row reports and the seven-day row deliberately does not.
+    QCOMPARE(lines.at(1), QStringLiteral("5h  63% · 63% through · resets in 1h 52m"));
     QVERIFY(lines.at(2).startsWith(QStringLiteral("7d  41% · resets ")));
+    QVERIFY(!lines.at(2).contains(QStringLiteral("through")));
+}
+
+void CoreTest::measuresPositionWithinTheFiveHourWindow()
+{
+    // A percentage alone does not say whether it is a lot: 63% with four hours
+    // to go is heavy, 63% with forty minutes left is fine. This is the second
+    // number that makes the first mean something.
+    const QDateTime now(QDate(2026, 9, 4), QTime(12, 0, 0), QTimeZone::UTC);
+
+    const auto at = [&](int minutesUntilReset) {
+        UsagePeriod p;
+        p.percentage = 63;
+        p.resetAt = now.addSecs(minutesUntilReset * 60);
+        return p;
+    };
+
+    QCOMPARE(qRound(*windowProgress(PeriodKind::FiveHour, at(300), now)), 0);   // just started
+    QCOMPARE(qRound(*windowProgress(PeriodKind::FiveHour, at(120), now)), 60);
+    QCOMPARE(qRound(*windowProgress(PeriodKind::FiveHour, at(0), now)), 100);   // about to reset
+
+    QCOMPARE(format::pace(PeriodKind::FiveHour, at(120), now),
+             QStringLiteral("Usage 63% · window 60%"));
+}
+
+void CoreTest::refusesToGuessTheWindowWhenItCannotKnow()
+{
+    const QDateTime now(QDate(2026, 9, 4), QTime(12, 0, 0), QTimeZone::UTC);
+
+    UsagePeriod period;
+    period.percentage = 63;
+
+    // No reset time: nothing to measure against.
+    QVERIFY(!windowProgress(PeriodKind::FiveHour, period, now).has_value());
+
+    // The seven-day window never gets this. Consumption across days is
+    // naturally uneven, so "40% through the week" says nothing about whether
+    // 40% spent is a lot.
+    period.resetAt = now.addSecs(2 * 24 * 3600);
+    QVERIFY(!windowProgress(PeriodKind::SevenDay, period, now).has_value());
+    QVERIFY(format::pace(PeriodKind::SevenDay, period, now).isEmpty());
+
+    // The window length is an assumption about an undocumented endpoint. If a
+    // reset time ever lands outside it, this must go quiet rather than lie.
+    period.resetAt = now.addSecs(6 * 3600);
+    QVERIFY(!windowProgress(PeriodKind::FiveHour, period, now).has_value());
+    period.resetAt = now.addSecs(-3600);
+    QVERIFY(!windowProgress(PeriodKind::FiveHour, period, now).has_value());
+    QVERIFY(format::pace(PeriodKind::FiveHour, period, now).isEmpty());
 }
 
 void CoreTest::formatsUpdatedAgoWithoutPluralPlaceholders()
