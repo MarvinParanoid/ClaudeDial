@@ -120,6 +120,15 @@ Run `bin\claudedial.exe`. Qt sits beside it and nothing needs installing. The
 usual flags work from a terminal - the binary borrows the console it was
 launched from, since a GUI binary on Windows has none of its own.
 
+**The tray icon looks different here, and that is the design.** Windows asks
+for a 16-pixel icon in the notification area, and at that size the dial with a
+number inside it is not legible - so Percentage draws the number at nearly full
+height with a thin usage bar under it instead. Set **Tray style** to **Gauge**
+for the dial: with no number competing for the space it survives 16 px, drawn
+with a heavier stroke. On a display scaled above 100% Windows asks for a larger
+icon and Percentage returns to the dial on its own. The rule is the pixmap
+size, never the desktop.
+
 It reads the same credentials Claude Code writes, at
 `%USERPROFILE%\.claude\.credentials.json`. **If your Claude Code runs inside
 WSL, they are in the WSL filesystem instead** and a native build will not find
@@ -192,7 +201,7 @@ same care.
 | **i3 / X11** with a tray | supported, best effort | Tray, popup, settings and CLI must work. i3bar asks for a 15x15 icon, where the mark switches to its small-size form - legible rather than faithful. Verified on Debian 13. |
 | Xfce, Cinnamon, MATE, LXQt, COSMIC | expected to work | Same StatusNotifierItem path as Plasma. Nobody has run it; the protocol says it should. |
 | **No tray at all** - Sway, Hyprland, a bare session | `claudedial --json` | Not a fallback but the interface for that user. Stable, and free while the tray runs. |
-| **Windows** | builds, untried | Compiles and passes the tests in CI, and there is a zip. Nobody has run it on a real desktop yet, so treat it as personal-use scaffolding rather than a supported target. |
+| **Windows** | works, lightly tested | Run on a real desktop: the tray icon appears, the small-size mark renders, and the CLI works from a terminal. Notifications, autostart and reading real credentials have not been exercised there. Personal-use scaffolding rather than a supported target. |
 | macOS | not attempted | Qt supports it, but the token lives in the Keychain there, which is real work in the one place that must not be got wrong. |
 
 The operative rule, when two of those conflict: **Plasma is not made worse to

@@ -27,7 +27,7 @@ much care each one gets when a choice cannot serve them all.
 | i3 / X11 with a tray | supported, best effort — must work; cosmetic compromises accepted |
 | Xfce, Cinnamon, MATE, LXQt, COSMIC | expected to work; unverified |
 | No tray | the CLI is the interface, not a fallback |
-| Windows | builds and self-tests in CI; nobody has run it |
+| Windows | works, lightly tested; personal use |
 | macOS | not attempted — the token is in the Keychain there |
 
 ClaudeDial is made of exactly what Plasma is built around — a permanently
@@ -72,12 +72,26 @@ One Windows-specific wrinkle: Qt links this as a GUI binary, which there means
 no console at all, so `claudedial --json` from a terminal would print into
 nothing. It borrows the parent console when given any flag.
 
-**Nobody has run it on a real Windows desktop.** Compilation and the tests are
-checked in CI on every push — which is not the same thing, and is the reason
-this is a row of its own rather than a supported tier. Two things to look at
-first when someone does: whether the tray icon appears at all, and, if Claude
-Code is running inside WSL, that the credentials are then in the WSL filesystem
-where a native build will not find them.
+**Run on a real Windows desktop, and it works.** Confirmed there: the tray icon
+appears, the CLI prints to the terminal that launched it, and the small-size
+mark renders — Windows asks for a 16-pixel notification-area icon, which trips
+the same level of detail added for GNOME and i3, so Percentage shows the number
+with a bar rather than the dial. Selecting the Gauge style keeps the dial, which
+survives 16 px with no number inside it.
+
+Not exercised there: notifications, autostart, and reading real credentials.
+The last one has a trap worth repeating — if Claude Code runs inside WSL its
+credentials are in the WSL filesystem, where a native build will not find them.
+
+One unexplained symptom, kept because it is real: exiting prints
+`QObject::killTimer: Timers cannot be stopped from another thread`. It does not
+reproduce on Linux, on either the primary or the secondary-instance path, and
+diagnosing it needs a Windows machine — there is no cross compiler on any
+machine working on this. Harmless as far as anyone can tell, and it stays
+written down rather than guessed at.
+
+It is a row of its own rather than a supported tier because "works when tried
+once" is not the same as tested.
 
 ## Three tiers of guarantee
 
