@@ -13,6 +13,38 @@ tier above it being present.
 
 ---
 
+## Which desktops, and how far
+
+Two axes, and keeping them apart is what stops this document contradicting
+itself. The tiers below are about **features**: the CLI, then the tray, then the
+popup, and which of them may be missing. This table is about **desktops**: how
+much care each one gets when a choice cannot serve them all.
+
+| Desktop | Level |
+| --- | --- |
+| KDE Plasma / Wayland | primary — polished and tested, and where a visual decision is settled |
+| GNOME / Wayland + AppIndicator | supported — must work and look reasonable |
+| i3 / X11 with a tray | supported, best effort — must work; cosmetic compromises accepted |
+| Xfce, Cinnamon, MATE, LXQt, COSMIC | expected to work; unverified |
+| No tray | the CLI is the interface, not a fallback |
+| Windows, macOS | not attempted |
+
+ClaudeDial is made of exactly what Plasma is built around — a permanently
+visible tray icon, a small popup on click, settings, notifications, autostart —
+so that is where it is taken to the pixel. The rest is portability, not equal
+ambition.
+
+**The operative rule: Plasma is not made worse to make another desktop better.**
+Where one choice cannot serve both, Plasma gets the precise answer and the others
+get a safe one. That is not a preference, it decides code: the tray neutral
+reads the panel colour Plasma declares, and falls back to a grey that is merely
+never invisible everywhere else. Balancing that grey across all desktops was
+tried first, and it made Plasma worse for no one's benefit.
+
+Note what the rule does *not* license. GNOME reporting a false failure, or i3
+tiling a settings form into a column, are bugs at "supported" level and were
+fixed as such — the licence is for polish, not for defects.
+
 ## Three tiers of guarantee
 
 ### Tier 1 — the core, and the CLI. Guaranteed.

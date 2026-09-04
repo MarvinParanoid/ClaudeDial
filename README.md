@@ -156,21 +156,32 @@ nothing is running - so a Waybar `interval` costs nothing, and returns instantly
 
 ## Desktop support
 
+**ClaudeDial is a KDE Plasma application that works elsewhere.** Everything it
+is made of - a permanently visible tray icon, a small popup on click, settings,
+notifications, autostart - is what Plasma is built around, so that is where it
+is taken to the pixel. The rest is deliberate portability rather than equal
+ambition, and saying so is more useful than implying every desktop gets the
+same care.
 
-Developed on Arch with KDE Plasma on Wayland; built to work beyond it.
-
-| Desktop | Works via | Notes |
+| Desktop | Level | What that means |
 | --- | --- | --- |
-| KDE Plasma | tray icon, popup, tooltip | the desktop this was developed and tested on |
-| Xfce, Cinnamon, MATE, LXQt | tray icon, popup, tooltip | StatusNotifierItem; not yet verified by anyone |
-| GNOME | tray icon and menu | needs the [AppIndicator extension][appind]; a left click opens the menu, so use **Show usage** or double-click. No tooltips on AppIndicator |
-| Sway, Hyprland, i3 | `claudedial --json` | a text status bar needs no tray at all |
-| Windows, macOS | — | Qt supports them; nobody has tried |
+| **KDE Plasma / Wayland** | primary | Polished and tested. Appearance is settled here, and this is the desktop a visual decision is made on. |
+| **GNOME / Wayland** + [AppIndicator][appind] | supported | Must work, without bugs, and look reasonable. Verified: tray, popup, notifications. A left click opens the menu, so use **Show usage** or double-click, and AppIndicator has no tooltips at all. |
+| **i3 / X11** with a tray | supported, best effort | Tray, popup, settings and CLI must work. Cosmetic compromises are accepted: i3bar asks for a 15x15 icon, and it will not look as good as it does at 22 px. Verified on Debian 13. |
+| Xfce, Cinnamon, MATE, LXQt, COSMIC | expected to work | Same StatusNotifierItem path as Plasma. Nobody has run it; the protocol says it should. |
+| **No tray at all** - Sway, Hyprland, a bare session | `claudedial --json` | Not a fallback but the interface for that user. Stable, and free while the tray runs. |
+| Windows, macOS | not attempted | Qt supports them. The credential store and autostart would both need real work first. |
 
-Only the first row has been verified. The rest follows from the protocols
-involved, which is not the same thing — see
-[docs/platform-support.md](docs/platform-support.md) for what is guaranteed,
-what is attempted, and what ClaudeDial declines to do.
+The operative rule, when two of those conflict: **Plasma is not made worse to
+make another desktop better.** Where a choice cannot serve both, Plasma gets the
+precise answer and the others get one that is safe - which is exactly how the
+tray icon's colour works, since Plasma is the only desktop that writes down what
+its panel looks like.
+
+[docs/platform-support.md](docs/platform-support.md) is the long version: what
+is guaranteed, what is attempted, what is declined, and the measurements behind
+each. Note that the tiers there are about *features* - the CLI, then the tray,
+then the popup - which is a different axis from this table.
 
 [appind]: https://github.com/ubuntu/gnome-shell-extension-appindicator
 
@@ -186,8 +197,8 @@ Two known Wayland limitations that ClaudeDial cannot work around reliably:
   appears wherever the compositor decides - typically near the middle of the
   screen. ClaudeDial asks the panel where its icon is and anchors to it when it
   gets an answer, but StatusNotifierItem hosts generally do not report icon
-  geometry; Plasma does not. (The anchoring path is exercised only by a legacy
-  XEmbed tray on X11, and is untested.)
+  geometry; Plasma does not. (The anchoring path is reached on X11 with an
+  XEmbed tray - verified on i3, where the popup does open next to the icon.)
 
   **Drag the popup by its header** to move it - that goes through the compositor
   and works on Wayland. On Plasma you can make the position stick with a window
