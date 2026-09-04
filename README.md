@@ -308,11 +308,26 @@ On Arch: `pacman -S qt6-base qt6-declarative qt6-svg cmake ninja`.
 
 ## Development
 
-
-`CLAUDEDIAL_SIMULATE` reports a usage figure instead of asking the server:
+`--demo` runs the whole application on invented numbers:
 
 ```console
-$ CLAUDEDIAL_SIMULATE=99 claudedial          # tray, popup and notifications
+$ claudedial --demo            # tray, popup, settings, notifications
+$ claudedial --demo=96,41      # one or two percentages, five-hour first
+$ claudedial --demo --json
+```
+
+It makes no network request and reads no credentials, so it runs on a machine
+that has never seen Claude Code. That is what makes it the way to check a
+package on another distribution or desktop: install the `.deb`, the AppImage or
+the AUR build in a VM or container, run `claudedial --demo`, and you are
+looking at the real tray icon, the real popup and the real settings window
+without an account or a token anywhere near it.
+
+`CLAUDEDIAL_SIMULATE` is the same mechanism as an environment variable, which
+is occasionally handier:
+
+```console
+$ CLAUDEDIAL_SIMULATE=99 claudedial
 $ CLAUDEDIAL_SIMULATE=63,41 claudedial --json
 ```
 

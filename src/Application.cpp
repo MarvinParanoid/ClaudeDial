@@ -24,6 +24,7 @@
 #include <QQuickItem>
 #include <QQuickView>
 #include <QStyleHints>
+#include <QTextStream>
 #include <QTimer>
 
 namespace claudedial {
@@ -113,7 +114,36 @@ bool Application::initialize()
     m_tray->show();
     m_service->start();
 
+    verifyTrayVisible(0);
+
     return true;
+}
+
+void Application::verifyTrayVisible(int attempt)
+{
+    // A panel can register its host after we start, so give it time and one
+    // second chance before saying anything.
+    constexpr int kDelaysMs[] = {3000, 9000};
+    constexpr int kAttempts = 2;
+
+    if (attempt >= kAttempts) {
+        QTextStream err(stderr);
+        err << "claudedial: this desktop reports a system tray, but our icon did "
+               "not appear in one.\n"
+               "That happens when Qt's tray implementation and the panel "
+               "disagree - typically a\n"
+               "D-Bus platform theme with no StatusNotifierHost on the session "
+               "bus.\n"
+               "ClaudeDial keeps running, and `claudedial --json` still reports "
+               "usage from this\n"
+               "instance without spending an API request of its own.\n";
+        return;
+    }
+
+    QTimer::singleShot(kDelaysMs[attempt], this, [this, attempt] {
+        if (m_tray && !m_tray->hasVisibleIcon())
+            verifyTrayVisible(attempt + 1);
+    });
 }
 
 void Application::showPopup()

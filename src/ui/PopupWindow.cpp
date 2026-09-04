@@ -98,10 +98,11 @@ void PopupWindow::placeAndShow(const QRect& anchor)
     QPoint position;
 
     if (!anchor.isEmpty()) {
-        // Anchor to the icon. Unreachable on Linux with Qt 6, which has no
-        // xcb tray-icon class left and reports no geometry over SNI; kept
-        // for Windows and macOS, where geometry() is implemented. See
-        // docs/platform-support.md for the measurement.
+        // Anchor to the icon. Reached where Qt uses its XEmbed tray - an X11
+        // desktop whose platform theme is not D-Bus-based - and on Windows
+        // and macOS. Never on Plasma, which takes the SNI path on X11 as
+        // well as Wayland and reports no geometry at all. Measured; see
+        // docs/platform-support.md.
         position.setX(anchor.center().x() - popup.width() / 2);
         position.setY(anchor.center().y() < available.center().y()
                           ? anchor.bottom() + kMargin

@@ -30,6 +30,14 @@ public:
     /// StatusNotifierItem, and always the case on Wayland.
     [[nodiscard]] virtual QRect iconGeometry() const = 0;
 
+    /// Whether the icon actually reached a panel, asked after show().
+    ///
+    /// Part of the interface rather than of one backend because "the desktop
+    /// says it has a tray" and "our icon is on screen" turned out to be
+    /// different questions, and any future backend has to answer the second one
+    /// too.
+    [[nodiscard]] virtual bool hasVisibleIcon() const = 0;
+
 Q_SIGNALS:
     /// Primary activation: a left click on the icon. Toggles the popup.
     void activated();

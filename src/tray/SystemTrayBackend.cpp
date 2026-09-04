@@ -1,7 +1,12 @@
 #include "SystemTrayBackend.h"
 
 #include <QAction>
+#include <QCoreApplication>
+#include <QDBusConnection>
+#include <QDBusInterface>
+#include <QDBusReply>
 #include <QMenu>
+#include <QStringList>
 #include <QSystemTrayIcon>
 
 namespace claudedial::tray {
@@ -62,6 +67,47 @@ SystemTrayBackend::~SystemTrayBackend()
 bool SystemTrayBackend::isAvailable()
 {
     return QSystemTrayIcon::isSystemTrayAvailable();
+}
+
+bool SystemTrayBackend::hasVisibleIcon() const
+{
+    // The XEmbed path docks a real window into the panel, so any geometry at
+    // all means the icon is on screen.
+    if (!m_tray->geometry().isEmpty())
+        return true;
+
+    // Otherwise Qt should have registered a StatusNotifierItem for us. Match by
+    // process rather than by bus name: Qt registers the item on a connection of
+    // its own, so our default session bus name is not the one in the list.
+    QDBusConnection bus = QDBusConnection::sessionBus();
+    if (!bus.isConnected())
+        return false;
+
+    QDBusInterface watcher(QStringLiteral("org.kde.StatusNotifierWatcher"),
+                           QStringLiteral("/StatusNotifierWatcher"),
+                           QStringLiteral("org.kde.StatusNotifierWatcher"), bus);
+    if (!watcher.isValid())
+        return false;
+
+    const QStringList items = watcher.property("RegisteredStatusNotifierItems").toStringList();
+    if (items.isEmpty())
+        return false;
+
+    QDBusInterface daemon(QStringLiteral("org.freedesktop.DBus"),
+                          QStringLiteral("/org/freedesktop/DBus"),
+                          QStringLiteral("org.freedesktop.DBus"), bus);
+    const auto self = static_cast<uint>(QCoreApplication::applicationPid());
+    for (const QString& entry : items) {
+        // Entries are "<bus name>/<object path>".
+        const QString name = entry.left(entry.indexOf(QLatin1Char('/')));
+        if (name.isEmpty())
+            continue;
+        const QDBusReply<uint> owner =
+            daemon.call(QStringLiteral("GetConnectionUnixProcessID"), name);
+        if (owner.isValid() && owner.value() == self)
+            return true;
+    }
+    return false;
 }
 
 void SystemTrayBackend::setIcon(const QIcon& icon)

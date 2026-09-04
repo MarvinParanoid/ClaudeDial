@@ -66,6 +66,10 @@ protected:
 private:
     void updateTray();
     void applyTheme();
+
+    /// Says so on stderr when the icon never appeared, instead of running
+    /// invisibly and silently. Retried once, because a panel may register late.
+    void verifyTrayVisible(int attempt);
     void showSettings();
     void onThresholdCrossed(core::PeriodKind kind, int threshold, double percentage);
 

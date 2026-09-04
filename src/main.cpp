@@ -2,6 +2,7 @@
 #include "SingleInstance.h"
 #include "ui/GaugeItem.h"
 #include "cli/Cli.h"
+#include "core/UsageClient.h"
 
 #include <QApplication>
 #include <QQmlEngine>
@@ -19,16 +20,47 @@ void printUsage(QTextStream& out)
            "  claudedial            Run in the system tray\n"
            "  claudedial --once     Print current usage and exit\n"
            "  claudedial --json     Print current usage as JSON and exit\n"
+           "  claudedial --demo     Run on invented numbers, with no credentials\n"
            "  claudedial --help     Show this help\n"
            "  claudedial --version  Show the version\n\n"
            "The JSON output includes Waybar's text/tooltip/class keys, so a\n"
-           "custom module needs no wrapper script.\n";
+           "custom module needs no wrapper script.\n\n"
+           "--demo makes no network request and reads no credentials, which is\n"
+           "how to check packaging and appearance on a desktop that has never\n"
+           "run Claude Code. It takes optional percentages: --demo=96,41\n";
 }
 
 } // namespace
 
 int main(int argc, char** argv)
 {
+    // Demo mode is resolved first, so that it composes with every other flag:
+    // `--demo --json` has to print invented numbers too. It reuses the same
+    // environment variable the client already honours rather than threading a
+    // second switch through the core.
+    for (int i = 1; i < argc; ++i) {
+        if (std::strncmp(argv[i], "--demo", 6) != 0)
+            continue;
+        const char tail = argv[i][6];
+        if (tail == '\0')
+            qputenv("CLAUDEDIAL_SIMULATE", "62,41");
+        else if (tail == '=')
+            qputenv("CLAUDEDIAL_SIMULATE", argv[i] + 7);
+        else
+            continue;
+
+        // Refuse an unparseable --demo=... rather than silently falling through
+        // to a real request: someone asking for demo numbers has no intention
+        // of reaching the network, and may have no credentials at all.
+        if (!claudedial::core::UsageClient::isSimulating()) {
+            QTextStream err(stderr);
+            err << "claudedial: cannot read demo percentages from '" << argv[i]
+                << "'.\nExpected one or two numbers, five-hour first: "
+                   "--demo=96 or --demo=96,41\n";
+            return 2;
+        }
+    }
+
     // Flags are handled before any application object exists, because --json has
     // to work over SSH and from a status-bar startup script - that is, with no
     // display and no compositor.
