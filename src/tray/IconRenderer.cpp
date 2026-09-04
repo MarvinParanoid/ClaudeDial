@@ -17,16 +17,22 @@ namespace {
 /// stays crisp instead of being downscaled from one large pixmap.
 constexpr int kSizes[] = { 16, 22, 24, 32, 48, 64 };
 
-/// How much lighter the arc is drawn when it holds a number instead of a needle.
+/// The arc's stroke weight in the tray, for both styles.
 ///
-/// In the gauge style the arc *is* the reading, so it carries full weight. Here
-/// the number is the reading and the arc is context, so it steps back - and it
-/// has to. A block of two digits is a rectangle inscribed in the arc's circle,
-/// so the interior radius has to cover half its diagonal, and at full weight it
-/// does not: at 0.45 and even at 0.38, 88 and 99 still touch the arc walls in a
-/// real panel. The arc's outer silhouette is unchanged by this, only its weight,
-/// so the two styles remain one mark.
-constexpr double kNumberArcScale = 0.32;
+/// The number style forced the value. A block of two digits is a rectangle
+/// inscribed in the arc's circle, so the interior radius has to cover half its
+/// diagonal, and at heavier weights it does not: at 0.45 and even at 0.38, 88
+/// and 99 still touch the arc walls in a real panel.
+///
+/// The gauge style then adopted it, which is the point. Drawn at full weight it
+/// read as a donut or a progress widget rather than as the same dial with a
+/// different middle - the colour mass dominated the needle from 75% up, and the
+/// two styles looked like two families of icon instead of one mark read two
+/// ways. Identical geometry, and only the middle differs: a needle, or the
+/// number. Checked at a real 16 and 22 px, magnified without interpolation
+/// rather than judged from a scaled-up mock-up; at 16 px the stroke floor makes
+/// the alternatives indistinguishable anyway.
+constexpr double kTrayArcScale = 0.32;
 
 /// Nudge the digits down a little. Below the centre the arc simply is not there
 /// - the gap is at the bottom - so this is clearance bought for free, and it is
@@ -75,7 +81,7 @@ void IconRenderer::paintNumberInArc(QPainter& painter, int size, double percenta
 
     // The same arc as the gauge style, drawn by the same function, with its
     // middle left for us.
-    gauge::paint(painter, bounds, percentage, { options.foreground, value }, kNumberArcScale,
+    gauge::paint(painter, bounds, percentage, { options.foreground, value }, kTrayArcScale,
                  gauge::Center::Empty);
 
     const QString text = percentage >= 100.0 ? QString::fromLatin1(kLimitGlyph)
@@ -112,7 +118,7 @@ QPixmap IconRenderer::renderPixmap(int size, std::optional<double> percentage,
         options.foreground,
         percentage ? colorFor(*percentage, options) : options.foreground,
     };
-    gauge::paint(painter, QRectF(0, 0, size, size), percentage, colors);
+    gauge::paint(painter, QRectF(0, 0, size, size), percentage, colors, kTrayArcScale);
 
     return pixmap;
 }
