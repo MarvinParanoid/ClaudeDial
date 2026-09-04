@@ -4,7 +4,7 @@
 #include <QLocale>
 #include <QStringList>
 
-namespace claudometer::core::format {
+namespace claudedial::core::format {
 namespace {
 
 QTime truncateToMinute(QTime time)
@@ -103,7 +103,7 @@ QString updatedAgo(const QDateTime& updatedAt, const QDateTime& now)
 
 QString tooltip(const UsageState& state, const QDateTime& now)
 {
-    QStringList lines { QStringLiteral("Claudometer") };
+    QStringList lines { QStringLiteral("ClaudeDial") };
 
     const auto line = [&](PeriodKind kind, const QString& label) {
         const auto& period = state.period(kind);
@@ -126,4 +126,4 @@ QString tooltip(const UsageState& state, const QDateTime& now)
     return lines.join(QLatin1Char('\n'));
 }
 
-} // namespace claudometer::core::format
+} // namespace claudedial::core::format

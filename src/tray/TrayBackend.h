@@ -5,7 +5,7 @@
 #include <QRect>
 #include <QString>
 
-namespace claudometer::tray {
+namespace claudedial::tray {
 
 /// What the rest of the application needs from a tray, and nothing more.
 ///
@@ -51,4 +51,4 @@ Q_SIGNALS:
     void quitRequested();
 };
 
-} // namespace claudometer::tray
+} // namespace claudedial::tray

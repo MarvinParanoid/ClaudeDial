@@ -1,10 +1,10 @@
-# Maintainer: Claudometer contributors
-pkgname=claudometer
+# Maintainer: ClaudeDial contributors
+pkgname=claudedial
 pkgver=0.1.0
 pkgrel=1
 pkgdesc="Claude Code usage at a glance - minimal system tray indicator"
 arch=('x86_64')
-url="https://github.com/MarvinParanoid/Claudometer"
+url="https://github.com/MarvinParanoid/ClaudeDial"
 license=('MIT')
 depends=('qt6-base' 'qt6-declarative' 'qt6-svg')
 makedepends=('cmake' 'ninja')
@@ -15,7 +15,7 @@ build() {
   cmake -S "$pkgname-$pkgver" -B build -G Ninja \
     -DCMAKE_BUILD_TYPE=Release \
     -DCMAKE_INSTALL_PREFIX=/usr \
-    -DCLAUDOMETER_BUILD_TESTS=OFF
+    -DCLAUDEDIAL_BUILD_TESTS=OFF
   cmake --build build
 }
 

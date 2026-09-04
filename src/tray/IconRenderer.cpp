@@ -10,7 +10,7 @@
 
 #include <algorithm>
 
-namespace claudometer::tray {
+namespace claudedial::tray {
 namespace {
 
 /// Sizes a Linux panel actually asks for. Each is rendered directly so the mark
@@ -125,4 +125,4 @@ QIcon IconRenderer::render(std::optional<double> percentage, const Options& opti
     return icon;
 }
 
-} // namespace claudometer::tray
+} // namespace claudedial::tray

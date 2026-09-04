@@ -3,7 +3,7 @@
 #include <QColor>
 #include <QObject>
 
-namespace claudometer::ui {
+namespace claudedial::ui {
 
 /// The one palette QML reads.
 ///
@@ -18,7 +18,7 @@ class Colors : public QObject
 
     Q_PROPERTY(bool dark READ dark NOTIFY changed)
 
-    /// Claudometer's identity. The header mark, and nothing else.
+    /// ClaudeDial's identity. The header mark, and nothing else.
     Q_PROPERTY(QColor brand READ brand NOTIFY changed)
 
     /// The user's own desktop accent, for things they interact with.
@@ -53,4 +53,4 @@ private:
     QColor m_accent;
 };
 
-} // namespace claudometer::ui
+} // namespace claudedial::ui

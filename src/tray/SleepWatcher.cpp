@@ -2,7 +2,7 @@
 
 #include <QDBusConnection>
 
-namespace claudometer::tray {
+namespace claudedial::tray {
 
 SleepWatcher::SleepWatcher(QObject* parent)
     : QObject(parent)
@@ -23,4 +23,4 @@ void SleepWatcher::onPrepareForSleep(bool aboutToSleep)
         Q_EMIT resumed();
 }
 
-} // namespace claudometer::tray
+} // namespace claudedial::tray

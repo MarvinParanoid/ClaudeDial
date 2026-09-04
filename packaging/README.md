@@ -7,15 +7,15 @@ something worth releasing.
 What is here:
 
 - `PKGBUILD` - Arch source package, built from a release tarball.
-- `PKGBUILD-bin` - the `claudometer-bin` AUR package, which unpacks the
+- `PKGBUILD-bin` - the `claudedial-bin` AUR package, which unpacks the
   prebuilt binary tarball from a GitHub release instead of compiling.
 
 What `cmake --install` lays down, which is what every format needs to package:
 
 ```
-/usr/bin/claudometer
-/usr/share/applications/claudometer.desktop
-/usr/share/icons/hicolor/scalable/apps/claudometer.svg
+/usr/bin/claudedial
+/usr/share/applications/claudedial.desktop
+/usr/share/icons/hicolor/scalable/apps/claudedial.svg
 ```
 
 Runtime dependencies are only `qt6-base` and `qt6-declarative`. There is no
@@ -45,8 +45,8 @@ chosen so the runner's glibc 2.35 becomes the floor rather than 24.04's 2.39 -
 and attaches two artefacts:
 
 ```
-claudometer-<version>-linux-x86_64.tar.gz   links the system Qt; what claudometer-bin consumes
-Claudometer-x86_64.AppImage                 self-contained
+claudedial-<version>-linux-x86_64.tar.gz   links the system Qt; what claudedial-bin consumes
+ClaudeDial-x86_64.AppImage                 self-contained
 ```
 
 ```console
@@ -71,9 +71,9 @@ CI and not on a developer machine.
 four files. What remains is per-release:
 
 ```console
-$ git clone ssh://aur@aur.archlinux.org/claudometer-bin.git
-$ cp packaging/PKGBUILD-bin claudometer-bin/PKGBUILD
-$ cd claudometer-bin
+$ git clone ssh://aur@aur.archlinux.org/claudedial-bin.git
+$ cp packaging/PKGBUILD-bin claudedial-bin/PKGBUILD
+$ cd claudedial-bin
 $ updpkgsums                          # replaces the SKIP checksums
 $ makepkg --printsrcinfo > .SRCINFO   # the AUR requires this, and requires it current
 $ git add PKGBUILD .SRCINFO && git commit && git push
@@ -89,7 +89,7 @@ be published to the AUR.
   platform plugins and the QtQuick runtime bundled. The QML is already inside
   the binary as a Qt resource, and the icons are drawn rather than loaded, so
   no `qt6-svg`.
-- **Flatpak** - possible, but note that a sandboxed Claudometer needs a
+- **Flatpak** - possible, but note that a sandboxed ClaudeDial needs a
   filesystem override to read `~/.claude/.credentials.json`, which is worth
   thinking about carefully before shipping.
 - **GitHub Actions release job** - build on the oldest glibc that is practical,

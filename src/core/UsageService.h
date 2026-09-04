@@ -12,7 +12,7 @@
 
 class QTimer;
 
-namespace claudometer::core {
+namespace claudedial::core {
 
 class Config;
 
@@ -47,10 +47,10 @@ public:
 Q_SIGNALS:
     void stateChanged();
     void fetchingChanged();
-    void fetchFailed(claudometer::core::FetchError error);
+    void fetchFailed(claudedial::core::FetchError error);
 
     /// A usage threshold was crossed for the first time in this window.
-    void thresholdCrossed(claudometer::core::PeriodKind kind, int threshold, double percentage);
+    void thresholdCrossed(claudedial::core::PeriodKind kind, int threshold, double percentage);
 
 private:
     void scheduleNext();
@@ -84,4 +84,4 @@ private:
     QDateTime m_lastSevenDayReset;
 };
 
-} // namespace claudometer::core
+} // namespace claudedial::core

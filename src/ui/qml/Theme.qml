@@ -5,7 +5,7 @@ import QtQuick
 // accent is the user's own Plasma accent rather than one we invented.
 //
 // Three roles, kept apart:
-//   brand   - Claudometer's identity: the header mark, and nothing else.
+//   brand   - ClaudeDial's identity: the header mark, and nothing else.
 //   accent  - interaction: switches, the selected segment, the busy spinner.
 //   usage*  - how much of a limit is spent.
 QtObject {

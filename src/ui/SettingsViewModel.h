@@ -2,11 +2,11 @@
 
 #include <QObject>
 
-namespace claudometer::core {
+namespace claudedial::core {
 class Config;
 }
 
-namespace claudometer::ui {
+namespace claudedial::ui {
 
 /// Settings, as QML sees them. A thin pass-through to core::Config so QML never
 /// touches QSettings directly.
@@ -56,4 +56,4 @@ private:
     core::Config* m_config;
 };
 
-} // namespace claudometer::ui
+} // namespace claudedial::ui

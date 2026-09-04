@@ -9,7 +9,7 @@
 #include <QDBusReply>
 #include <QVariantMap>
 
-namespace claudometer::tray {
+namespace claudedial::tray {
 namespace {
 
 constexpr auto kService = "org.freedesktop.Notifications";
@@ -28,11 +28,11 @@ struct HintImage {
 };
 
 } // namespace
-} // namespace claudometer::tray
+} // namespace claudedial::tray
 
-Q_DECLARE_METATYPE(claudometer::tray::HintImage)
+Q_DECLARE_METATYPE(claudedial::tray::HintImage)
 
-namespace claudometer::tray {
+namespace claudedial::tray {
 namespace {
 
 QDBusArgument& operator<<(QDBusArgument& argument, const HintImage& image)
@@ -121,7 +121,7 @@ void Notifier::send(core::PeriodKind kind, const QString& title, const QString& 
     QVariantMap hints;
     hints[QStringLiteral("urgency")] = critical ? uchar(2) : uchar(1);
     // Lets the shell group our notifications under the desktop entry.
-    hints[QStringLiteral("desktop-entry")] = QStringLiteral("claudometer");
+    hints[QStringLiteral("desktop-entry")] = QStringLiteral("claudedial");
     if (!icon.isNull())
         hints[QStringLiteral("image-data")] = QVariant::fromValue(toHintImage(icon));
 
@@ -129,7 +129,7 @@ void Notifier::send(core::PeriodKind kind, const QString& title, const QString& 
 
     const QDBusReply<quint32> reply = interface.call(
         QStringLiteral("Notify"),
-        QStringLiteral("Claudometer"),
+        QStringLiteral("ClaudeDial"),
         id, // replaces_id: update this window's banner rather than stacking
         QString(), // no icon name: the pixels above are the icon
         title,
@@ -142,4 +142,4 @@ void Notifier::send(core::PeriodKind kind, const QString& title, const QString& 
         id = reply.value();
 }
 
-} // namespace claudometer::tray
+} // namespace claudedial::tray

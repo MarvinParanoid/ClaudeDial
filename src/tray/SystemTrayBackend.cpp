@@ -4,7 +4,7 @@
 #include <QMenu>
 #include <QSystemTrayIcon>
 
-namespace claudometer::tray {
+namespace claudedial::tray {
 
 SystemTrayBackend::SystemTrayBackend(QObject* parent)
     : TrayBackend(parent)
@@ -84,4 +84,4 @@ QRect SystemTrayBackend::iconGeometry() const
     return m_tray->geometry();
 }
 
-} // namespace claudometer::tray
+} // namespace claudedial::tray

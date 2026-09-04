@@ -2,7 +2,7 @@
 
 #include <QIcon>
 
-namespace claudometer {
+namespace claudedial {
 
 /// The application's identity mark, as distinct from the tray indicator.
 ///
@@ -14,7 +14,7 @@ namespace claudometer {
 ///
 /// Resolution order:
 ///   1. the installed freedesktop icon, by theme name, which is what the
-///      desktop itself uses for `Icon=claudometer` in the .desktop entry - and
+///      desktop itself uses for `Icon=claudedial` in the .desktop entry - and
 ///      on Wayland it is how the compositor finds a window's icon at all;
 ///   2. the same artwork bundled in the binary, so running from a build tree
 ///      looks right too.
@@ -22,4 +22,4 @@ namespace claudometer {
 /// One SVG serves both, so there is no second copy of the drawing to drift.
 [[nodiscard]] QIcon applicationIcon();
 
-} // namespace claudometer
+} // namespace claudedial

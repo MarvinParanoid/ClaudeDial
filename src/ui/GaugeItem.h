@@ -3,7 +3,7 @@
 #include <QColor>
 #include <QQuickPaintedItem>
 
-namespace claudometer::ui {
+namespace claudedial::ui {
 
 /// The popup header's gauge.
 ///
@@ -64,4 +64,4 @@ private:
     bool m_identity = false;
 };
 
-} // namespace claudometer::ui
+} // namespace claudedial::ui

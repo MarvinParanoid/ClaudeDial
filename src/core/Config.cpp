@@ -8,7 +8,7 @@
 
 #include <algorithm>
 
-namespace claudometer::core {
+namespace claudedial::core {
 namespace {
 
 constexpr auto kRefreshInterval = "refreshIntervalSeconds";
@@ -32,7 +32,7 @@ QString firedResetKey(const QString& windowKey)
 QString autostartFilePath()
 {
     return QStandardPaths::writableLocation(QStandardPaths::GenericConfigLocation)
-        + QStringLiteral("/autostart/claudometer.desktop");
+        + QStringLiteral("/autostart/claudedial.desktop");
 }
 
 } // namespace
@@ -40,10 +40,10 @@ QString autostartFilePath()
 Config::Config(QObject* parent)
     : QObject(parent)
     // NativeFormat rather than IniFormat: on Linux it is the same INI text file,
-    // but at the idiomatic ~/.config/claudometer/claudometer.conf instead of a
+    // but at the idiomatic ~/.config/claudedial/claudedial.conf instead of a
     // .ini. Nothing binary or registry-like is involved.
     , m_settings(new QSettings(QSettings::NativeFormat, QSettings::UserScope,
-                               QStringLiteral("claudometer"), QStringLiteral("claudometer"), this))
+                               QStringLiteral("claudedial"), QStringLiteral("claudedial"), this))
 {
 }
 
@@ -195,10 +195,10 @@ void Config::setStartOnLogin(bool enabled)
     file.write(
         "[Desktop Entry]\n"
         "Type=Application\n"
-        "Name=Claudometer\n"
+        "Name=ClaudeDial\n"
         "Comment=Claude Code usage at a glance\n"
-        "Exec=claudometer\n"
-        "Icon=claudometer\n"
+        "Exec=claudedial\n"
+        "Icon=claudedial\n"
         "Terminal=false\n"
         "Categories=Utility;\n"
         "X-GNOME-Autostart-enabled=true\n");
@@ -206,4 +206,4 @@ void Config::setStartOnLogin(bool enabled)
     Q_EMIT changed();
 }
 
-} // namespace claudometer::core
+} // namespace claudedial::core

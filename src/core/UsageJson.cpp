@@ -6,7 +6,7 @@
 #include <QJsonDocument>
 #include <QJsonObject>
 
-namespace claudometer::core::json {
+namespace claudedial::core::json {
 namespace {
 
 QJsonObject periodObject(const UsagePeriod& period)
@@ -116,4 +116,4 @@ std::optional<UsageState> parseStatus(const QByteArray& payload)
     return state;
 }
 
-} // namespace claudometer::core::json
+} // namespace claudedial::core::json

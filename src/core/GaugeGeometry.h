@@ -1,8 +1,8 @@
 #pragma once
 
-namespace claudometer::core::gaugeGeometry {
+namespace claudedial::core::gaugeGeometry {
 
-/// The canonical Claudometer gauge, as pure numbers.
+/// The canonical ClaudeDial gauge, as pure numbers.
 ///
 /// Every rendition of the mark comes from these: the application icon, the popup
 /// header, the settings window's icon, both tray styles and the notification
@@ -68,4 +68,4 @@ constexpr double dialRadius(double thickness)
 /// Far enough round to read as "measuring something" rather than empty or full.
 constexpr double kIdentityPercentage = 62.0;
 
-} // namespace claudometer::core::gaugeGeometry
+} // namespace claudedial::core::gaugeGeometry

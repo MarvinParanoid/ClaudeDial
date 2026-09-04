@@ -4,10 +4,10 @@
 **Date of investigation:** 2026-09-03
 **Investigated on:** Arch Linux, KDE Plasma (Wayland), Claude Code `2.1.255` / VS Code extension `2.1.259`
 
-> **Summary:** all four values Claudometer needs (5-hour %, 5-hour reset, 7-day %, 7-day reset)
+> **Summary:** all four values ClaudeDial needs (5-hour %, 5-hour reset, 7-day %, 7-day reset)
 > are available from a single authenticated `GET` request to an **undocumented** Anthropic
 > endpoint, using the OAuth access token Claude Code already stores on disk.
-> No unsafe credential handling is required, **provided Claudometer never refreshes the token.**
+> No unsafe credential handling is required, **provided ClaudeDial never refreshes the token.**
 > That constraint is the single most important design decision in this document — see
 > [Token lifetime](#token-lifetime-the-main-limitation).
 
@@ -51,7 +51,7 @@ API key (`ANTHROPIC_API_KEY`) or via Bedrock/Vertex have **no** plan rate limits
 file will be absent or lack `claudeAiOauth`. Claude Code models this internally as
 `rate_limits_available: false`.
 
-### Alternative sources, in the order Claudometer should try them
+### Alternative sources, in the order ClaudeDial should try them
 
 1. `$CLAUDE_CODE_OAUTH_TOKEN` — environment variable. Claude Code honours it
    (129 references in the binary); a bare access token, no refresh token.
@@ -65,7 +65,7 @@ file will be absent or lack `claudeAiOauth`. Claude Code models this internally 
   application: [leonardocouy/claudometer][lc] reads
   `~/.claude/.credentials.json` on Linux and the system Keychain on macOS.
 - `libsecret` appears twice in the binary but is not used for these credentials on Linux —
-  Claude Code writes the plain `0600` JSON file. Claudometer therefore does not need a
+  Claude Code writes the plain `0600` JSON file. ClaudeDial therefore does not need a
   keyring dependency.
 
 ### Can these credentials safely be reused?
@@ -76,10 +76,10 @@ file will be absent or lack `claudeAiOauth`. Claude Code models this internally 
   installed. This is the same thing every existing monitor does.
 - **Refreshing is not safe.** The refresh endpoint is
   `https://platform.claude.com/v1/oauth/token`. Anthropic rotates the refresh token on
-  use, so a refresh performed by Claudometer would (a) require writing
+  use, so a refresh performed by ClaudeDial would (a) require writing
   `.credentials.json`, and (b) race Claude Code doing the same thing. Losing that race
   invalidates the stored refresh token and **logs the user out of Claude Code.**
-  Claudometer must never do this.
+  ClaudeDial must never do this.
 
 ---
 
@@ -96,7 +96,7 @@ Two variants exist in the Claude Code binary:
 | `/api/oauth/usage` | normal refresh |
 | `/api/oauth/usage?at_wall=1&skip_spend=1` | when a request was just rejected for hitting a limit; skips the billing/spend lookup |
 
-`skip_spend=1` returns a smaller payload. Claudometer does not need spend data, so
+`skip_spend=1` returns a smaller payload. ClaudeDial does not need spend data, so
 **`?skip_spend=1` is the better default** — less work for the server, less data we hold.
 
 The corresponding call site in Claude Code (`fetchUtilization`, deobfuscated names):
@@ -111,7 +111,7 @@ const res  = await http.get(path, {
 });
 ```
 
-Note the **5 second timeout** and the single 401→refresh→retry. Claudometer keeps the
+Note the **5 second timeout** and the single 401→refresh→retry. ClaudeDial keeps the
 timeout and drops the refresh.
 
 ### Authentication
@@ -122,7 +122,7 @@ Host: api.anthropic.com
 Authorization: Bearer <accessToken from .credentials.json>
 Content-Type: application/json
 anthropic-beta: oauth-2025-04-20
-User-Agent: claudometer/0.1 (+https://github.com/<owner>/claudometer)
+User-Agent: claudedial/0.1 (+https://github.com/<owner>/claudedial)
 ```
 
 Bearer token OAuth. No signing, no other secret.
@@ -139,14 +139,14 @@ Community reports ([Claude-Code-Usage-Monitor#202][issue202]) state that a
 aggressive, persistent `429`s.
 
 **This was not reproduced.** The verification request in §3 was sent with
-`User-Agent: claudometer-research/0.1` and returned `200` immediately.
+`User-Agent: claudedial-research/0.1` and returned `200` immediately.
 
 Interpretation: there is likely UA-keyed rate-limit bucketing rather than an allowlist.
 An unrecognised UA plausibly gets a smaller bucket, which would look exactly like
 "mandatory" to a tool that polls quickly.
 
-**Recommendation: send an honest `claudometer/<version>` UA and poll conservatively.**
-Do not impersonate `claude-code/<version>`. Impersonation makes Claudometer
+**Recommendation: send an honest `claudedial/<version>` UA and poll conservatively.**
+Do not impersonate `claude-code/<version>`. Impersonation makes ClaudeDial
 indistinguishable from the official client in Anthropic's telemetry, which is both
 dishonest and actively harmful — it would pollute the signal Anthropic uses to decide
 whether this endpoint is being abused, and it is the fastest way to get the endpoint
@@ -156,15 +156,15 @@ the correct response is to poll less often, not to lie.
 ### Rate limiting
 
 **Observed during this work:** roughly ten requests within ten minutes - the
-verification request in §3, plus repeated `claudometer --once` / `--json` runs
+verification request in §3, plus repeated `claudedial --once` / `--json` runs
 while testing - produced a `429`. That is a burst, not a poll, but it establishes
 that the limit is real and not generous, and that it applies to an honest
-`claudometer/*` User-Agent.
+`claudedial/*` User-Agent.
 
 - Buckets are **per access token**, not per account. Two monitors on one machine
   share one bucket.
 - Community guidance: 180 s between polls is comfortably safe.
-- Claudometer's 5-minute default is well inside that. **Do not offer an interval
+- ClaudeDial's 5-minute default is well inside that. **Do not offer an interval
   below 60 s**, and expect `--json` invocations from a status bar to count
   against the same bucket as the tray.
 - On `429`: **honour `Retry-After` when the server sends it**, and fall back to
@@ -252,7 +252,7 @@ quota buckets (`nimbus_quill`, `cinder_cove`, `tangelo`, `iguana_necktie`,
 `amber_ladder`, `juniper_tide`, `seven_day_omelette`, `omelette_promotional`). They are
 `null` for this account.
 
-**Claudometer must ignore every key it does not explicitly understand.** New buckets
+**ClaudeDial must ignore every key it does not explicitly understand.** New buckets
 appear without warning; a strict parser would break on a Tuesday.
 
 ### Window object shape
@@ -272,7 +272,7 @@ Both fields are nullable. `resets_at` carries fractional seconds and a `+00:00` 
 
 ### Known window keys
 
-| Key | Meaning | Claudometer |
+| Key | Meaning | ClaudeDial |
 | --- | --- | --- |
 | `five_hour` | rolling 5-hour session window | **primary** — drives the tray icon |
 | `seven_day` | 7-day, all models | **primary** — second popup row |
@@ -291,7 +291,7 @@ simpler and is the shape Claude Code's own public-facing schema exposes.
 Claude Code also reads `anthropic-ratelimit-unified-*` response headers from **ordinary
 inference requests** (`status`, `resetsAt`, `utilization`, and a `unifiedWindows` object
 with `five_hour` / `seven_day` / `seven_day_overage_included`). This is how it updates
-usage without polling. Not usable by Claudometer — we do not make inference requests —
+usage without polling. Not usable by ClaudeDial — we do not make inference requests —
 but it is confirmation that the two windows are the canonical, first-class pair.
 
 ---
@@ -309,12 +309,12 @@ but it is confirmation that the two windows are the canonical, first-class pair.
 
 There is one semi-supported alternative, described in §5.
 
-### Consequences to state plainly in Claudometer's README
+### Consequences to state plainly in ClaudeDial's README
 
 1. The endpoint can change shape or disappear in any Anthropic deployment, with no notice
    and no deprecation window.
 2. Response fields are nullable and the key set grows.
-3. Claudometer is an unofficial tool. It is not endorsed by or affiliated with Anthropic.
+3. ClaudeDial is an unofficial tool. It is not endorsed by or affiliated with Anthropic.
 4. It reads credentials belonging to another application. That must be stated up front,
    not buried.
 
@@ -378,7 +378,7 @@ no API request, so it cannot consume the rate-limit bucket or earn a 429.
 The costs are equally real:
 
 - **It requires editing the user's `~/.claude/settings.json`.** If they already
-  have a status line, Claudometer would have to chain into it without breaking
+  have a status line, ClaudeDial would have to chain into it without breaking
   it. That is the user's file, and the restraint that keeps us out of
   `.credentials.json` applies to writing this one for them too.
 - **It only updates while Claude Code is running.** The HTTP endpoint answers on
@@ -391,7 +391,7 @@ The costs are equally real:
 **Recommendation: keep the HTTP endpoint as the primary source, and offer this
 as an opt-in credential-free mode later.** It is a genuinely better answer for
 anyone unwilling to let a tray widget read another application's OAuth token,
-and for an active user it would cut Claudometer's API traffic to nothing. It is
+and for an active user it would cut ClaudeDial's API traffic to nothing. It is
 not a replacement, because "current on demand" is the whole point of a tray
 indicator. Two data paths are only worth keeping honest once the first one hurts.
 
@@ -455,7 +455,7 @@ the OAuth token, or the status-line payload. Nothing else exists. And the tools
 that do estimate from transcripts say plainly that the official numbers win when
 they have them — the same conclusion §5(d) reaches independently.
 
-Claudometer is therefore doing nothing novel or riskier than the field. The one
+ClaudeDial is therefore doing nothing novel or riskier than the field. The one
 thing the field has that we do not is the credential-free path.
 
 Two patterns worth adopting: **isolating all credential and network code in one small,
@@ -463,7 +463,7 @@ auditable unit**, and **aligning polls to reset boundaries**.
 
 One pattern worth explicitly rejecting: several of these tools auto-run `claude update` or
 otherwise force a token refresh when the token expires. That is the credential-rotation
-race described in §1. Claudometer will degrade visibly instead.
+race described in §1. ClaudeDial will degrade visibly instead.
 
 ---
 
@@ -471,7 +471,7 @@ race described in §1. Claudometer will degrade visibly instead.
 
 ### Token lifetime — the main limitation
 
-Because Claudometer never refreshes, it is only as fresh as Claude Code's own token.
+Because ClaudeDial never refreshes, it is only as fresh as Claude Code's own token.
 
 Observed on the test machine: access token had **~6.3 h** remaining, refresh token
 **~26 days**. (The `#202` write-up claims ~60 min access-token lifetime; not what was
@@ -482,12 +482,12 @@ Behaviour when `now >= expiresAt - 60s`:
 1. Do **not** send the request. Do **not** refresh.
 2. Keep and display the last known usage, marked stale.
 3. Watch `.credentials.json` with `QFileSystemWatcher`; when Claude Code refreshes the
-   token the file changes, and Claudometer re-reads and polls again immediately.
+   token the file changes, and ClaudeDial re-reads and polls again immediately.
 4. Only if the **refresh** token has also expired is this genuinely unrecoverable — then
    show "sign in with Claude Code" and stop polling.
 
 In practice anyone using Claude Code daily keeps the token alive for free. Someone who
-has not run it in a day opens Claudometer to stale data and a clear reason why. That is
+has not run it in a day opens ClaudeDial to stale data and a clear reason why. That is
 an acceptable trade for never being able to log the user out.
 
 ### Other limitations
@@ -510,7 +510,7 @@ an acceptable trade for never being able to log the user out.
   `03:59:59.6…` and `04:00:00.4…`. It is a rolling window too, so its reset moves
   as the oldest usage ages out. Consequence for the UI: an absolute time rendered
   by truncation flickers between two adjacent minutes on successive polls. **Round
-  to the nearest minute before formatting** - Claudometer does this in
+  to the nearest minute before formatting** - ClaudeDial does this in
   `core::format::resetAbsolute`, with a regression test.
 - **Team/Enterprise accounts** may report `member_dashboard_available` and org-level
   restrictions (`org_level_disabled_until`, `org_spend_cap_reached`) that change what
@@ -525,7 +525,7 @@ The threat here is not an exotic exploit. It is a small utility carelessly turni
 
 1. **Never log the token.** Not at any verbosity, not truncated, not "first 8 chars".
    Prefixes are still secret material and still identify the account.
-2. **Never copy the token anywhere.** Not into `QSettings`, not into Claudometer's own
+2. **Never copy the token anywhere.** Not into `QSettings`, not into ClaudeDial's own
    config, not into a cache file, not into an environment variable for a child process.
    Read it, use it, drop it.
 3. **Never expose it to QML.** QML is a scripting surface with introspection; a token in
@@ -540,7 +540,7 @@ The threat here is not an exotic exploit. It is a small utility carelessly turni
    string set — never by interpolating the request.
 7. **Disable Qt network logging in release.** Ship with `QT_LOGGING_RULES` for
    `qt.network.*` forced off, so a user's `~/.config/QtProject/qtlogging.ini` cannot turn
-   on header logging under Claudometer.
+   on header logging under ClaudeDial.
 8. **No crash reporting.** No Sentry, no breakpad, no core-dump upload. Nothing that
    could ship process memory off the machine. This is the simplest way to satisfy
    "credentials must not appear in crash reports": have no crash reports.
@@ -559,7 +559,7 @@ The threat here is not an exotic exploit. It is a small utility carelessly turni
     through one redaction helper that strips anything matching the token, UUIDs, and
     `Bearer\s+\S+`. The research probe used for this document did exactly that.
 
-### Data Claudometer must never persist or transmit
+### Data ClaudeDial must never persist or transmit
 
 The response in §3 also contains the organisation UUID, workspace ID, subscription type
 and spend figures. **None of it is needed.** Extract the four numbers, discard the rest —
@@ -567,7 +567,7 @@ do not hold the parsed response after mapping it into `UsageState`.
 
 ### Not sending anything anywhere
 
-Claudometer makes exactly one kind of outbound request: `GET api.anthropic.com/api/oauth/usage`.
+ClaudeDial makes exactly one kind of outbound request: `GET api.anthropic.com/api/oauth/usage`.
 No telemetry, no update check, no analytics, no error reporting. That should be a stated,
 testable property of the project — one host in the allowlist, verifiable with `strace`
 or by reading `UsageClient`.
@@ -602,7 +602,7 @@ UsageState             { fiveHour, sevenDay, updatedAt, stale }
 QNetworkRequest req{QUrl("https://api.anthropic.com/api/oauth/usage?skip_spend=1")};
 req.setRawHeader("Content-Type",   "application/json");
 req.setRawHeader("anthropic-beta", "oauth-2025-04-20");
-req.setRawHeader("User-Agent",     "claudometer/" CLAUDOMETER_VERSION);
+req.setRawHeader("User-Agent",     "claudedial/" CLAUDEDIAL_VERSION);
 credentials.authorize(req);                  // sets Authorization: Bearer …
 req.setTransferTimeout(5000);
 req.setAttribute(QNetworkRequest::RedirectPolicyAttribute,
@@ -689,7 +689,7 @@ The two real risks are both honest-documentation problems rather than engineerin
 1. **The endpoint is undocumented and marked experimental by its own authors.** It will
    break eventually. The README must say so, the parser must be lenient, and a broken
    endpoint must degrade to visible staleness rather than a crash or a wrong number.
-2. **Claudometer reads another application's credential file.** Users are entitled to know
+2. **ClaudeDial reads another application's credential file.** Users are entitled to know
    this before they install a tray widget. State it in the README, keep the credential
    path auditable in a single short file, and keep the outbound host list at one entry.
 
@@ -720,7 +720,7 @@ this; layer-shell would be required, and is not worth a dependency yet.
 **Focus-out dismissal is unreliable.** A popup opened from a D-Bus `Activate`
 call may never receive keyboard focus, so `QWindow::activeChanged` never fires
 and the window does not dismiss itself. The tray toggle and an explicit close
-button are the dependable paths, and are what Claudometer ships; `Escape` is
+button are the dependable paths, and are what ClaudeDial ships; `Escape` is
 wired up for the cases where focus is granted.
 
 **A tray icon cannot be designed in a mock-up.** Four candidate marks were

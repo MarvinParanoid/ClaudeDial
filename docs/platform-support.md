@@ -1,9 +1,9 @@
 # Platform support — the contract
 
-What Claudometer guarantees, what it attempts, and what it declines to do.
+What ClaudeDial guarantees, what it attempts, and what it declines to do.
 
 This is a contract rather than a wish list. Its purpose is to make the answer to
-"does Claudometer work on X?" a matter of reading rather than of testing twenty
+"does ClaudeDial work on X?" a matter of reading rather than of testing twenty
 desktops — and to stop the codebase from slowly acquiring a `if (gnome &&
 wayland && version >= …)` in every method.
 
@@ -18,8 +18,8 @@ tier above it being present.
 ### Tier 1 — the core, and the CLI. Guaranteed.
 
 ```
-claudometer --json     machine-readable, stable
-claudometer --once     human-readable, one shot
+claudedial --json     machine-readable, stable
+claudedial --once     human-readable, one shot
 ```
 
 Runs with no display, no compositor and no tray: `QCoreApplication` only, chosen
@@ -93,7 +93,7 @@ which would make the anchored popup work on X11 even though it cannot on
 Wayland. Untested, and the single most valuable thing to test next.
 
 GNOME's missing tray is not a bug for us to fix. GNOME removed the system tray;
-applications reach it through an extension. Claudometer's job is to say so
+applications reach it through an extension. ClaudeDial's job is to say so
 clearly and to keep working through Tier 2, not to install anything on the
 user's behalf.
 
@@ -107,7 +107,7 @@ That generalises the Plasmoid conclusion in `portability.md` §3 into a pattern
 worth stating plainly: **where a desktop has its own panel-widget API, the
 native widget beats an SNI tray icon** - correct placement, no activation
 guessing, no missing tooltip. Both a Plasmoid and a Shell extension are
-front-ends that Claudometer could grow *without touching its core*, because
+front-ends that ClaudeDial could grow *without touching its core*, because
 `--json` and the local socket already give them everything they need. Neither is
 work for now; both are the right shape when a desktop's tray proves too thin.
 
@@ -163,7 +163,7 @@ Written down rather than quietly tolerated.
    so the two percentages exist only inside the popup. Disabled menu entries are
    the fix; DBusMenu renders plain items fine.
 3. **Autostart is XDG-specific code inside `core`.** `Config::setStartOnLogin`
-   writes `~/.config/autostart/claudometer.desktop` directly. Core is otherwise
+   writes `~/.config/autostart/claudedial.desktop` directly. Core is otherwise
    free of platform assumptions, and this is the one place a second platform
    would force a change. It belongs behind an interface — but only once there is
    a second implementation to put behind it.
@@ -205,7 +205,7 @@ Against the tiers above, what is done and what is not:
 | Absence of a tray does not kill the application | **not done** (gap 1) |
 | Autostart behind an interface | **not done** (gap 3) |
 | AppImage | not done |
-| `claudometer-bin` in the AUR | not done — the PKGBUILD is a source package |
+| `claudedial-bin` in the AUR | not done — the PKGBUILD is a source package |
 | Compatibility matrix in the README | done — a short version, linking here |
 
 And then the part no amount of preparation replaces: release it, and let real

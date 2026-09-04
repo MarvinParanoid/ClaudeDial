@@ -11,26 +11,26 @@ class QQmlEngine;
 class QQuickView;
 class QTimer;
 
-namespace claudometer::core {
+namespace claudedial::core {
 class Config;
 class Credentials;
 class UsageService;
 }
 
-namespace claudometer::tray {
+namespace claudedial::tray {
 class Notifier;
 class SleepWatcher;
 class TrayBackend;
 }
 
-namespace claudometer::ui {
+namespace claudedial::ui {
 class Colors;
 class PopupWindow;
 class SettingsViewModel;
 class UsageViewModel;
 }
 
-namespace claudometer {
+namespace claudedial {
 
 /// Wires the pieces together and owns nothing else. All the behaviour lives in
 /// core; this is the assembly.
@@ -97,4 +97,4 @@ private:
     QColor m_panelForeground;
 };
 
-} // namespace claudometer
+} // namespace claudedial

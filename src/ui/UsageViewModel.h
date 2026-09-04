@@ -5,12 +5,12 @@
 
 class QTimer;
 
-namespace claudometer::core {
+namespace claudedial::core {
 class Config;
 class UsageService;
 }
 
-namespace claudometer::ui {
+namespace claudedial::ui {
 
 /// The only thing QML ever sees.
 ///
@@ -76,4 +76,4 @@ private:
     QTimer* m_tick;
 };
 
-} // namespace claudometer::ui
+} // namespace claudedial::ui

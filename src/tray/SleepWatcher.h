@@ -2,7 +2,7 @@
 
 #include <QObject>
 
-namespace claudometer::tray {
+namespace claudedial::tray {
 
 /// Emits resumed() after the machine wakes from suspend.
 ///
@@ -24,4 +24,4 @@ private Q_SLOTS:
     void onPrepareForSleep(bool aboutToSleep);
 };
 
-} // namespace claudometer::tray
+} // namespace claudedial::tray

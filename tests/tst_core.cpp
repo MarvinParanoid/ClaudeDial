@@ -18,7 +18,7 @@
 #include <QTest>
 #include <QTimeZone>
 
-using namespace claudometer::core;
+using namespace claudedial::core;
 
 class CoreTest : public QObject
 {
@@ -261,7 +261,7 @@ void CoreTest::buildsTooltip()
 
     const QStringList lines = format::tooltip(state, now).split(QLatin1Char('\n'));
     QCOMPARE(lines.size(), 3);
-    QCOMPARE(lines.at(0), QStringLiteral("Claudometer"));
+    QCOMPARE(lines.at(0), QStringLiteral("ClaudeDial"));
     QCOMPARE(lines.at(1), QStringLiteral("5h  63% · resets in 1h 52m"));
     QVERIFY(lines.at(2).startsWith(QStringLiteral("7d  41% · resets ")));
 }
@@ -424,10 +424,10 @@ void CoreTest::shippedIconMatchesCanonicalGeometry()
     // only numbers. It had been hand-copied once and drifted: centre 7.8% lower,
     // outer edge 5% smaller, which is what made the identity mark and the tray
     // mark stop looking like the same thing. This is the guard.
-    using namespace claudometer::core::gaugeGeometry;
+    using namespace claudedial::core::gaugeGeometry;
 
-    QFile file(QStringLiteral(CLAUDOMETER_SOURCE_DIR
-                              "/data/icons/hicolor/scalable/apps/claudometer.svg"));
+    QFile file(QStringLiteral(CLAUDEDIAL_SOURCE_DIR
+                              "/data/icons/hicolor/scalable/apps/claudedial.svg"));
     QVERIFY2(file.open(QIODevice::ReadOnly), qPrintable(file.fileName()));
     const QString svg = QString::fromUtf8(file.readAll());
 
@@ -465,14 +465,14 @@ void CoreTest::shippedIconMatchesCanonicalGeometry()
 void CoreTest::storesSettingsAtTheDocumentedPath()
 {
     // The README and the packaging notes both promise
-    // ~/.config/claudometer/claudometer.conf. QSettings derives the extension
+    // ~/.config/claudedial/claudedial.conf. QSettings derives the extension
     // from the format, so IniFormat would quietly produce a .ini instead and
     // every hand-written config file would be ignored.
     const Config config;
     const QString path = config.filePath();
 
     QVERIFY2(path.endsWith(QStringLiteral(".conf")), qPrintable(path));
-    QVERIFY2(path.contains(QStringLiteral("/claudometer/claudometer.")), qPrintable(path));
+    QVERIFY2(path.contains(QStringLiteral("/claudedial/claudedial.")), qPrintable(path));
 }
 
 void CoreTest::roundTripsSettings()
@@ -500,7 +500,7 @@ void CoreTest::defaultsSuitALinuxTray()
     // interpret, and the theme follows the desktop.
     QStandardPaths::setTestModeEnabled(true);
     QSettings(QSettings::NativeFormat, QSettings::UserScope,
-              QStringLiteral("claudometer"), QStringLiteral("claudometer"))
+              QStringLiteral("claudedial"), QStringLiteral("claudedial"))
         .clear();
 
     const Config config;

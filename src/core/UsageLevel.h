@@ -2,7 +2,7 @@
 
 #include <QString>
 
-namespace claudometer::core {
+namespace claudedial::core {
 
 /// How alarming a percentage is.
 ///
@@ -28,4 +28,4 @@ constexpr int kLimitThreshold = 100;
 /// The stable string used in `--json`'s `class` field and by the QML theme.
 [[nodiscard]] QString levelName(UsageLevel level);
 
-} // namespace claudometer::core
+} // namespace claudedial::core

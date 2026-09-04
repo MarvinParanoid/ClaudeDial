@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.21)
 
-project(claudometer
+project(claudedial
     VERSION 0.1.0
     DESCRIPTION "Claude Code usage at a glance"
     LANGUAGES CXX
@@ -14,7 +14,7 @@ if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
     set(CMAKE_BUILD_TYPE Release CACHE STRING "" FORCE)
 endif()
 
-option(CLAUDOMETER_BUILD_TESTS "Build unit tests" ON)
+option(CLAUDEDIAL_BUILD_TESTS "Build unit tests" ON)
 
 # 6.8, not 6.5, and the difference is not cosmetic. Declaring 6.5 while using
 # newer APIs means a build on 6.5 fails deep in a translation unit with an
@@ -32,7 +32,7 @@ add_compile_options(-Wall -Wextra -Wpedantic)
 add_subdirectory(src/core)
 add_subdirectory(src)
 
-if(CLAUDOMETER_BUILD_TESTS)
+if(CLAUDEDIAL_BUILD_TESTS)
     find_package(Qt6 6.5 QUIET COMPONENTS Test)
     if(Qt6Test_FOUND)
         enable_testing()
@@ -45,8 +45,8 @@ endif()
 # --- installation -------------------------------------------------------------
 include(GNUInstallDirs)
 
-install(TARGETS claudometer RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
-install(FILES data/claudometer.desktop DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/applications)
+install(TARGETS claudedial RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
+install(FILES data/claudedial.desktop DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/applications)
 install(DIRECTORY data/icons/ DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/icons)
 
 # --- packaging ----------------------------------------------------------------
@@ -54,13 +54,13 @@ install(DIRECTORY data/icons/ DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/icons)
 # Only three files are installed, and the QML lives inside the binary as a Qt
 # resource, so every format packages the same small payload.
 
-set(CPACK_PACKAGE_NAME claudometer)
-set(CPACK_PACKAGE_VENDOR "Claudometer contributors")
+set(CPACK_PACKAGE_NAME claudedial)
+set(CPACK_PACKAGE_VENDOR "ClaudeDial contributors")
 set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "${PROJECT_DESCRIPTION}")
-set(CPACK_PACKAGE_HOMEPAGE_URL "https://github.com/MarvinParanoid/Claudometer")
-set(CPACK_PACKAGE_CONTACT "Claudometer contributors")
+set(CPACK_PACKAGE_HOMEPAGE_URL "https://github.com/MarvinParanoid/ClaudeDial")
+set(CPACK_PACKAGE_CONTACT "ClaudeDial contributors")
 set(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_CURRENT_SOURCE_DIR}/LICENSE")
-set(CPACK_PACKAGE_FILE_NAME "claudometer-${PROJECT_VERSION}-linux-x86_64")
+set(CPACK_PACKAGE_FILE_NAME "claudedial-${PROJECT_VERSION}-linux-x86_64")
 set(CPACK_STRIP_FILES ON)
 set(CPACK_GENERATOR "TGZ")
 

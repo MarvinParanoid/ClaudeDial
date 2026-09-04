@@ -1,4 +1,4 @@
-qt_add_executable(claudometer
+qt_add_executable(claudedial
     AppIcon.cpp
     AppIcon.h
     Brand.h
@@ -34,7 +34,7 @@ qt_add_executable(claudometer
 
 # Plain Qt resources rather than a QML module: this is one small app with five
 # QML files, and the module machinery would only add moving parts.
-qt_add_resources(claudometer "qml"
+qt_add_resources(claudedial "qml"
     PREFIX "/"
     BASE "ui"
     FILES
@@ -53,14 +53,14 @@ qt_add_resources(claudometer "qml"
 # The application icon is one SVG, installed into the icon theme and embedded
 # here so a build tree looks right too. Qt6::Svg is what rasterises it; the tray
 # marks are drawn with QPainter and need nothing.
-qt_add_resources(claudometer "appicon"
+qt_add_resources(claudedial "appicon"
     PREFIX "/icons"
     BASE "../data/icons/hicolor/scalable/apps"
-    FILES ../data/icons/hicolor/scalable/apps/claudometer.svg
+    FILES ../data/icons/hicolor/scalable/apps/claudedial.svg
 )
 
-target_link_libraries(claudometer PRIVATE
-    claudometer_core
+target_link_libraries(claudedial PRIVATE
+    claudedial_core
     Qt6::DBus
     Qt6::Svg
     Qt6::Gui
@@ -69,4 +69,4 @@ target_link_libraries(claudometer PRIVATE
     Qt6::Widgets
 )
 
-target_include_directories(claudometer PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+target_include_directories(claudedial PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})

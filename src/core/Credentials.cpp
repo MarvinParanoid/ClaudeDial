@@ -10,7 +10,7 @@
 #include <QProcessEnvironment>
 #include <QTimeZone>
 
-namespace claudometer::core {
+namespace claudedial::core {
 namespace {
 
 /// Never let a token linger in a freed heap page.
@@ -150,4 +150,4 @@ bool Credentials::authorize(QNetworkRequest& request) const
     return true;
 }
 
-} // namespace claudometer::core
+} // namespace claudedial::core

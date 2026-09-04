@@ -2,7 +2,7 @@
 
 #include <QQuickView>
 
-namespace claudometer::ui {
+namespace claudedial::ui {
 
 /// The small frameless window the tray icon opens.
 ///
@@ -47,4 +47,4 @@ private:
     void syncSize();
 };
 
-} // namespace claudometer::ui
+} // namespace claudedial::ui

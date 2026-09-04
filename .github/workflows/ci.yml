@@ -5,7 +5,7 @@ on:
     branches: [main]
   pull_request:
 
-# Claudometer needs Qt 6.8 (QStyleHints::setColorScheme), and no GitHub-hosted
+# ClaudeDial needs Qt 6.8 (QStyleHints::setColorScheme), and no GitHub-hosted
 # runner ships that in apt - ubuntu-24.04 is on Qt 6.4. So the build runs in
 # containers instead, which also makes the toolchain explicit rather than
 # whatever the runner image happens to have this month.

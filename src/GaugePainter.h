@@ -7,7 +7,7 @@
 
 class QPainter;
 
-namespace claudometer::gauge {
+namespace claudedial::gauge {
 
 /// Colours for one gauge. Supplied by the caller: the tray icon must follow the
 /// panel's palette, the popup follows its own.
@@ -16,7 +16,7 @@ struct Colors {
     QColor value; ///< the used portion of the dial, and the needle
 };
 
-/// Draws the Claudometer speedometer: a thick 240-degree dial with the gap at
+/// Draws the ClaudeDial speedometer: a thick 240-degree dial with the gap at
 /// the bottom, the used portion filled, and a needle. 0% points down-left, 100%
 /// down-right.
 ///
@@ -59,4 +59,4 @@ void paint(QPainter& painter, const QRectF& bounds, std::optional<double> percen
 
 /// The canonical numbers behind all of this live in core/GaugeGeometry.h.
 
-} // namespace claudometer::gauge
+} // namespace claudedial::gauge

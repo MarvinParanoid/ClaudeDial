@@ -8,7 +8,7 @@
 class QNetworkAccessManager;
 class QJsonValue;
 
-namespace claudometer::core {
+namespace claudedial::core {
 
 class Credentials;
 
@@ -22,7 +22,7 @@ enum class FetchError {
     BadResponse,    ///< 200 but nothing we could parse
 };
 
-/// Performs the single HTTP request Claudometer makes, and parses it.
+/// Performs the single HTTP request ClaudeDial makes, and parses it.
 ///
 /// The endpoint is undocumented and marked experimental by Claude Code's own
 /// schema, so parsing is deliberately lenient: unknown keys, new quota buckets
@@ -51,7 +51,7 @@ public:
     [[nodiscard]] static int parseRetryAfter(const QByteArray& value,
                                              const QDateTime& now = QDateTime::currentDateTimeUtc());
 
-    /// True when CLAUDOMETER_SIMULATE is set, in which case no request is made.
+    /// True when CLAUDEDIAL_SIMULATE is set, in which case no request is made.
     ///
     /// A development aid, and the only way to reach the upper end of the scale:
     /// the 95% and 100% steps are fixed, so without this the colours, the "!"
@@ -60,10 +60,10 @@ public:
     [[nodiscard]] static bool isSimulating();
 
 Q_SIGNALS:
-    void succeeded(const claudometer::core::UsageState& state);
+    void succeeded(const claudedial::core::UsageState& state);
 
     /// `retryAfterSeconds` is what the server asked for, or 0 if it did not ask.
-    void failed(claudometer::core::FetchError error, int retryAfterSeconds = 0);
+    void failed(claudedial::core::FetchError error, int retryAfterSeconds = 0);
 
 private:
     Credentials* m_credentials;
@@ -71,4 +71,4 @@ private:
     bool m_inFlight = false;
 };
 
-} // namespace claudometer::core
+} // namespace claudedial::core

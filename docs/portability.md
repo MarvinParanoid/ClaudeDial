@@ -1,6 +1,6 @@
 # Portability and distribution — what to take from the field
 
-**Scope:** research only. No Claudometer code was changed to write this.
+**Scope:** research only. No ClaudeDial code was changed to write this.
 
 Surveyed for the things a tray utility gets wrong on desktops its author does
 not run: [Syncthing Tray][st] (C++/Qt/CMake, the closest match to our stack and
@@ -9,7 +9,7 @@ breakage), [gogpu/systray][gogpu] (platform split and icon requirements),
 [gatus-monitor][gatus] (a package matrix a small project actually ships), and
 [Qt's own documentation][qtdoc].
 
-Two findings break Claudometer's primary interaction outside Plasma. Everything
+Two findings break ClaudeDial's primary interaction outside Plasma. Everything
 else is either confirmation that our current choices are right, or a list of
 traps for later.
 
@@ -19,7 +19,7 @@ traps for later.
 
 ### Left click does not open anything
 
-Claudometer's whole interaction model is *glance → hover → click*. Two sources
+ClaudeDial's whole interaction model is *glance → hover → click*. Two sources
 agree that the click half does not survive GNOME:
 
 - Qt: "since GNOME Shell 3.26, not all activation reasons are supported without
@@ -81,7 +81,7 @@ answer.
 
 **Compositor rules are the accepted user-side fix.** They ship Sway and KWin
 rules for exactly this. Our README already tells Plasma users to pin the popup
-with a window rule, matching on class `claudometer` and title `Claudometer`.
+with a window rule, matching on class `claudedial` and title `ClaudeDial`.
 
 **Do not build a portability layer.** `QSystemTrayIcon` in Qt 6 covers Windows,
 macOS, D-Bus StatusNotifierItem (KDE, GNOME, Xfce, LXQt, DDE) *and* the legacy
@@ -114,8 +114,8 @@ option:
 | New C++ dependency | none | yes |
 | Touches our core | no | yes |
 
-And it is unusually cheap for us, because a Plasmoid is QML and Claudometer
-already has two machine-readable interfaces it could read: `claudometer --json`,
+And it is unusually cheap for us, because a Plasmoid is QML and ClaudeDial
+already has two machine-readable interfaces it could read: `claudedial --json`,
 or the local socket that answers `status` without spending an API request. A
 Plasmoid would be a separate, optional package that consumes those — no changes
 to the core at all.
@@ -162,7 +162,7 @@ artefact in this survey, because it documents what actually went wrong.
 - **They also require OpenGL and libX11.** So do we: Qt Quick needs a GL stack.
   Worth saying out loud before someone tries it on a headless box.
 - **Ship a scalable icon and a `.desktop` entry inside the AppImage**, since the
-  desktop resolves `Icon=claudometer` by name. We already install both.
+  desktop resolves `Icon=claudedial` by name. We already install both.
 
 On channels, what a one-person project sustains: **AUR** (their model is a
 PKGBUILD plus an optional prebuilt binary repository), **Flathub**, and a generic
@@ -181,7 +181,7 @@ transfers, not the tooling.
 
 ---
 
-## 6. Icons, if Claudometer ever leaves Linux
+## 6. Icons, if ClaudeDial ever leaves Linux
 
 From [gogpu/systray][gogpu], which states the requirements plainly:
 

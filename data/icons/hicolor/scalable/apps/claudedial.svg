@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-  The Claudometer application icon.
+  The ClaudeDial application icon.
 
   Generated from the canonical gauge geometry in src/core/GaugeGeometry.h, and
   checked against it by a unit test. Do not adjust these numbers by hand: this
@@ -16,14 +16,14 @@
 
   Terracotta, and monochrome. In blue this sat in a task manager next to VS Code
   looking like one more blue developer tool; in this colour it is picked out
-  instantly, and it says which service Claudometer reports on without borrowing
+  instantly, and it says which service ClaudeDial reports on without borrowing
   anyone's logo. One colour rather than a coloured needle, because at 16 px a
   second hue is just noise. No backdrop either: a dark tile forces the mark down
   to about 78% to leave padding, costing the legibility that matters most at
   16 px, and on a dark panel it merges into the background while fighting the
   highlight behind an active task.
 
-  This colour is Claudometer's identity only. Interactive controls follow the
+  This colour is ClaudeDial's identity only. Interactive controls follow the
   user's own Plasma accent, and usage keeps its own neutral -> amber -> orange
   -> red ramp. Neither should borrow this one.
 -->

@@ -14,7 +14,7 @@
 
 #include <algorithm>
 
-namespace claudometer::core {
+namespace claudedial::core {
 namespace {
 
 /// Pinned at compile time. A configurable endpoint would be a credential
@@ -31,7 +31,7 @@ constexpr int kRetryAfterCapSeconds = 60 * 60;
 
 /// Qt can log request headers, and ours carry the bearer token. A user's
 /// ~/.config/QtProject/qtlogging.ini must not be able to switch that on for
-/// Claudometer, so the rules are forced off here - in the constructor of the
+/// ClaudeDial, so the rules are forced off here - in the constructor of the
 /// only class that ever sends the token, rather than in an entry point that a
 /// future one could forget to mirror. Rules set this way take precedence over
 /// the configuration file.
@@ -45,12 +45,12 @@ void silenceNetworkLogging()
                                                     "qt.network.*.info=false"));
 }
 
-/// Reads CLAUDOMETER_SIMULATE, e.g. "96" or "96,41" - the five-hour and
+/// Reads CLAUDEDIAL_SIMULATE, e.g. "96" or "96,41" - the five-hour and
 /// seven-day percentages to report instead of asking the server.
 std::optional<UsageState> simulatedState()
 {
     const QString raw =
-        QProcessEnvironment::systemEnvironment().value(QStringLiteral("CLAUDOMETER_SIMULATE"));
+        QProcessEnvironment::systemEnvironment().value(QStringLiteral("CLAUDEDIAL_SIMULATE"));
     if (raw.isEmpty())
         return std::nullopt;
 
@@ -123,7 +123,7 @@ void UsageClient::fetch()
     request.setRawHeader(QByteArrayLiteral("Content-Type"), QByteArrayLiteral("application/json"));
     request.setRawHeader(QByteArrayLiteral("anthropic-beta"), QByteArrayLiteral("oauth-2025-04-20"));
     request.setRawHeader(QByteArrayLiteral("User-Agent"),
-                         QByteArrayLiteral("claudometer/" CLAUDOMETER_VERSION));
+                         QByteArrayLiteral("claudedial/" CLAUDEDIAL_VERSION));
     // Never follow a redirect while carrying a bearer token: an unexpected
     // redirect would replay the Authorization header at another host.
     request.setAttribute(QNetworkRequest::RedirectPolicyAttribute,
@@ -240,4 +240,4 @@ std::optional<UsageState> UsageClient::parseResponse(const QByteArray& body)
     return state;
 }
 
-} // namespace claudometer::core
+} // namespace claudedial::core

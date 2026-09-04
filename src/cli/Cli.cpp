@@ -15,10 +15,10 @@
 #include <QTextStream>
 #include <QTimer>
 
-namespace claudometer::cli {
+namespace claudedial::cli {
 namespace {
 
-using namespace claudometer::core;
+using namespace claudedial::core;
 
 QString describe(FetchError error, Credentials::Status status)
 {
@@ -68,8 +68,8 @@ void printHuman(QTextStream& out, const UsageState& state)
 int run(int argc, char** argv, bool jsonOutput)
 {
     QCoreApplication app(argc, argv);
-    QCoreApplication::setApplicationName(QStringLiteral("claudometer"));
-    QCoreApplication::setApplicationVersion(QStringLiteral(CLAUDOMETER_VERSION));
+    QCoreApplication::setApplicationName(QStringLiteral("claudedial"));
+    QCoreApplication::setApplicationVersion(QStringLiteral(CLAUDEDIAL_VERSION));
 
     QTextStream out(stdout);
 
@@ -116,7 +116,7 @@ int run(int argc, char** argv, bool jsonOutput)
             // Still valid JSON, so a status bar shows "--" rather than breaking.
             out << json::unavailable(reason);
         } else {
-            err << "claudometer: " << reason << '\n';
+            err << "claudedial: " << reason << '\n';
         }
         exitCode = 1;
         QCoreApplication::quit();
@@ -130,4 +130,4 @@ int run(int argc, char** argv, bool jsonOutput)
     return result != 0 ? result : exitCode;
 }
 
-} // namespace claudometer::cli
+} // namespace claudedial::cli

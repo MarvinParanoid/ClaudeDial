@@ -8,12 +8,12 @@
 class QNetworkRequest;
 class QFileSystemWatcher;
 
-namespace claudometer::core {
+namespace claudedial::core {
 
 /// Reads the OAuth access token Claude Code stores on disk, and nothing else.
 ///
 /// This class is the *only* place a token exists in the process. It is never
-/// logged, never copied into Claudometer's own configuration, never exposed to
+/// logged, never copied into ClaudeDial's own configuration, never exposed to
 /// QML, and never written back. In particular this class does NOT refresh the
 /// token: Anthropic rotates the refresh token on use, so refreshing here would
 /// race Claude Code and could log the user out of it. See docs/usage-api.md.
@@ -60,4 +60,4 @@ private:
     QFileSystemWatcher* m_watcher = nullptr;
 };
 
-} // namespace claudometer::core
+} // namespace claudedial::core

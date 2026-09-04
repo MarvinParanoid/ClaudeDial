@@ -7,7 +7,7 @@
 
 #include <cmath>
 
-namespace claudometer::ui {
+namespace claudedial::ui {
 namespace {
 
 /// Gap between the popup and the panel edge it sits against.
@@ -25,7 +25,7 @@ PopupWindow::PopupWindow(QQmlEngine* engine, const QUrl& source)
     // Never shown - the window has no decorations - but it is how a KWin window
     // rule can pin this window without also matching the settings window, which
     // shares the application's window class.
-    setTitle(QStringLiteral("Claudometer"));
+    setTitle(QStringLiteral("ClaudeDial"));
     setResizeMode(QQuickView::SizeRootObjectToView);
     setColor(Qt::transparent); // let the QML rectangle's rounded corners show
 
@@ -125,4 +125,4 @@ void PopupWindow::placeAndShow(const QRect& anchor)
     requestActivate();
 }
 
-} // namespace claudometer::ui
+} // namespace claudedial::ui

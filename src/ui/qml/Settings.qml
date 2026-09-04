@@ -3,7 +3,7 @@ import QtQuick
 // Three small groups, drawn with the same tokens as the popup.
 //
 // Nothing here reads QPalette. That is the point: the platform theme may keep a
-// dark palette while the user has asked Claudometer for Light, and a form that
+// dark palette while the user has asked ClaudeDial for Light, and a form that
 // takes its background from one source and its label colours from the other ends
 // up with invisible text. One source of truth, everywhere.
 Rectangle {

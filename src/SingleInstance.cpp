@@ -5,7 +5,7 @@
 #include <QRegularExpression>
 #include <QLocalSocket>
 
-namespace claudometer {
+namespace claudedial {
 namespace {
 
 /// Per user *and* per graphical session.
@@ -22,12 +22,12 @@ QString socketName()
     if (session.isEmpty())
         session = env.value(QStringLiteral("DISPLAY"));
     if (session.isEmpty())
-        return QStringLiteral("claudometer");
+        return QStringLiteral("claudedial");
 
     // A display name may hold characters a socket name cannot.
     static const QRegularExpression unsafe(QStringLiteral("[^A-Za-z0-9_-]"));
     session.replace(unsafe, QStringLiteral("_"));
-    return QStringLiteral("claudometer-%1").arg(session);
+    return QStringLiteral("claudedial-%1").arg(session);
 }
 
 constexpr int kConnectTimeoutMs = 300;
@@ -118,4 +118,4 @@ bool SingleInstance::acquire()
     return true;
 }
 
-} // namespace claudometer
+} // namespace claudedial

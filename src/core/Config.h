@@ -7,10 +7,10 @@
 
 class QSettings;
 
-namespace claudometer::core {
+namespace claudedial::core {
 
 /// Persisted settings, via QSettings - which on Linux means
-/// ~/.config/claudometer/claudometer.conf, i.e. plain XDG. No database, no
+/// ~/.config/claudedial/claudedial.conf, i.e. plain XDG. No database, no
 /// bespoke format, nothing to migrate.
 ///
 /// Credentials are never stored here. This file is user-readable by design.
@@ -25,7 +25,7 @@ public:
         Dark,
     };
 
-    /// What the tray icon puts inside the Claudometer arc.
+    /// What the tray icon puts inside the ClaudeDial arc.
     ///
     /// Two variants of one mark, not two icons: the arc is identical in both,
     /// and only its middle differs. Gauge photographs better; Percentage is the
@@ -69,7 +69,7 @@ public:
     //
     // Not user preferences: this is state, kept under a [state] group so it is
     // obvious that editing it by hand achieves nothing. It has to survive a
-    // restart, or Claudometer re-announces thresholds it already announced -
+    // restart, or ClaudeDial re-announces thresholds it already announced -
     // every login would repeat the warning for the window you are still in.
 
     /// Thresholds already announced for `windowKey` ("five_hour"/"seven_day").
@@ -93,4 +93,4 @@ private:
     QSettings* m_settings;
 };
 
-} // namespace claudometer::core
+} // namespace claudedial::core

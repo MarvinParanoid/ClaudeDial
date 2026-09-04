@@ -3,9 +3,9 @@
 #include <QDateTime>
 #include <optional>
 
-namespace claudometer::core {
+namespace claudedial::core {
 
-/// Which quota window a value belongs to. The two windows Claudometer tracks.
+/// Which quota window a value belongs to. The two windows ClaudeDial tracks.
 enum class PeriodKind {
     FiveHour,
     SevenDay,
@@ -43,4 +43,4 @@ struct UsageState {
     }
 };
 
-} // namespace claudometer::core
+} // namespace claudedial::core

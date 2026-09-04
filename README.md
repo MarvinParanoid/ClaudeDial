@@ -1,4 +1,4 @@
-# Claudometer
+# ClaudeDial
 
 **Claude Code usage at a glance.**
 
@@ -10,7 +10,7 @@ Glance at the icon, hover for details, click for a small popup, forget about it.
 That is the tray icon at 8%, 23%, 75%, 88%, 99% and at the limit - the exact
 figure on top, the needle below. Same arc, two readings. Click it:
 
-<img src="docs/images/popup-dark.png" alt="The Claudometer popup" width="340">
+<img src="docs/images/popup-dark.png" alt="The ClaudeDial popup" width="340">
 
 It is not an analytics dashboard, and is not going to become one. No graphs, no
 token history, no accounts, no telemetry, no cloud backend.
@@ -19,7 +19,7 @@ token history, no accounts, no telemetry, no cloud backend.
 
 Two things you are entitled to know up front.
 
-**1. Claudometer reads Claude Code's credential file.** It needs the OAuth access
+**1. ClaudeDial reads Claude Code's credential file.** It needs the OAuth access
 token Claude Code stores at `~/.claude/.credentials.json` in order to ask
 Anthropic what your usage is. It opens that file read-only, holds the token in
 exactly one class, sends it to exactly one pinned HTTPS host, and never logs it,
@@ -27,18 +27,18 @@ copies it, exposes it to the UI layer, or writes it anywhere.
 
 It also **never refreshes the token**, which is a deliberate limitation rather
 than an oversight: Anthropic rotates the refresh token on use, so refreshing
-here would race Claude Code and could sign you out of it. Instead, Claudometer
+here would race Claude Code and could sign you out of it. Instead, ClaudeDial
 watches the file and picks up whatever Claude Code refreshes. In practice, if
 you use Claude Code daily the token stays alive for free; if you have not run it
-in a while, Claudometer shows you stale data and says so.
+in a while, ClaudeDial shows you stale data and says so.
 
-**2. The usage endpoint is undocumented.** Claudometer reads
+**2. The usage endpoint is undocumented.** ClaudeDial reads
 `GET api.anthropic.com/api/oauth/usage`, which is not part of Anthropic's public
 API and is annotated *"Experimental - the response shape may change"* by Claude
 Code's own internal schema. It can change or disappear without notice. When it
-does, Claudometer degrades to showing stale data rather than crashing or lying.
+does, ClaudeDial degrades to showing stale data rather than crashing or lying.
 
-Claudometer is an unofficial tool. It is not endorsed by or affiliated with
+ClaudeDial is an unofficial tool. It is not endorsed by or affiliated with
 Anthropic.
 
 Full write-up, including the exact request, the response shape, and the security
@@ -47,18 +47,18 @@ put together: [docs/architecture.md](docs/architecture.md).
 
 ## Status bar integration
 
-Claudometer is also a one-shot CLI, so Waybar, Polybar, i3blocks, Conky and
+ClaudeDial is also a one-shot CLI, so Waybar, Polybar, i3blocks, Conky and
 plain scripts can use it without the tray.
 
 ```console
-$ claudometer --json
+$ claudedial --json
 {
     "five_hour": { "usage": 10, "reset_at": "2026-09-03T21:30:00Z" },
     "seven_day": { "usage": 27, "reset_at": "2026-09-08T04:00:00Z" },
     "updated_at": "2026-09-03T18:17:54Z",
     "stale": false,
     "text": "10%",
-    "tooltip": "Claudometer\n5h  10% · resets in 3h 12m\n7d  27% · resets Tue 06:00",
+    "tooltip": "ClaudeDial\n5h  10% · resets in 3h 12m\n7d  27% · resets Tue 06:00",
     "class": "normal"
 }
 ```
@@ -68,10 +68,10 @@ module needs no wrapper script:
 
 ```jsonc
 "custom/claude": {
-    "exec": "claudometer --json",
+    "exec": "claudedial --json",
     "return-type": "json",
     "interval": 300,
-    "on-click": "claudometer"
+    "on-click": "claudedial"
 }
 ```
 
@@ -80,7 +80,7 @@ module needs no wrapper script:
 and timestamps only: no token, no organisation id, nothing identifying, because
 status-bar configs end up in public dotfiles repos.
 
-`claudometer --once` prints the same thing for humans. Both run without a
+`claudedial --once` prints the same thing for humans. Both run without a
 display, so they work over SSH and from a startup script before the compositor
 is up.
 
@@ -92,11 +92,11 @@ nothing is running - so a Waybar `interval` costs nothing, and returns instantly
 
 ## Development
 
-`CLAUDOMETER_SIMULATE` reports a usage figure instead of asking the server:
+`CLAUDEDIAL_SIMULATE` reports a usage figure instead of asking the server:
 
 ```console
-$ CLAUDOMETER_SIMULATE=99 claudometer          # tray, popup and notifications
-$ CLAUDOMETER_SIMULATE=63,41 claudometer --json
+$ CLAUDEDIAL_SIMULATE=99 claudedial          # tray, popup and notifications
+$ CLAUDEDIAL_SIMULATE=63,41 claudedial --json
 ```
 
 One or two percentages, five-hour first. It makes no request, so it works
@@ -132,13 +132,13 @@ Developed on Arch with KDE Plasma on Wayland; built to work beyond it.
 | KDE Plasma | tray icon, popup, tooltip | the desktop this was developed and tested on |
 | Xfce, Cinnamon, MATE, LXQt | tray icon, popup, tooltip | StatusNotifierItem; not yet verified by anyone |
 | GNOME | tray icon and menu | needs the [AppIndicator extension][appind]; a left click opens the menu, so use **Show usage** or double-click. No tooltips on AppIndicator |
-| Sway, Hyprland, i3 | `claudometer --json` | a text status bar needs no tray at all |
+| Sway, Hyprland, i3 | `claudedial --json` | a text status bar needs no tray at all |
 | Windows, macOS | — | Qt supports them; nobody has tried |
 
 Only the first row has been verified. The rest follows from the protocols
 involved, which is not the same thing — see
 [docs/platform-support.md](docs/platform-support.md) for what is guaranteed,
-what is attempted, and what Claudometer declines to do.
+what is attempted, and what ClaudeDial declines to do.
 
 [appind]: https://github.com/ubuntu/gnome-shell-extension-appindicator
 
@@ -147,13 +147,13 @@ it works on Plasma out of the box, and on GNOME with the AppIndicator extension.
 Notifications use `org.freedesktop.Notifications`. Autostart is a normal XDG
 entry in `~/.config/autostart`. Refresh-on-resume uses logind's `PrepareForSleep`.
 
-Two known Wayland limitations, neither of which Claudometer can fix from inside
+Two known Wayland limitations, neither of which ClaudeDial can fix from inside
 the sandbox:
 
 - **The popup's position is chosen by the compositor.** A Wayland client cannot
   place its own top-level windows, so `setPosition()` is ignored and the popup
   appears wherever the compositor decides - typically near the middle of the
-  screen. Claudometer asks the panel where its icon is and anchors to it when it
+  screen. ClaudeDial asks the panel where its icon is and anchors to it when it
   gets an answer, but StatusNotifierItem hosts generally do not report icon
   geometry; Plasma does not. (The anchoring path is exercised only by a legacy
   XEmbed tray on X11, and is untested.)
@@ -161,7 +161,7 @@ the sandbox:
   **Drag the popup by its header** to move it - that goes through the compositor
   and works on Wayland. On Plasma you can make the position stick with a window
   rule: System Settings → Window Management → Window Rules, match window class
-  `claudometer` and window title `Claudometer`, then set Position to force the
+  `claudedial` and window title `ClaudeDial`, then set Position to force the
   corner you want. Match the title as well as the class, or the rule will also
   catch the settings window.
 - **The popup may not receive keyboard focus**, in which case it will not
@@ -170,7 +170,7 @@ the sandbox:
 
 ## Settings
 
-<img src="docs/images/settings.png" alt="The Claudometer settings window" width="381">
+<img src="docs/images/settings.png" alt="The ClaudeDial settings window" width="381">
 
 Right-click the tray icon for **Show usage**, **Refresh now**, **Settings** and
 **Quit**, or use the gear in the popup.
@@ -180,10 +180,10 @@ the AppIndicator extension, a single left click opens the menu rather than
 activating the icon, so the menu is the only route to the popup. A double click
 opens it there too. On Plasma a single click toggles it, as you would expect. Start on login, refresh
 interval, notifications, warning and critical thresholds, tray style, and theme
-(system / light / dark). Stored in `~/.config/claudometer/claudometer.conf`;
-the `[state]` group in that file is Claudometer's own bookkeeping, not settings.
+(system / light / dark). Stored in `~/.config/claudedial/claudedial.conf`;
+the `[state]` group in that file is ClaudeDial's own bookkeeping, not settings.
 
-**Tray style** picks what goes inside the Claudometer arc:
+**Tray style** picks what goes inside the ClaudeDial arc:
 
 - **Percentage** (default) - the exact 5-hour figure. Answers the question with
   no hover and nothing to interpret, which is what a tray indicator is for.
@@ -203,13 +203,13 @@ A full red arc around an exclamation mark says it more firmly, and the tooltip
 still gives the figure.
 
 When the data is stale the whole mark fades, so a glance at the panel tells you
-the number is the last one Claudometer managed to fetch.
+the number is the last one ClaudeDial managed to fetch.
 
 Three colour roles, kept apart on purpose:
 
 | | |
 | --- | --- |
-| **Terracotta** | Claudometer's identity - the application icon, and nothing else |
+| **Terracotta** | ClaudeDial's identity - the application icon, and nothing else |
 | **Your Plasma accent** | the settings window's controls, so they look like the rest of your desktop |
 | **neutral → amber → orange → red** | how much of a limit is spent |
 
@@ -235,7 +235,7 @@ visible while you are reading it.
 
 ## Notifications
 
-<img src="docs/images/notification.png" alt="A Claudometer notification" width="347">
+<img src="docs/images/notification.png" alt="A ClaudeDial notification" width="347">
 
 Once per window at 75%, 90%, 95% and 100%, reset when the window does - and not
 re-announced after a restart. The title says how bad it is, the first line says
@@ -244,7 +244,7 @@ part you do not already have from the title and the icon. (The icon shows the
 *current* figure, so it can read 96 on a banner about crossing 95%.)
 
 The icon travels with the notification as pixels rather than as an icon name.
-A name only resolves once Claudometer is installed into an icon theme, and until
+A name only resolves once ClaudeDial is installed into an icon theme, and until
 then the daemon draws a blank document, which makes the banner look broken.
 
 ## Refresh behaviour

@@ -7,10 +7,10 @@
 
 #include <QTimer>
 
-namespace claudometer::ui {
+namespace claudedial::ui {
 namespace {
 
-using namespace claudometer::core;
+using namespace claudedial::core;
 
 } // namespace
 
@@ -121,4 +121,4 @@ void UsageViewModel::close()
     Q_EMIT closeRequested();
 }
 
-} // namespace claudometer::ui
+} // namespace claudedial::ui

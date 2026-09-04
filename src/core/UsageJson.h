@@ -7,9 +7,9 @@
 
 #include <optional>
 
-namespace claudometer::core {
+namespace claudedial::core {
 
-/// Machine-readable output for `claudometer --json`.
+/// Machine-readable output for `claudedial --json`.
 ///
 /// Carries percentages and timestamps only: no token, no organisation UUID, no
 /// workspace id, no email. Status-bar configs end up in public dotfiles repos.
@@ -33,4 +33,4 @@ QByteArray unavailable(const QString& reason);
 std::optional<UsageState> parseStatus(const QByteArray& payload);
 
 } // namespace json
-} // namespace claudometer::core
+} // namespace claudedial::core

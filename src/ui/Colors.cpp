@@ -5,7 +5,7 @@
 #include <QGuiApplication>
 #include <QPalette>
 
-namespace claudometer::ui {
+namespace claudedial::ui {
 
 Colors::Colors(QObject* parent)
     : QObject(parent)
@@ -67,4 +67,4 @@ QColor Colors::usageSevere() const
     return brand::kUsageSevere;
 }
 
-} // namespace claudometer::ui
+} // namespace claudedial::ui

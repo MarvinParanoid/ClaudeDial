@@ -4,7 +4,7 @@
 
 #include <QString>
 
-namespace claudometer::core {
+namespace claudedial::core {
 
 /// Human-readable strings shared by the tray tooltip, the popup and the CLI.
 /// `now` is injectable so the formatting is testable without waiting for a clock.
@@ -36,4 +36,4 @@ QString updatedAgo(const QDateTime& updatedAt, const QDateTime& now = QDateTime:
 QString tooltip(const UsageState& state, const QDateTime& now = QDateTime::currentDateTimeUtc());
 
 } // namespace format
-} // namespace claudometer::core
+} // namespace claudedial::core

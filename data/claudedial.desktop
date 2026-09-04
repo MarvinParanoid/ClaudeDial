@@ -1,10 +1,10 @@
 [Desktop Entry]
 Type=Application
-Name=Claudometer
+Name=ClaudeDial
 GenericName=Claude Code Usage Monitor
 Comment=Claude Code usage at a glance
-Exec=claudometer
-Icon=claudometer
+Exec=claudedial
+Icon=claudedial
 Terminal=false
 Categories=Utility;Monitor;
 Keywords=claude;usage;limit;monitor;tray;

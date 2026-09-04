@@ -26,7 +26,7 @@
 #include <QStyleHints>
 #include <QTimer>
 
-namespace claudometer {
+namespace claudedial {
 
 using core::Config;
 using core::Credentials;
@@ -162,7 +162,7 @@ void Application::updateTray()
     m_tray->setIcon(IconRenderer::render(percentage, options));
 
     const QString tooltip = state.isValid() ? core::format::tooltip(state)
-                                            : QStringLiteral("Claudometer\n%1").arg(
+                                            : QStringLiteral("ClaudeDial\n%1").arg(
                                                   m_service->unavailableReason());
     m_tray->setToolTip(tooltip);
 }
@@ -175,7 +175,7 @@ void Application::applyTheme()
     // While we are not overriding anything, the application palette *is* the
     // desktop's, so this is the moment to note what the panel looks like. The
     // tray icon has to keep following the desktop even when the user forces
-    // Light or Dark for Claudometer's own windows: forcing Light on a dark panel
+    // Light or Dark for ClaudeDial's own windows: forcing Light on a dark panel
     // would otherwise paint a dark icon onto a dark panel and lose it entirely.
     if (theme == Config::Theme::System)
         m_panelForeground = QGuiApplication::palette().color(QPalette::WindowText);
@@ -214,7 +214,7 @@ void Application::showSettings()
 {
     if (!m_settingsWindow) {
         m_settingsWindow = new QQuickView(m_engine, nullptr);
-        m_settingsWindow->setTitle(tr("Claudometer Settings"));
+        m_settingsWindow->setTitle(tr("ClaudeDial Settings"));
         m_settingsWindow->setResizeMode(QQuickView::SizeRootObjectToView);
         m_settingsWindow->setSource(QUrl(QStringLiteral("qrc:/qml/Settings.qml")));
         if (QQuickItem* root = m_settingsWindow->rootObject()) {
@@ -255,4 +255,4 @@ void Application::onThresholdCrossed(PeriodKind kind, int threshold, double perc
     m_notifier->notifyThreshold(kind, threshold, reset, icon);
 }
 
-} // namespace claudometer
+} // namespace claudedial

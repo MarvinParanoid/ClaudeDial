@@ -2,7 +2,7 @@
 
 #include <algorithm>
 
-namespace claudometer::core {
+namespace claudedial::core {
 
 UsageLevel levelFor(double percentage, int warningThreshold, int criticalThreshold)
 {
@@ -36,4 +36,4 @@ QString levelName(UsageLevel level)
     return QStringLiteral("normal");
 }
 
-} // namespace claudometer::core
+} // namespace claudedial::core

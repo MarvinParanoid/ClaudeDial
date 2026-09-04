@@ -6,7 +6,7 @@
 #include <QObject>
 #include <QString>
 
-namespace claudometer::tray {
+namespace claudedial::tray {
 
 /// Desktop notifications over the standard freedesktop.org D-Bus interface.
 ///
@@ -43,4 +43,4 @@ private:
     quint32 m_sevenDayId = 0;
 };
 
-} // namespace claudometer::tray
+} // namespace claudedial::tray

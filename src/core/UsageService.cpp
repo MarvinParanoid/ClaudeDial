@@ -8,7 +8,7 @@
 
 #include <algorithm>
 
-namespace claudometer::core {
+namespace claudedial::core {
 namespace {
 
 /// Backoff ladder for 429s, in minutes, capped at the last entry.
@@ -307,4 +307,4 @@ void UsageService::evaluateThresholds(const UsageState& previous, const UsageSta
     }
 }
 
-} // namespace claudometer::core
+} // namespace claudedial::core

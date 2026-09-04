@@ -4,7 +4,7 @@
 
 #include <algorithm>
 
-namespace claudometer::ui {
+namespace claudedial::ui {
 
 using core::Config;
 
@@ -103,4 +103,4 @@ void SettingsViewModel::setThemeIndex(int index)
         m_config->setTheme(theme);
 }
 
-} // namespace claudometer::ui
+} // namespace claudedial::ui

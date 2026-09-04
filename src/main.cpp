@@ -14,13 +14,13 @@ namespace {
 
 void printUsage(QTextStream& out)
 {
-    out << "claudometer " CLAUDOMETER_VERSION " - Claude Code usage at a glance\n\n"
+    out << "claudedial " CLAUDEDIAL_VERSION " - Claude Code usage at a glance\n\n"
            "Usage:\n"
-           "  claudometer            Run in the system tray\n"
-           "  claudometer --once     Print current usage and exit\n"
-           "  claudometer --json     Print current usage as JSON and exit\n"
-           "  claudometer --help     Show this help\n"
-           "  claudometer --version  Show the version\n\n"
+           "  claudedial            Run in the system tray\n"
+           "  claudedial --once     Print current usage and exit\n"
+           "  claudedial --json     Print current usage as JSON and exit\n"
+           "  claudedial --help     Show this help\n"
+           "  claudedial --version  Show the version\n\n"
            "The JSON output includes Waybar's text/tooltip/class keys, so a\n"
            "custom module needs no wrapper script.\n";
 }
@@ -34,9 +34,9 @@ int main(int argc, char** argv)
     // display and no compositor.
     for (int i = 1; i < argc; ++i) {
         if (std::strcmp(argv[i], "--json") == 0)
-            return claudometer::cli::run(argc, argv, /*jsonOutput=*/true);
+            return claudedial::cli::run(argc, argv, /*jsonOutput=*/true);
         if (std::strcmp(argv[i], "--once") == 0)
-            return claudometer::cli::run(argc, argv, /*jsonOutput=*/false);
+            return claudedial::cli::run(argc, argv, /*jsonOutput=*/false);
         if (std::strcmp(argv[i], "--help") == 0 || std::strcmp(argv[i], "-h") == 0) {
             QTextStream out(stdout);
             printUsage(out);
@@ -44,50 +44,50 @@ int main(int argc, char** argv)
         }
         if (std::strcmp(argv[i], "--version") == 0 || std::strcmp(argv[i], "-v") == 0) {
             QTextStream out(stdout);
-            out << "claudometer " CLAUDOMETER_VERSION "\n";
+            out << "claudedial " CLAUDEDIAL_VERSION "\n";
             return 0;
         }
     }
 
     QApplication app(argc, argv);
-    QApplication::setApplicationName(QStringLiteral("claudometer"));
-    QApplication::setApplicationVersion(QStringLiteral(CLAUDOMETER_VERSION));
-    QApplication::setOrganizationName(QStringLiteral("claudometer"));
+    QApplication::setApplicationName(QStringLiteral("claudedial"));
+    QApplication::setApplicationVersion(QStringLiteral(CLAUDEDIAL_VERSION));
+    QApplication::setOrganizationName(QStringLiteral("claudedial"));
     // Lets the compositor and the notification daemon associate us with our
     // .desktop entry - which is what gives notifications the right name and icon.
-    QApplication::setDesktopFileName(QStringLiteral("claudometer"));
+    QApplication::setDesktopFileName(QStringLiteral("claudedial"));
 
     // A tray application must not exit when its popup closes.
     QApplication::setQuitOnLastWindowClosed(false);
 
-    // Basic is the unstyled template set. Every control Claudometer uses
+    // Basic is the unstyled template set. Every control ClaudeDial uses
     // supplies its own visuals from Theme.qml, so a style that derives colours
     // from QPalette would only reintroduce the mismatch that made light-theme
     // labels invisible: the platform theme can keep a dark palette while the
-    // user has asked Claudometer for Light.
+    // user has asked ClaudeDial for Light.
     QQuickStyle::setStyle(QStringLiteral("Basic"));
 
     // The popup header's gauge is drawn by the same function as the tray icon.
-    qmlRegisterType<claudometer::ui::GaugeItem>("Claudometer", 1, 0, "Gauge");
+    qmlRegisterType<claudedial::ui::GaugeItem>("ClaudeDial", 1, 0, "Gauge");
 
     // A second launch should surface the running instance, not add a second
     // tray icon.
-    claudometer::SingleInstance instance;
+    claudedial::SingleInstance instance;
     if (!instance.acquire())
         return 0;
 
-    claudometer::Application application;
+    claudedial::Application application;
     if (!application.initialize()) {
         QTextStream err(stderr);
-        err << "claudometer: no system tray is available on this desktop.\n"
-               "Try `claudometer --json` for status-bar integration instead.\n";
+        err << "claudedial: no system tray is available on this desktop.\n"
+               "Try `claudedial --json` for status-bar integration instead.\n";
         return 1;
     }
 
-    QObject::connect(&instance, &claudometer::SingleInstance::activationRequested,
-                     &application, &claudometer::Application::showPopup);
+    QObject::connect(&instance, &claudedial::SingleInstance::activationRequested,
+                     &application, &claudedial::Application::showPopup);
 
-    // Lets `claudometer --json` from a status bar read this instance's last
+    // Lets `claudedial --json` from a status bar read this instance's last
     // result instead of spending an API request of its own.
     instance.setStatusProvider([&application] { return application.statusJson(); });
 

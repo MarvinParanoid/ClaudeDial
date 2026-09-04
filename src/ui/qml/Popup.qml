@@ -1,5 +1,5 @@
 import QtQuick
-import Claudometer
+import ClaudeDial
 
 // The whole UI. Deliberately not a dashboard: two numbers, two bars, two reset
 // lines, and when it was last updated. Nothing here scrolls, navigates or
@@ -69,7 +69,7 @@ Rectangle {
                 anchors.left: headerGauge.right
                 anchors.leftMargin: 10
                 anchors.verticalCenter: parent.verticalCenter
-                text: "Claudometer"
+                text: "ClaudeDial"
                 color: theme.text
                 font.pixelSize: 14
                 font.weight: Font.DemiBold

@@ -7,10 +7,10 @@
 
 #include <algorithm>
 
-namespace claudometer::gauge {
+namespace claudedial::gauge {
 namespace {
 
-using namespace claudometer::core::gaugeGeometry;
+using namespace claudedial::core::gaugeGeometry;
 
 /// Proportions for a logotype rather than an indicator.
 ///
@@ -82,4 +82,4 @@ void paint(QPainter& painter, const QRectF& bounds, std::optional<double> percen
     painter.restore();
 }
 
-} // namespace claudometer::gauge
+} // namespace claudedial::gauge

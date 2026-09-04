@@ -1,4 +1,4 @@
-add_library(claudometer_core STATIC
+add_library(claudedial_core STATIC
     Config.cpp
     Config.h
     Credentials.cpp
@@ -18,12 +18,12 @@ add_library(claudometer_core STATIC
 
 # Core knows nothing about QML, QtQuick, widgets or D-Bus. Keeping the link
 # line this short is what makes it testable headlessly.
-target_link_libraries(claudometer_core PUBLIC Qt6::Core Qt6::Network)
+target_link_libraries(claudedial_core PUBLIC Qt6::Core Qt6::Network)
 
-target_include_directories(claudometer_core PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/..)
+target_include_directories(claudedial_core PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/..)
 
-target_compile_definitions(claudometer_core
-    PUBLIC CLAUDOMETER_VERSION="${PROJECT_VERSION}"
+target_compile_definitions(claudedial_core
+    PUBLIC CLAUDEDIAL_VERSION="${PROJECT_VERSION}"
 )
 
-set_target_properties(claudometer_core PROPERTIES AUTOMOC ON POSITION_INDEPENDENT_CODE ON)
+set_target_properties(claudedial_core PROPERTIES AUTOMOC ON POSITION_INDEPENDENT_CODE ON)

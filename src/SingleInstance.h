@@ -9,11 +9,11 @@
 
 class QLocalServer;
 
-namespace claudometer {
+namespace claudedial {
 
 /// Keeps exactly one tray icon on screen.
 ///
-/// Without this, launching Claudometer again just adds another icon to the
+/// Without this, launching ClaudeDial again just adds another icon to the
 /// panel - easy to do from a launcher, and confusing once it has happened. A
 /// second launch instead asks the running instance to show its popup, which
 /// doubles as the `on-click` handler for status-bar modules.
@@ -45,4 +45,4 @@ private:
     std::function<QByteArray()> m_statusProvider;
 };
 
-} // namespace claudometer
+} // namespace claudedial

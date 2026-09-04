@@ -4,7 +4,7 @@
 
 #include <QPainter>
 
-namespace claudometer::ui {
+namespace claudedial::ui {
 
 GaugeItem::GaugeItem(QQuickItem* parent)
     : QQuickPaintedItem(parent)
@@ -75,4 +75,4 @@ void GaugeItem::setValueColor(const QColor& color)
     Q_EMIT changed();
 }
 
-} // namespace claudometer::ui
+} // namespace claudedial::ui

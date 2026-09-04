@@ -5,7 +5,7 @@
 class QMenu;
 class QSystemTrayIcon;
 
-namespace claudometer::tray {
+namespace claudedial::tray {
 
 /// QSystemTrayIcon-backed tray.
 ///
@@ -35,4 +35,4 @@ private:
     QMenu* m_menu;
 };
 
-} // namespace claudometer::tray
+} // namespace claudedial::tray

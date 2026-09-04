@@ -4,7 +4,7 @@ One binary, three build targets, fifteen classes. The shape exists to keep one
 promise: **the token lives in one class, and the UI layer cannot reach it.**
 
 ```
-claudometer_core        Qt6::Core + Qt6::Network only. No QML, no widgets, no D-Bus.
+claudedial_core        Qt6::Core + Qt6::Network only. No QML, no widgets, no D-Bus.
   Credentials             finds and validates the token; authorizes a request
   UsageClient             the one HTTP GET; lenient parsing
   UsageState              UsagePeriod{ double, optional<QDateTime> } x2
@@ -15,7 +15,7 @@ claudometer_core        Qt6::Core + Qt6::Network only. No QML, no widgets, no D-
   Format                  human strings (tooltip, "Resets in 1h 52m")
   UsageJson               --json output
 
-claudometer             the assembly
+claudedial             the assembly
   Application             wires it together; owns nothing interesting
   SingleInstance          one tray icon; a second launch shows the popup
   GaugePainter            the speedometer mark - one drawing, every host
@@ -34,7 +34,7 @@ claudometer             the assembly
   ui/GaugeItem            QQuickPaintedItem wrapping GaugePainter for QML
   ui/qml/*.qml            Popup, Settings, and two small components
 
-claudometer_tests       core only, headless
+claudedial_tests       core only, headless
 ```
 
 ## Data flow
@@ -164,7 +164,7 @@ signal.
 
 ## Simulation
 
-`CLAUDOMETER_SIMULATE=<5h>[,<7d>]` makes `UsageClient::fetch()` emit a synthetic
+`CLAUDEDIAL_SIMULATE=<5h>[,<7d>]` makes `UsageClient::fetch()` emit a synthetic
 state and return without touching the network. It exists because the 95% and
 100% steps of the ramp are fixed, so their colours, the `!` glyph and their
 notifications are otherwise unreachable without actually spending a limit - and

@@ -4,13 +4,13 @@
 
 #include <QColor>
 
-namespace claudometer::brand {
+namespace claudedial::brand {
 
 /// The colours, in one place, with one role each.
 ///
 /// Three roles, kept apart deliberately:
 ///
-///   identity  - Claudometer itself. The application icon and the popup's
+///   identity  - ClaudeDial itself. The application icon and the popup's
 ///               header mark, and nothing else. Never a control, never a usage
 ///               level: painting the whole application in it would cost the
 ///               usage ramp its meaning and stop the controls matching the
@@ -53,4 +53,4 @@ inline const QColor kUsageSevere { 0xda, 0x44, 0x53 };
     return neutral;
 }
 
-} // namespace claudometer::brand
+} // namespace claudedial::brand

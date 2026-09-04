@@ -7,7 +7,7 @@
 
 #include <optional>
 
-namespace claudometer::tray {
+namespace claudedial::tray {
 
 /// Draws the tray icon.
 ///
@@ -19,7 +19,7 @@ class IconRenderer
 {
 public:
     struct Options {
-        /// Needle or number. Both draw the same Claudometer arc, and the arc
+        /// Needle or number. Both draw the same ClaudeDial arc, and the arc
         /// fills with usage either way - so the two are variants of one mark and
         /// a full ring is never drawn. A full ring was tried first and read as a
         /// notification badge or a battery indicator.
@@ -51,4 +51,4 @@ private:
                                  const Options& options);
 };
 
-} // namespace claudometer::tray
+} // namespace claudedial::tray
