@@ -324,7 +324,69 @@ where each window is the `{utilization, resets_at}` pair above.
 **Rejected as the primary mechanism.** Worth revisiting only if the HTTP endpoint breaks
 and the user already has `claude` on `PATH`.
 
-### (b) `~/.config/Claude/plan-usage-history.json` — Claude Desktop's local cache
+### (b) Claude Code's status-line hook — a *documented* source
+
+Found by surveying more of the field (see §6). Claude Code renders its status
+line by running a command from `~/.claude/settings.json` and handing it a JSON
+payload on stdin. That payload carries the same two windows:
+
+```json
+"rate_limits": {
+  "five_hour": { "used_percentage": 0-100, "resets_at": 1788480781 },
+  "seven_day": { "used_percentage": 0-100, "resets_at": 1788480781 },
+  "spend_limit": { "used_percentage": 0-100, "resets_at": 1788480781 }
+}
+```
+
+`resets_at` is Unix epoch **seconds** here, not the ISO 8601 string the HTTP
+endpoint returns. The payload is documented inside the Claude Code binary
+itself, which says the block is "Only present for subscribers, or behind a
+gateway that sets a spend limit for you, after first API response, while at
+least one window is present", and that each window is "present only while the
+API reports it and its resets_at has not passed".
+
+Wiring, per the settings schema:
+
+```json
+"statusLine": { "type": "command", "command": "...", "refreshInterval": 30 }
+```
+
+`refreshInterval` re-runs the command every N seconds in addition to the
+event-driven update after each turn.
+
+**This changes the risk picture, and it is worth being clear about why.**
+Everything in §2–§4 rests on an endpoint Anthropic does not document, and that
+Claude Code's own schema calls experimental. This payload *is* documented, by
+the tool that produces it. It also needs no credentials at all — the single
+largest security concern in this document simply does not arise — and it costs
+no API request, so it cannot consume the rate-limit bucket or earn a 429.
+
+The costs are equally real:
+
+- **It requires editing the user's `~/.claude/settings.json`.** If they already
+  have a status line, Claudometer would have to chain into it without breaking
+  it. That is the user's file, and the restraint that keeps us out of
+  `.credentials.json` applies to writing this one for them too.
+- **It only updates while Claude Code is running.** The HTTP endpoint answers on
+  demand; this answers when a turn happens. Someone who has not run Claude Code
+  since this morning gets this morning's numbers.
+- **It sees only Claude Code.** claude.ai and the Desktop app spend the same
+  limits, and this payload will not know about them.
+- Nothing arrives until the first API response of a session.
+
+**Recommendation: keep the HTTP endpoint as the primary source, and offer this
+as an opt-in credential-free mode later.** It is a genuinely better answer for
+anyone unwilling to let a tray widget read another application's OAuth token,
+and for an active user it would cut Claudometer's API traffic to nothing. It is
+not a replacement, because "current on demand" is the whole point of a tray
+indicator. Two data paths are only worth keeping honest once the first one hurts.
+
+If it is built: throttle the writes (cctop uses ~30 s across all sessions), write
+atomically, and never emit anything on stdout — the tap must not be able to
+disturb the user's status line.
+
+
+### (c) `~/.config/Claude/plan-usage-history.json` — Claude Desktop's local cache
 
 Written by the Claude **Desktop** app (not Claude Code):
 
@@ -345,7 +407,7 @@ agree.** Useful independent confirmation that `fh`/`sd` are the same two windows
 
 **Rejected.** Missing reset timestamps alone disqualifies it.
 
-### (c) Reading local transcripts and estimating
+### (d) Reading local transcripts and estimating
 
 What some monitors do: scan `~/.claude/projects/**/*.jsonl`, sum tokens, guess. Claude
 Code itself does this only for its "what's contributing to usage" breakdown, never for
@@ -368,10 +430,19 @@ Surveyed, not copied. No code from any of these is reused.
 | [xikxp1/claude-monitor][xik] | Tray app; 5-hour / 7-day / Sonnet / Opus, threshold notifications, 1–30 min configurable refresh. |
 | Bortlesboat/claude-usage-monitor | Tray + GUI + CLI, colour-coded icon, notifications at 80 % / 90 %. |
 | [StaticB1/claude_ai_usage_widget][sb1] | Linux GTK tray widget + CLI. |
+| [stefanprodan/cctop][cctop] | Where the status-line source in §5(b) came from. Captures `rate_limits` from the payload via a `--capture-usage` tap, persists it to `~/.claude/cctop/usage.json`, throttles writes to ~30 s, writes atomically, and marks snapshots older than an hour with their age. Reads nothing else — "only `~/.claude` and the process table". |
+| [Maciek-roboblog/Claude-Code-Usage-Monitor][ccum] | Estimates from JSONL transcripts, *but* treats the official `rate_limits` from the status line as the source of truth when fresh, and labels every number `official`, `local_estimate`, `experimental` or `unknown`. |
+| [minchenlee/c9watch][c9], [sverrirsig/claude-control][cc], [m1ckc3s/claude-status-bar][csb], [gmr/claude-status][cs] | Session state and cost, from transcripts, hooks and the process table. No quota data, no credentials. |
+| [sotthang/so-agentbar][soa] | Reads official quota over OAuth. Its README names `/api/oauth/user`; **that endpoint does not exist** in Claude Code 2.1.255 — only `/api/oauth/usage` and `/api/oauth/profile` do. A slip, not a second endpoint. |
 
-**The consensus is unanimous:** every tool that reports *authoritative* percentages calls
-`GET /api/oauth/usage` with the OAuth token from `~/.claude/.credentials.json`.
-Claudometer is not doing anything novel or riskier than the field.
+**Two conclusions from the wider survey.** Every tool that reports authoritative
+percentages gets them from exactly one of two places: `GET /api/oauth/usage` with
+the OAuth token, or the status-line payload. Nothing else exists. And the tools
+that do estimate from transcripts say plainly that the official numbers win when
+they have them — the same conclusion §5(d) reaches independently.
+
+Claudometer is therefore doing nothing novel or riskier than the field. The one
+thing the field has that we do not is the credential-free path.
 
 Two patterns worth adopting: **isolating all credential and network code in one small,
 auditable unit**, and **aligning polls to reset boundaries**.
@@ -664,6 +735,8 @@ relying on a native-looking QQC2 style that will not be there.
 - [Claude-Code-Usage-Monitor#202 — "Anthropic OAuth Usage API"][issue202] — endpoint write-up
 - [xikxp1/claude-monitor][xik] — tray monitor with per-model windows
 - [StaticB1/claude_ai_usage_widget][sb1] — Linux GTK tray widget + CLI
+- [stefanprodan/cctop][cctop] — the status-line capture technique
+- [Maciek-roboblog/Claude-Code-Usage-Monitor][ccum] — provenance labelling
 - Claude Code `2.1.255` binary — endpoint, headers, internal schemas, retry policy
 - Live `GET /api/oauth/usage` — response in §3
 
@@ -671,3 +744,10 @@ relying on a native-looking QQC2 style that will not be there.
 [issue202]: https://github.com/Maciek-roboblog/Claude-Code-Usage-Monitor/issues/202
 [xik]: https://github.com/xikxp1/claude-monitor
 [sb1]: https://github.com/StaticB1/claude_ai_usage_widget
+[cctop]: https://github.com/stefanprodan/cctop
+[ccum]: https://github.com/Maciek-roboblog/Claude-Code-Usage-Monitor
+[c9]: https://github.com/minchenlee/c9watch
+[cc]: https://github.com/sverrirsig/claude-control
+[csb]: https://github.com/m1ckc3s/claude-status-bar
+[cs]: https://github.com/gmr/claude-status
+[soa]: https://github.com/sotthang/so-agentbar
