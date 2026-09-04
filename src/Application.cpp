@@ -1,6 +1,7 @@
 #include "Application.h"
 
 #include "AppIcon.h"
+#include "Brand.h"
 #include "core/Config.h"
 #include "core/Credentials.h"
 #include "core/Format.h"
@@ -99,13 +100,6 @@ bool Application::initialize()
             applyTheme();
     });
 
-    // Sampled before any Theme override is applied, so it really is the
-    // desktop's colour and not one we chose - and before it, whether the
-    // platform has a desktop to speak for at all.
-    m_panelSchemeKnown =
-        QGuiApplication::styleHints()->colorScheme() != Qt::ColorScheme::Unknown;
-    m_panelForeground = trayForeground();
-
     // The tooltip contains "resets in 1h 52m", which decays on its own.
     m_tooltipTick->setInterval(60 * 1000);
     connect(m_tooltipTick, &QTimer::timeout, this, &Application::updateTray);
@@ -179,11 +173,9 @@ void Application::updateTray()
 
     IconRenderer::Options options;
     options.style = m_config->trayStyle();
-    // There is no way to ask a StatusNotifierItem host what its panel looks
-    // like, so the application palette is the best available proxy. It is right
-    // on Plasma with a matching panel theme and can be wrong on a panel that is
-    // themed independently.
-    options.foreground = m_panelForeground;
+    // A fixed mid-tone rather than the panel's colour, which cannot be learned.
+    // See brand::kTrayNeutral for the two reports and the contrast figures.
+    options.foreground = brand::kTrayNeutral;
     options.warningThreshold = m_config->warningThreshold();
     options.criticalThreshold = m_config->criticalThreshold();
     options.stale = state.stale;
@@ -200,45 +192,10 @@ void Application::updateTray()
     m_tray->setToolTip(tooltip);
 }
 
-QColor Application::trayForeground() const
-{
-    // QPalette is the only proxy for what the panel looks like - there is no way
-    // to ask a StatusNotifierItem host, and no way to ask an XEmbed one either.
-    // But it is a proxy only when Qt has a desktop to ask.
-    //
-    // Where QStyleHints::colorScheme() is Unknown, Qt has no desktop
-    // integration and the palette is its own built-in default. Measured under
-    // xcb: XDG_CURRENT_DESKTOP=i3 and =sway both give WindowText #000000 with
-    // colorScheme Unknown, where KDE and GNOME give #fcfcfc and Dark. Pure
-    // black is not a light desktop, it is an absence of information - and
-    // i3bar's default background is black, so trusting it drew the icon in
-    // black on black. Reported from a real i3 session: the icon appeared only
-    // at 75% and above, which is exactly where the warning and critical
-    // colours take over from this neutral.
-    //
-    // Panels are overwhelmingly dark - i3bar, polybar and waybar all default
-    // that way - so a light neutral is the assumption when nobody tells us.
-    // This is a guess, and it is deliberately the one that fails visibly rather
-    // than invisibly: a light mark on a light panel is faint, a black mark on a
-    // black panel is nothing at all.
-    if (!m_panelSchemeKnown)
-        return QColor(0xdc, 0xdc, 0xdc); // the same neutral IconRenderer defaults to
-
-    return QGuiApplication::palette().color(QPalette::WindowText);
-}
-
 void Application::applyTheme()
 {
     auto* hints = QGuiApplication::styleHints();
     const Config::Theme theme = m_config->theme();
-
-    // While we are not overriding anything, the application palette *is* the
-    // desktop's, so this is the moment to note what the panel looks like. The
-    // tray icon has to keep following the desktop even when the user forces
-    // Light or Dark for ClaudeDial's own windows: forcing Light on a dark panel
-    // would otherwise paint a dark icon onto a dark panel and lose it entirely.
-    if (theme == Config::Theme::System)
-        m_panelForeground = trayForeground();
 
     Qt::ColorScheme requested = Qt::ColorScheme::Unknown; // Unknown = follow the system
     switch (theme) {
@@ -299,7 +256,7 @@ void Application::onThresholdCrossed(PeriodKind kind, int threshold, double perc
     // Always the number here, whatever the tray is set to: a notification is
     // about one specific figure, and at this size it is plainly legible.
     options.style = Config::TrayStyle::Percentage;
-    options.foreground = m_panelForeground;
+    options.foreground = brand::kTrayNeutral;
     options.warningThreshold = m_config->warningThreshold();
     options.criticalThreshold = m_config->criticalThreshold();
 

@@ -28,6 +28,29 @@ namespace claudedial::brand {
 /// Claude's terracotta.
 inline const QColor kIdentity { 0xd9, 0x77, 0x57 };
 
+/// The tray mark's neutral, while nothing needs attention.
+///
+/// A fixed mid-tone, and deliberately not the panel's own foreground. There is
+/// no way to learn what a panel looks like: not from a StatusNotifierItem host,
+/// not from an XEmbed one, and not from QPalette - which describes the
+/// *application* colours and is a separate setting from the panel's. Two
+/// independent reports proved the proxy wrong in mainstream configurations, and
+/// in opposite ways. On i3, QPalette::WindowText is #000000 with colorScheme
+/// Unknown, against i3bar's black. On KDE's shipped Breeze Twilight, the
+/// palette is honest and still useless: ColorScheme=BreezeLight for
+/// applications, plasmarc Theme=breeze-dark for the panel, so a correctly
+/// sampled near-black landed on a dark panel. In both, the icon was invisible
+/// below 75% and appeared above it - exactly where these usage colours take
+/// over from the neutral.
+///
+/// Contrast ratios decided the value. Against a dark panel, a light panel and
+/// i3bar's black: near-black gives 1.0 / 13.3 / 1.4 and light grey 11.1 / 1.2 /
+/// 15.3 - each invisible somewhere. This grey gives 5.4 / 2.5 / 7.5, never
+/// invisible anywhere, and its worst case is no worse than kUsageWarning's 2.3,
+/// which has shipped without complaint. Terracotta scores similarly but shares
+/// a hue with the warning step and would blunt the escalation.
+inline const QColor kTrayNeutral { 0x9a, 0x9a, 0x9a };
+
 inline const QColor kUsageWarning { 0xfd, 0xbc, 0x4b };
 inline const QColor kUsageCritical { 0xf0, 0x84, 0x2c };
 inline const QColor kUsageSevere { 0xda, 0x44, 0x53 };

@@ -217,19 +217,51 @@ Pure black is not a light desktop. It is Qt's built-in default with no desktop
 integration to fill it in — and i3bar's background is black, so ClaudeDial was
 drawing black on black.
 
-The panel itself stays unknowable: neither a StatusNotifierItem host nor an
-XEmbed one can be asked what it looks like. So the rule is not about the colour
-but about whether the proxy carries information at all. Where `colorScheme()` is
-Unknown, `Application::trayForeground()` assumes a dark panel — the default for
-i3bar, polybar and waybar alike. That is a guess, chosen because it fails
-visibly rather than invisibly: a light mark on a light panel is faint, a black
-mark on a black panel is nothing.
+### And then KDE's own Breeze Twilight did it differently
 
-**Still open:** a user whose panel is light and whose desktop tells Qt nothing
-gets a faint icon and no way to say so. An explicit override would settle it —
-a setting, or an environment variable for the crowd this affects, who are the
-same people editing status-bar configs. Not added yet, because no such report
-exists and the guess covers every default in the list above.
+The first fix keyed on `colorScheme() == Unknown` — treating the palette as
+uninformative rather than wrong. A second report killed that idea: on Breeze
+Twilight, a look-and-feel Plasma ships, the icon was invisible below 75% too.
+
+Measured live on that desktop: `WindowText #232629`, `Window #eff0f1`,
+`colorScheme() = Light`. The palette is *honest*. It is simply about the wrong
+thing, because on Plasma the panel is a separate setting — the look-and-feel
+package says so outright:
+
+```
+# org.kde.breezetwilight.desktop/contents/defaults
+[kdeglobals][General] ColorScheme=BreezeLight    # applications light
+[plasmarc][Theme]     name=breeze-dark           # panel dark
+```
+
+So the proxy is not merely uninformative sometimes; it can be accurate and
+useless. Chasing it further would mean reading `plasmarc`, resolving an unset
+value through the look-and-feel package's defaults, and deciding whether a
+Plasma theme name implies a dark panel — four fragile hops, for one desktop.
+
+**The neutral is now a fixed mid-tone, `brand::kTrayNeutral`, and no panel
+colour is consulted at all.** Contrast ratios against a dark panel, a light
+panel and i3bar's black:
+
+| mark | dark | light | i3bar |
+| --- | --- | --- | --- |
+| near-black `#232629` | **1.0** | 13.3 | **1.4** |
+| light grey `#dcdcdc` | 11.1 | **1.2** | 15.3 |
+| mid grey `#9a9a9a` | 5.4 | 2.5 | 7.5 |
+| `kUsageWarning` | 5.8 | 2.3 | 8.0 |
+
+Either extreme is invisible somewhere. The mid-tone never is, and its worst
+case is no worse than the warning colour, which has shipped without complaint —
+which is also why the icon appeared at 75% and above in both reports. Thresholds
+and the warning/critical/severe steps are untouched.
+
+Terracotta scores comparably and was rejected: it shares a hue with the warning
+step and would blunt the escalation.
+
+**Accepted cost:** on a light panel the neutral is fainter than a
+palette-derived near-black would have been. That is deliberate — a faint mark
+is a nuisance, an invisible one is a bug, and the palette cannot tell the two
+situations apart.
 
 ## Degradation
 
