@@ -97,6 +97,21 @@ applications reach it through an extension. Claudometer's job is to say so
 clearly and to keep working through Tier 2, not to install anything on the
 user's behalf.
 
+**A third toolkit agrees about that row.** [leonardocouy/claudometer][lc], a
+Tauri application solving the same problem, builds its Linux tray on
+`libappindicator3` — GTK AppIndicator, not StatusNotifierItem directly. It
+therefore inherits the whole AppIndicator restriction set: no tooltips, and a
+left click that opens the menu rather than activating the item. Qt, dorkbox's
+Java catalogue and a Rust/GTK application arriving at the same limitations from
+three different directions is about as much confirmation as this contract is
+going to get without a GNOME machine.
+
+It also shows what the WebView route costs on Linux: that project needs
+`libwebkit2gtk-4.1` at build *and* run time. The brief's "no embedded browser"
+constraint turns out to have had a concrete portability basis and not only an
+aesthetic one — WebKitGTK's 4.0/4.1 split has broken Tauri applications across
+distributions repeatedly. Our runtime dependencies are three Qt packages.
+
 ---
 
 ## Degradation
@@ -184,3 +199,4 @@ reports from real desktops replace guesses. Even Syncthing Tray, with a far
 longer list than ours, does not claim to test every combination.
 
 [appind]: https://github.com/ubuntu/gnome-shell-extension-appindicator
+[lc]: https://github.com/leonardocouy/claudometer

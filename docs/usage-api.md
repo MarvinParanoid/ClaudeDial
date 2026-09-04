@@ -61,7 +61,9 @@ file will be absent or lack `claudeAiOauth`. Claude Code models this internally 
 ### Not applicable on Linux
 
 - **macOS** stores this in the login Keychain under service `Claude Code-credentials`.
-  That string does **not** appear in the Linux binary.
+  That string does **not** appear in the Linux binary. Corroborated by a shipping
+  application: [leonardocouy/claudometer][lc] reads
+  `~/.claude/.credentials.json` on Linux and the system Keychain on macOS.
 - `libsecret` appears twice in the binary but is not used for these credentials on Linux —
   Claude Code writes the plain `0600` JSON file. Claudometer therefore does not need a
   keyring dependency.
@@ -751,3 +753,4 @@ relying on a native-looking QQC2 style that will not be there.
 [csb]: https://github.com/m1ckc3s/claude-status-bar
 [cs]: https://github.com/gmr/claude-status
 [soa]: https://github.com/sotthang/so-agentbar
+[lc]: https://github.com/leonardocouy/claudometer
