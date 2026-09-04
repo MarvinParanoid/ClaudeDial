@@ -1,0 +1,80 @@
+name: Build ClaudeDial for Windows
+description: >
+  Compiles, tests, and assembles the Qt runtime into a zip. Shared by ci.yml,
+  which attaches the zip to every push, and release.yml, which attaches it to a
+  tag - one copy, because two copies of a deployment recipe drift and only one
+  of them gets fixed.
+
+outputs:
+  zip:
+    description: The assembled archive, at the repository root.
+    value: ClaudeDial-windows-x86_64.zip
+
+runs:
+  using: composite
+  steps:
+    - uses: jurplel/install-qt-action@v4
+      with:
+        version: '6.8.*'
+        cache: true
+
+    - name: Build
+      shell: pwsh
+      run: |
+        cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+        cmake --build build --config Release
+
+    - name: Test
+      shell: pwsh
+      run: ctest --test-dir build -C Release --output-on-failure
+
+    # Qt's own deployment script, through install. A hand-written windeployqt
+    # call deployed every DLL and then no QML modules at all.
+    #
+    # The prefix must be absolute: Qt composes the qt.conf path from
+    # CMAKE_INSTALL_PREFIX and refuses a relative one - and it does so only
+    # after installing everything else, which reads like a deployment fault
+    # rather than a path one.
+    - name: Assemble the runtime
+      shell: pwsh
+      run: cmake --install build --config Release --prefix "${{ github.workspace }}/dist"
+
+    # Printed, not merely asserted: Actions logs need admin rights to download,
+    # so a failure here would otherwise be diagnosed by guesswork.
+    - name: Show what was assembled
+      shell: pwsh
+      run: Get-ChildItem -Recurse dist | Select-Object -ExpandProperty FullName | ForEach-Object { $_.Replace((Resolve-Path dist).Path, '') }
+
+    # Searched recursively rather than at a fixed path: the layout is Qt's to
+    # choose, and asserting a guessed one is how the first attempt failed. Qt
+    # puts the binary in bin/ and the QML modules in qml/.
+    - name: Check what was assembled
+      shell: pwsh
+      run: |
+        $fail = 0
+        function Need($pattern, $what) {
+          if (-not (Get-ChildItem -Recurse -Path dist -Filter $pattern -ErrorAction SilentlyContinue)) {
+            Write-Host "MISSING $what ($pattern)"
+            return 1
+          }
+          return 0
+        }
+        $fail += Need 'claudedial.exe' 'the binary'
+        $fail += Need 'Qt6Core.dll'    'the Qt runtime'
+        $fail += Need 'Qt6Quick.dll'   'QtQuick'
+        $fail += Need 'qwindows.dll'   'the windows platform plugin'
+        if (-not (Get-ChildItem -Recurse -Path dist -Directory -Filter 'Basic' -ErrorAction SilentlyContinue |
+                  Where-Object { $_.FullName -match 'Controls' })) {
+          Write-Host 'MISSING QtQuick.Controls.Basic - the settings window will not load'
+          $fail += 1
+        }
+        if (-not (Get-ChildItem -Recurse -Path dist -Filter 'qopensslbackend.dll' -ErrorAction SilentlyContinue) -and
+            -not (Get-ChildItem -Recurse -Path dist -Filter 'qschannelbackend.dll' -ErrorAction SilentlyContinue)) {
+          Write-Host 'MISSING a TLS backend - api.anthropic.com will be unreachable'
+          $fail += 1
+        }
+        exit $fail
+
+    - name: Zip it
+      shell: pwsh
+      run: Compress-Archive -Path dist/* -DestinationPath ClaudeDial-windows-x86_64.zip -Force

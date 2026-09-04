@@ -49,7 +49,7 @@ put together: [docs/architecture.md](docs/architecture.md).
 
 ## Installation
 
-Two artefacts are published for each release, plus a source build.
+Three artefacts are published for each release, plus a source build.
 
 ### AppImage
 
@@ -106,15 +106,17 @@ package lands and `yay -S claudedial-bin` starts working.
 
 ### Windows
 
-Personal-use scaffolding rather than a supported target, and nobody has run it
-on a real desktop yet - but there is a build, and it is not attached to a
-release.
+`ClaudeDial-windows-x86_64.zip` comes with each release from v0.1.6 on.
+Personal-use scaffolding rather than a supported target: it has been run on a
+real desktop and it works, but lightly - see [Desktop
+support](#desktop-support).
 
-Take it from the latest green run on the [Actions
-tab](https://github.com/MarvinParanoid/ClaudeDial/actions): open the run, and
-the **Artifacts** box at the bottom of its summary page has
-`ClaudeDial-windows-x86_64`. Artifacts only appear once the whole run has
-finished, and GitHub always re-zips them, so there are two layers to unpack.
+Every push also leaves the same zip on its [Actions
+run](https://github.com/MarvinParanoid/ClaudeDial/actions), which is where to
+get a build between releases: open a green run and take
+`ClaudeDial-windows-x86_64` from the **Artifacts** box at the bottom. Those
+appear only once the whole run has finished, and GitHub re-zips them, so there
+are two layers to unpack - the release asset has one.
 
 Run `bin\claudedial.exe`. Qt sits beside it and nothing needs installing. The
 usual flags work from a terminal - the binary borrows the console it was

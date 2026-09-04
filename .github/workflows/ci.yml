@@ -20,80 +20,14 @@ jobs:
   # discovered to be broken while cutting a release. The tests run too: the core
   # is plain Qt and there is no reason for them not to.
   windows:
-    name: Windows (compile and test)
+    name: Windows (compile, test, package)
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
-
-      - uses: jurplel/install-qt-action@v4
-        with:
-          version: '6.8.*'
-          cache: true
-
-      - name: Build
-        shell: pwsh
-        run: |
-          cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
-          cmake --build build --config Release
-
-      - name: Test
-        shell: pwsh
-        run: ctest --test-dir build -C Release --output-on-failure
-
-      # Qt's deployment script, run through install, rather than a bare
-      # windeployqt call - see the note in CMakeLists.txt for why.
-      # An absolute prefix, and not by preference: Qt's deploy support composes
-      # the qt.conf path from CMAKE_INSTALL_PREFIX and then refuses a relative
-      # one - "Given qt.conf path is not an absolute path: 'dist/bin/qt.conf'".
-      # A relative --prefix gets all the way through installing the QML modules
-      # before failing, which makes it look like a deployment problem rather
-      # than a path one.
-      - name: Assemble the runtime
-        shell: pwsh
-        run: cmake --install build --config Release --prefix "${{ github.workspace }}/dist"
-
-      # Printed, not just asserted. There is no cross compiler for Windows on
-      # any machine working on this, so a failure here is otherwise diagnosed by
-      # guesswork - and one guess about this step has already been wrong.
-      - name: Show what was assembled
-        shell: pwsh
-        run: Get-ChildItem -Recurse dist | Select-Object -ExpandProperty FullName | ForEach-Object { $_.Replace((Resolve-Path dist).Path, '') }
-
-      # Searched recursively rather than at a fixed path: the layout is Qt's to
-      # choose, and asserting a guessed one is how the previous attempt failed.
-      - name: Check what was assembled
-        shell: pwsh
-        run: |
-          $fail = 0
-          function Need($pattern, $what) {
-            if (-not (Get-ChildItem -Recurse -Path dist -Filter $pattern -ErrorAction SilentlyContinue)) {
-              Write-Host "MISSING $what ($pattern)"
-              return 1
-            }
-            return 0
-          }
-          $fail += Need 'claudedial.exe' 'the binary'
-          $fail += Need 'Qt6Core.dll'    'the Qt runtime'
-          $fail += Need 'Qt6Quick.dll'   'QtQuick'
-          $fail += Need 'qwindows.dll'   'the windows platform plugin'
-          if (-not (Get-ChildItem -Recurse -Path dist -Directory -Filter 'Basic' -ErrorAction SilentlyContinue |
-                    Where-Object { $_.FullName -match 'Controls' })) {
-            Write-Host 'MISSING QtQuick.Controls.Basic - the settings window will not load'
-            $fail += 1
-          }
-          if (-not (Get-ChildItem -Recurse -Path dist -Filter 'qopensslbackend.dll' -ErrorAction SilentlyContinue) -and
-              -not (Get-ChildItem -Recurse -Path dist -Filter 'qschannelbackend.dll' -ErrorAction SilentlyContinue)) {
-            Write-Host 'MISSING a TLS backend - api.anthropic.com will be unreachable'
-            $fail += 1
-          }
-          exit $fail
-
-      - name: Zip it
-        shell: pwsh
-        run: Compress-Archive -Path dist/* -DestinationPath ClaudeDial-windows-x86_64.zip
+      - uses: ./.github/actions/windows-build
 
       # Attached to every run, so getting a Windows build is a download rather
-      # than a manual workflow dispatch or a spent version number.
+      # than a manual dispatch or a spent version number.
       - uses: actions/upload-artifact@v4
         with:
           name: ClaudeDial-windows-x86_64
