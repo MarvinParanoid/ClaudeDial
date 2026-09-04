@@ -5,6 +5,7 @@
 #include "core/Config.h"
 #include "core/Credentials.h"
 #include "core/Format.h"
+#include "core/PanelTheme.h"
 #include "core/UsageJson.h"
 #include "core/UsageService.h"
 #include "tray/IconRenderer.h"
@@ -17,6 +18,7 @@
 #include "ui/UsageViewModel.h"
 
 #include <QEvent>
+#include <QFile>
 #include <QGuiApplication>
 #include <QImage>
 #include <QPalette>
@@ -24,6 +26,7 @@
 #include <QQmlEngine>
 #include <QQuickItem>
 #include <QQuickView>
+#include <QStandardPaths>
 #include <QStyleHints>
 #include <QTextStream>
 #include <QTimer>
@@ -190,6 +193,56 @@ void Application::updateTray()
     m_tray->setToolTip(tooltip);
 }
 
+namespace {
+
+/// The panel background Plasma declares, or nullopt off Plasma and when Plasma
+/// says nothing.
+///
+/// Three small file reads, repeated whenever the icon is redrawn - a minute
+/// apart at worst. Caching would mean watching both plasmarc and kdeglobals to
+/// stay correct through a look-and-feel change, which is more machinery than
+/// the reads cost.
+std::optional<core::Rgb> plasmaPanelBackground()
+{
+    const auto read = [](const QString& path) -> QString {
+        QFile file(path);
+        if (!file.open(QIODevice::ReadOnly | QIODevice::Text))
+            return {};
+        return QString::fromUtf8(file.readAll());
+    };
+    const QString config =
+        QStandardPaths::writableLocation(QStandardPaths::GenericConfigLocation);
+
+    QString lookAndFeel;
+    const QString package =
+        core::lookAndFeelPackage(read(config + QStringLiteral("/kdeglobals")));
+    if (!package.isEmpty()) {
+        const QString relative =
+            QStringLiteral("plasma/look-and-feel/%1/contents/defaults").arg(package);
+        for (const QString& path :
+             QStandardPaths::locateAll(QStandardPaths::GenericDataLocation, relative)) {
+            lookAndFeel = read(path);
+            if (!lookAndFeel.isEmpty())
+                break;
+        }
+    }
+
+    const QString theme =
+        core::plasmaThemeName(read(config + QStringLiteral("/plasmarc")), lookAndFeel);
+    if (theme.isEmpty())
+        return std::nullopt;
+
+    const QString relative = QStringLiteral("plasma/desktoptheme/%1/colors").arg(theme);
+    for (const QString& path :
+         QStandardPaths::locateAll(QStandardPaths::GenericDataLocation, relative)) {
+        if (const auto background = core::plasmaPanelBackground(read(path)))
+            return background;
+    }
+    return std::nullopt;
+}
+
+} // namespace
+
 QColor Application::trayNeutral() const
 {
     switch (m_config->trayTone()) {
@@ -201,15 +254,21 @@ QColor Application::trayNeutral() const
         break;
     }
 
-    // Auto follows the application palette, which is right wherever the panel
-    // follows the applications - the stock Breeze and Breeze Dark case. Where
-    // the platform reports no colour scheme at all, Qt has no desktop to ask
-    // and the palette is its own default: measured as #000000 on i3 and sway,
-    // against i3bar's black. Assume a dark panel there, which is how i3bar,
-    // polybar and waybar all default.
+    // Plasma writes the panel's colour down, and it is exact rather than a
+    // guess: breeze-dark declares BackgroundNormal=32,35,38, which is the
+    // #202326 measured off the panel itself. This is what makes Auto right on
+    // Breeze Twilight, where the applications are light and the panel is not.
+    if (const auto panel = plasmaPanelBackground())
+        return panel->isDark() ? brand::kTrayNeutralLight : brand::kTrayNeutralDark;
+
+    // Nothing declared: the stock "default" Plasma theme ships no colours
+    // because it follows the application colour scheme, and elsewhere there is
+    // no Plasma to ask. Either way the palette is now the best answer.
     //
-    // Auto is wrong wherever the panel is themed independently of the
-    // applications. That is what the explicit tones are for.
+    // Where the platform reports no colour scheme at all, Qt has no desktop to
+    // ask and the palette is its own default: measured as #000000 on i3 and
+    // sway, against i3bar's black. Assume a dark panel there, which is how
+    // i3bar, polybar and waybar all default.
     if (QGuiApplication::styleHints()->colorScheme() == Qt::ColorScheme::Unknown)
         return brand::kTrayNeutralLight;
 

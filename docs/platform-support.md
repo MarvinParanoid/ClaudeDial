@@ -257,7 +257,34 @@ panels, and 3.64 is the ceiling for *any* single colour: a fixed neutral can be
 balanced or crisp, never both. Terracotta scores comparably (4.9 / 2.7) and also
 shares a hue with the warning step, which would blunt the escalation.
 
-**So the tone is a setting.** `core::Config::TrayTone` — Auto, Light, Dark —
+**And then Auto still had to be right by default.** Leaving Breeze Twilight to
+a setting was not good enough: it is a look-and-feel KDE ships, on the platform
+most of these users are on, and a default that draws an invisible icon there is
+a bug rather than a configuration question.
+
+Plasma does write the panel's colour down, and it is exact. The chain, verified
+against a screenshot of the panel:
+
+1. `~/.config/plasmarc` `[Theme] name` — absent on the machine in question,
+   while the desktop was plainly using breeze-dark, so this cannot be the only
+   source;
+2. `kdeglobals LookAndFeelPackage` — then that package's
+   `contents/defaults`, whose groups read `[plasmarc][Theme]` rather than plain
+   INI. Twilight's says `name=breeze-dark`;
+3. `plasma/desktoptheme/breeze-dark/colors` `[Colors:Window] BackgroundNormal`
+   = `32,35,38`.
+
+`#202326`. Sampling the panel's own pixels from a screenshot measured
+`#202326`, luminance 34.6. Not a heuristic — the panel's actual background.
+
+The stock `default` theme ships no `colors` file at all, which is how it says it
+follows the application colour scheme, and that is exactly the case where
+QPalette was the right answer all along. So Auto now reads the declared panel
+colour where there is one, and falls back to the palette where there is not.
+The parsing lives in `core::PanelTheme` with the real config strings as its
+tests, since core takes only Qt Core and Network and stays testable headlessly.
+
+**The tone stays a setting too.** `core::Config::TrayTone` — Auto, Light, Dark —
 with `brand::kTrayNeutralLight` (`#dcdcdc`, 11.1 on a dark panel) and
 `kTrayNeutralDark` (`#232629`, 13.3 on a light one). Both crisp, because each is
 chosen for a known background rather than hedged across two.

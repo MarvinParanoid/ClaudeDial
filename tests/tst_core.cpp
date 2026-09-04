@@ -1,5 +1,6 @@
 #include "core/Config.h"
 #include "core/Format.h"
+#include "core/PanelTheme.h"
 #include "core/GaugeGeometry.h"
 #include "core/UsageClient.h"
 #include "core/UsageJson.h"
@@ -27,6 +28,7 @@ class CoreTest : public QObject
 private Q_SLOTS:
     void initTestCase();
 
+    void readsThePlasmaPanelColour();
     void parsesRealResponse();
     void ignoresUnknownKeys();
     void toleratesNullWindows();
@@ -603,6 +605,61 @@ void CoreTest::remembersAnnouncedThresholdsAcrossRestarts()
     // A window with nothing recorded must come back empty, not stale.
     QVERIFY(reread.firedThresholds(QStringLiteral("seven_day")).isEmpty());
     QVERIFY(!reread.firedWindowReset(QStringLiteral("seven_day")).isValid());
+}
+
+/// The panel colour is the one thing about a tray icon that cannot be asked for
+/// at runtime, and getting it wrong made the icon invisible twice. These are the
+/// real strings from the machine where that happened.
+void CoreTest::readsThePlasmaPanelColour()
+{
+    const QString twilightDefaults = QStringLiteral(
+        "[kdeglobals][General]\n"
+        "ColorScheme=BreezeLight\n"
+        "\n"
+        "[plasmarc][Theme]\n"
+        "name=breeze-dark\n");
+
+    // No plasmarc on the machine at all, while the desktop was plainly using
+    // breeze-dark - so the look-and-feel package has to be consulted, and this
+    // is the case that a plain INI parser would miss: the group is
+    // [plasmarc][Theme], not [Theme].
+    QCOMPARE(plasmaThemeName(QString(), twilightDefaults),
+             QStringLiteral("breeze-dark"));
+
+    // An explicit choice wins over the package default.
+    QCOMPARE(plasmaThemeName(QStringLiteral("[Theme]\nname=oxygen\n"), twilightDefaults),
+             QStringLiteral("oxygen"));
+
+    QVERIFY(plasmaThemeName(QString(), QString()).isEmpty());
+
+    QCOMPARE(lookAndFeelPackage(QStringLiteral(
+                 "[General]\nBrowserApplication=x.desktop\n"
+                 "[KDE]\nLookAndFeelPackage=org.kde.breezetwilight.desktop\n")),
+             QStringLiteral("org.kde.breezetwilight.desktop"));
+
+    // breeze-dark's own colours. #202326, which is what a screenshot of the
+    // panel measured, so this is the panel and not an approximation of it.
+    const auto dark = plasmaPanelBackground(
+        QStringLiteral("[Colors:Window]\nBackgroundNormal=32,35,38\n"));
+    QVERIFY(dark.has_value());
+    QCOMPARE(dark->r, 32);
+    QVERIFY(dark->isDark());
+
+    const auto light = plasmaPanelBackground(
+        QStringLiteral("[Colors:Window]\nBackgroundNormal=239,240,241\n"));
+    QVERIFY(light.has_value());
+    QVERIFY(!light->isDark());
+
+    // The stock "default" theme ships no colours at all, which is how it says
+    // it follows the application colour scheme. That must read as "no answer",
+    // not as black.
+    QVERIFY(!plasmaPanelBackground(QString()).has_value());
+    QVERIFY(!plasmaPanelBackground(
+                 QStringLiteral("[Colors:Button]\nBackgroundNormal=1,2,3\n"))
+                 .has_value());
+    QVERIFY(!plasmaPanelBackground(
+                 QStringLiteral("[Colors:Window]\nBackgroundNormal=nonsense\n"))
+                 .has_value());
 }
 
 QTEST_GUILESS_MAIN(CoreTest)

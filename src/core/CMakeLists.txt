@@ -5,6 +5,8 @@ add_library(claudedial_core STATIC
     Credentials.h
     Format.cpp
     Format.h
+    PanelTheme.cpp
+    PanelTheme.h
     UsageClient.cpp
     UsageClient.h
     UsageJson.cpp

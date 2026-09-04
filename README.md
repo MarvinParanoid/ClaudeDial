@@ -216,13 +216,13 @@ styles of one dial rather than two icons. The popup header always shows the
 needle, as the constant logotype.
 
 **Tray icon** sets how light or dark the icon is drawn while usage is below the
-warning threshold. **Auto** follows your application colours, which is right
-when your panel matches them. Pick **Light** for a dark panel or **Dark** for a
-light one when it does not: a panel cannot be asked what colour it is, and on
-KDE it is a separate setting from the application colour scheme - Breeze
-Twilight pairs light applications with a dark panel. Above the warning
-threshold the icon is amber, orange or red regardless, which is legible either
-way.
+warning threshold. **Auto** reads the panel's colour where Plasma declares one -
+which covers Breeze Twilight, where the applications are light and the panel is
+not - and follows your application colours elsewhere. Pick **Light** for a dark
+panel or **Dark** for a light one if it still guesses wrong: a panel cannot be
+asked what colour it is, and on most desktops nothing writes it down. Above the
+warning threshold the icon is amber, orange or red regardless, which is legible
+either way.
 
 When the data is stale the whole mark fades, so a glance at the panel tells you
 the number is the last one ClaudeDial managed to fetch.
