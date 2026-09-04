@@ -7,12 +7,12 @@
 # Qt, which is fine in both directions: Qt 6 keeps ABI compatibility across
 # minor versions, and a binary built against glibc 2.35 runs on newer glibc.
 #
-# The checksums below are for v0.1.5. After tagging a new release, refresh them:
+# The checksums below are for v0.1.6. After tagging a new release, refresh them:
 #     updpkgsums PKGBUILD-bin
 # or, without pacman-contrib installed, sha256sum the two published files.
 pkgname=claudedial-bin
 _pkgname=claudedial
-pkgver=0.1.5
+pkgver=0.1.6
 pkgrel=1
 pkgdesc="Claude Code usage at a glance - minimal system tray indicator"
 arch=('x86_64')
@@ -28,7 +28,7 @@ provides=("$_pkgname")
 conflicts=("$_pkgname")
 source=("$_pkgname-$pkgver.tar.gz::$url/releases/download/v$pkgver/$_pkgname-$pkgver-linux-x86_64.tar.gz"
         "LICENSE-$pkgver::$url/raw/v$pkgver/LICENSE")
-sha256sums=('96eb6110cae6305bdf16f41f8a942e266521109a0e3cde300beb2d1dd9472d8e'
+sha256sums=('7046ae8e1ed5665fe047e551ccf85c63cc1e2b2305b6d4506e3d2f8cdb88d286'
             '4698a8696649196be7bb4e7b24a8ed90865cc8933efe8f199415bb634dbf4630')
 
 package() {
