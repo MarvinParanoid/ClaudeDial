@@ -217,8 +217,7 @@ there is no pace multiplier, no projection and no verdict. The 7-day window does
 not get this: consumption across days is naturally uneven, so "40% through the
 week" would say nothing useful.
 
-That line is experimental. If nobody's eye ever catches it, it will go. (The
-popup screenshot above predates it.)
+That line is experimental. If nobody's eye ever catches it, it will go.
 
 Colour has three separate jobs:
 
