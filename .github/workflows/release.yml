@@ -32,10 +32,16 @@ jobs:
       # desktop the Qt plugin sweeps up third-party plugins from Qt's plugin
       # directory (kimageformats) and fails on their missing dependencies. A
       # clean Qt install has none of them.
+      # qtwayland is a separate module and is NOT part of the default install.
+      # Without it the AppImage carries only the xcb platform plugin, and on a
+      # Wayland session it either falls back to XWayland or refuses to start -
+      # which is what v0.1.0 shipped, on a project whose primary tested desktop
+      # is Plasma on Wayland.
       - name: Install Qt
         uses: jurplel/install-qt-action@v4
         with:
           version: '6.8.*'
+          modules: 'qtwayland'
           cache: true
 
       - name: Configure
@@ -64,13 +70,28 @@ jobs:
       # cmake --install already lays down exactly what linuxdeploy expects: the
       # binary, the .desktop entry and the hicolor icon. Verified locally - it
       # needed no -d or -i overrides.
+      # Two things the Qt plugin will not work out on its own.
+      #
+      # The Wayland platform plugin and its companions are only deployed when
+      # named: the plugin follows the *binary's* dependencies, and a Qt
+      # application does not link its platform plugin.
+      #
+      # OpenSSL is dlopen'd rather than linked by the Qt from these archives, so
+      # the dependency scan cannot see it either. Locally, against a distro Qt
+      # that links it, it was bundled automatically - which is exactly why this
+      # is asserted below rather than assumed.
       - name: Build the AppImage
         env:
           OUTPUT: ClaudeDial-x86_64.AppImage
           QML_SOURCES_PATHS: src/ui/qml
+          EXTRA_PLATFORM_PLUGINS: 'libqwayland-generic.so;libqwayland-egl.so'
+          EXTRA_QT_PLUGINS: 'wayland-decoration-client;wayland-graphics-integration-client;wayland-shell-integration'
         run: |
           DESTDIR="$PWD/AppDir" cmake --install build --prefix /usr
-          ./linuxdeploy-x86_64.AppImage --appdir AppDir --plugin qt --output appimage
+          ssl=$(dirname "$(ldconfig -p | awk '/libssl\.so\.3/{print $NF; exit}')")
+          ./linuxdeploy-x86_64.AppImage --appdir AppDir --plugin qt \
+            --library "$ssl/libssl.so.3" --library "$ssl/libcrypto.so.3" \
+            --output appimage
 
       # --version needs no credentials, no network and no display, which makes
       # it the one thing that can smoke-test a packaged GUI application in CI.
@@ -80,17 +101,35 @@ jobs:
           ./ClaudeDial-x86_64.AppImage --version
           ./ClaudeDial-x86_64.AppImage --help
 
-      # Whether Qt links OpenSSL or loads it at run time depends on how Qt was
-      # built. On the Qt used locally it was linked and therefore bundled; if
-      # this ever prints nothing, the AppImage will fail to reach
-      # api.anthropic.com on hosts whose OpenSSL differs, and libssl/libcrypto
-      # have to be added with linuxdeploy's --library.
-      - name: Report whether OpenSSL got bundled
+      # Assertions, not a report. v0.1.0 shipped without the Wayland plugin and
+      # without OpenSSL because these were printed for someone to read rather
+      # than checked, and nobody read them. Each of these has already been a
+      # real defect once.
+      - name: Verify what the AppImage contains
         run: |
           ./ClaudeDial-x86_64.AppImage --appimage-extract > /dev/null
-          find squashfs-root -name 'libssl*' -o -name 'libcrypto*' | sort
-          echo "--- QML modules bundled ---"
-          find squashfs-root -maxdepth 4 -type d -name 'QtQuick*' | sort | head
+          fail=0
+
+          echo "--- platform plugins ---"
+          ls squashfs-root/usr/plugins/platforms/
+          for p in libqxcb.so libqwayland-generic.so; do
+            [ -f "squashfs-root/usr/plugins/platforms/$p" ] \
+              || { echo "MISSING platform plugin: $p"; fail=1; }
+          done
+
+          echo "--- OpenSSL (Qt dlopens it, so nothing else will catch this) ---"
+          find squashfs-root -name 'libssl.so.3' -o -name 'libcrypto.so.3'
+          for l in libssl.so.3 libcrypto.so.3; do
+            find squashfs-root -name "$l" | grep -q . \
+              || { echo "MISSING library: $l - HTTPS will fail on hosts whose OpenSSL differs"; fail=1; }
+          done
+
+          echo "--- QML runtime (our own QML is in the binary; QtQuick's is not) ---"
+          find squashfs-root -maxdepth 5 -type d -name QtQuick
+          [ -d squashfs-root/usr/qml/QtQuick/Controls/Basic ] \
+            || { echo "MISSING QtQuick.Controls.Basic - the settings window will not load"; fail=1; }
+
+          exit $fail
 
       - name: Publish
         uses: softprops/action-gh-release@v2

@@ -256,6 +256,17 @@ any other usage monitor you run, and this endpoint does return 429 if you push
 it. A failure never clears good data - the last known usage stays on screen,
 marked stale.
 
+## If TLS fails from the AppImage
+
+The AppImage bundles OpenSSL, because distributions ship incompatible versions
+of it and ClaudeDial makes one HTTPS request. On a host whose own OpenSSL
+configuration disagrees with the bundled library, that can break instead of
+help; the escape hatch is to neutralise the host configuration for this process:
+
+```console
+$ OPENSSL_CONF= ./ClaudeDial-x86_64.AppImage
+```
+
 ## License
 
 MIT. See [LICENSE](LICENSE).
