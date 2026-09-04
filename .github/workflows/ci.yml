@@ -42,9 +42,15 @@ jobs:
 
       # Qt's deployment script, run through install, rather than a bare
       # windeployqt call - see the note in CMakeLists.txt for why.
+      # An absolute prefix, and not by preference: Qt's deploy support composes
+      # the qt.conf path from CMAKE_INSTALL_PREFIX and then refuses a relative
+      # one - "Given qt.conf path is not an absolute path: 'dist/bin/qt.conf'".
+      # A relative --prefix gets all the way through installing the QML modules
+      # before failing, which makes it look like a deployment problem rather
+      # than a path one.
       - name: Assemble the runtime
         shell: pwsh
-        run: cmake --install build --config Release --prefix dist
+        run: cmake --install build --config Release --prefix "${{ github.workspace }}/dist"
 
       # Printed, not just asserted. There is no cross compiler for Windows on
       # any machine working on this, so a failure here is otherwise diagnosed by
