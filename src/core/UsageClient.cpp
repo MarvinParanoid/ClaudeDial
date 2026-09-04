@@ -17,8 +17,9 @@
 namespace claudedial::core {
 namespace {
 
-/// Pinned at compile time. A configurable endpoint would be a credential
-/// exfiltration feature waiting to be social-engineered.
+/// Hard-coded, and deliberately not configurable: a settable endpoint would be a
+/// credential-exfiltration feature waiting to be social-engineered. Note that
+/// this is not certificate pinning - just one address that cannot be changed.
 constexpr auto kUsageUrl = "https://api.anthropic.com/api/oauth/usage?skip_spend=1";
 
 /// Matches Claude Code's own timeout for this request.

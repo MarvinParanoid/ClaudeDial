@@ -682,7 +682,8 @@ than shelling out to `notify-send`, so notifications can be replaced in place by
 The data is authoritative, complete (both percentages *and* both reset timestamps), and
 reachable with one small `GET`. Nothing about it requires unsafe credential handling: the
 token is read from a file the user already owns, held in one class, sent to exactly one
-pinned HTTPS host, never written, never logged, never given to QML, and never refreshed.
+hard-coded HTTPS host, never written, never logged, never given to QML, and never
+refreshed.
 
 The two real risks are both honest-documentation problems rather than engineering ones:
 

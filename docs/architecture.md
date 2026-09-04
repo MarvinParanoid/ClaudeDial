@@ -176,6 +176,12 @@ already announced and silence the real notification later. The CLI checks it too
 so an explicit override beats the shared-socket shortcut rather than being
 silently ignored while a tray instance is running.
 
+## Why it looks like this
+
+`design.md` records the visual decisions and what was tried and rejected -
+including the several that look arbitrary until you know they were measured in a
+real panel. Worth reading before "fixing" one of them.
+
 ## Beyond this desktop
 
 `portability.md` records what a survey of comparable tray applications says
@@ -187,4 +193,4 @@ rather than layer-shell is the answer to Wayland popup placement.
 
 No plugin system, no database, no telemetry, no crash reporting, no update
 check, no accounts, no embedded web view, no dependency injection framework, no
-event bus. One outbound host, pinned at compile time.
+event bus. One outbound host, hard-coded at compile time.

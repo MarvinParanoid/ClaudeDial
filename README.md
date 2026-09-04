@@ -2,13 +2,13 @@
 
 **Claude Code usage at a glance.**
 
-A minimal system tray indicator for Claude Code usage limits, for Linux.
+A minimal Linux system tray indicator for Claude Code usage limits.
 Glance at the icon, hover for details, click for a small popup, forget about it.
 
 <img src="docs/images/tray-styles.png" alt="The tray icon at 8, 23, 75, 88, 99 and 100 percent, in both styles" width="368">
 
 That is the tray icon at 8%, 23%, 75%, 88%, 99% and at the limit - the exact
-figure on top, the needle below. Same arc, two readings. Click it:
+figure on top, the needle below. Same dial, two styles. Click it:
 
 <img src="docs/images/popup-dark.png" alt="The ClaudeDial popup" width="340">
 
@@ -17,12 +17,14 @@ token history, no accounts, no telemetry, no cloud backend.
 
 ## Please read this before installing
 
+
 Two things you are entitled to know up front.
 
 **1. ClaudeDial reads Claude Code's credential file.** It needs the OAuth access
 token Claude Code stores at `~/.claude/.credentials.json` in order to ask
 Anthropic what your usage is. It opens that file read-only, holds the token in
-exactly one class, sends it to exactly one pinned HTTPS host, and never logs it,
+exactly one class, sends it only to `api.anthropic.com` over HTTPS - an address
+hard-coded at build time, not configurable - and never logs it,
 copies it, exposes it to the UI layer, or writes it anywhere.
 
 It also **never refreshes the token**, which is a deliberate limitation rather
@@ -45,7 +47,45 @@ Full write-up, including the exact request, the response shape, and the security
 rules the code follows: [docs/usage-api.md](docs/usage-api.md). How the code is
 put together: [docs/architecture.md](docs/architecture.md).
 
+## Installation
+
+Two artefacts are published for each release, plus a source build.
+
+### AppImage
+
+Self-contained: it carries Qt and OpenSSL, so it needs nothing but a Linux with
+a graphical session.
+
+```console
+$ chmod +x ClaudeDial-x86_64.AppImage
+$ ./ClaudeDial-x86_64.AppImage
+```
+
+Take v0.1.2 or later. The AppImages attached to v0.1.0 and v0.1.1 were built
+without the Qt Wayland platform plugin: the tray icon appears but the popup does
+not, and they need `QT_QPA_PLATFORM=xcb` to be usable.
+
+### Tarball
+
+`claudedial-<version>-linux-x86_64.tar.gz` from the same release is a hundred
+times smaller, because it links your distribution's Qt rather than shipping its
+own. Unpack it over `/usr` or `~/.local`.
+
+### Arch Linux
+
+```console
+$ yay -S claudedial-bin
+```
+
+Not in the AUR yet - the package is prepared in
+[packaging/PKGBUILD-bin](packaging/PKGBUILD-bin) and consumes the tarball above.
+
+### From source
+
+See [Building](#building).
+
 ## Status bar integration
+
 
 ClaudeDial is also a one-shot CLI, so Waybar, Polybar, i3blocks, Conky and
 plain scripts can use it without the tray.
@@ -90,40 +130,8 @@ otherwise consume it twice over. A one-shot invocation asks the running instance
 for its last result over a local socket and only reaches for the network when
 nothing is running - so a Waybar `interval` costs nothing, and returns instantly.
 
-## Development
-
-`CLAUDEDIAL_SIMULATE` reports a usage figure instead of asking the server:
-
-```console
-$ CLAUDEDIAL_SIMULATE=99 claudedial          # tray, popup and notifications
-$ CLAUDEDIAL_SIMULATE=63,41 claudedial --json
-```
-
-One or two percentages, five-hour first. It makes no request, so it works
-offline and costs no quota, and it is the only way to reach the top of the scale:
-the 95% and 100% steps are fixed, so without it their colours, the `!` glyph and
-their notifications cannot be exercised short of actually spending a limit.
-Simulated numbers are never recorded as announced, so a run at 100% will not
-silence the real notification later.
-
-Screenshots in this README were taken with it.
-
-## Building
-
-Needs Qt 6.5+ (including Qt Svg, for the application icon), CMake 3.21+ and a
-C++20 compiler. No other runtime dependencies - no Electron, no webview, no
-Python, no Node.
-
-```console
-$ cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
-$ cmake --build build
-$ ctest --test-dir build
-$ sudo cmake --install build
-```
-
-On Arch: `pacman -S qt6-base qt6-declarative qt6-svg cmake ninja`.
-
 ## Desktop support
+
 
 Developed on Arch with KDE Plasma on Wayland; built to work beyond it.
 
@@ -147,8 +155,7 @@ it works on Plasma out of the box, and on GNOME with the AppIndicator extension.
 Notifications use `org.freedesktop.Notifications`. Autostart is a normal XDG
 entry in `~/.config/autostart`. Refresh-on-resume uses logind's `PrepareForSleep`.
 
-Two known Wayland limitations, neither of which ClaudeDial can fix from inside
-the sandbox:
+Two known Wayland limitations that ClaudeDial cannot work around reliably:
 
 - **The popup's position is chosen by the compositor.** A Wayland client cannot
   place its own top-level windows, so `setPosition()` is ignored and the popup
@@ -170,6 +177,7 @@ the sandbox:
 
 ## Settings
 
+
 <img src="docs/images/settings.png" alt="The ClaudeDial settings window" width="381">
 
 Right-click the tray icon for **Show usage**, **Refresh now**, **Settings** and
@@ -178,62 +186,53 @@ Right-click the tray icon for **Show usage**, **Refresh now**, **Settings** and
 "Show usage" is in that menu for a reason: on GNOME, where the tray comes from
 the AppIndicator extension, a single left click opens the menu rather than
 activating the icon, so the menu is the only route to the popup. A double click
-opens it there too. On Plasma a single click toggles it, as you would expect. Start on login, refresh
-interval, notifications, warning and critical thresholds, tray style, and theme
-(system / light / dark). Stored in `~/.config/claudedial/claudedial.conf`;
-the `[state]` group in that file is ClaudeDial's own bookkeeping, not settings.
+opens it there too. On Plasma a single click toggles it, as you would expect.
+
+Start on login, refresh interval, notifications, warning and critical
+thresholds, tray style, and theme (system / light / dark) are all configurable.
+Settings live in `~/.config/claudedial/claudedial.conf`; the `[state]` group in
+that file is ClaudeDial's own bookkeeping, not settings.
 
 **Tray style** picks what goes inside the ClaudeDial arc:
 
 - **Percentage** (default) - the exact 5-hour figure. Answers the question with
-  no hover and nothing to interpret, which is what a tray indicator is for.
-  At 100% it shows `!`: three digits are not legible at 16 px, and "at the
-  limit" is better said than counted.
-- **Gauge** - the needle. The nicer mark, and a reading you take in at a glance
-  as little / half / nearly all, with the exact figure a hover away.
+  no hover and nothing to interpret, which is what a tray indicator is for. At
+  100% it shows `!`, because three digits are not legible at typical tray-icon
+  sizes and the tooltip still gives you the number.
+- **Gauge** - the needle. A reading you take in at a glance as little / half /
+  nearly all, with the exact figure a hover away.
 
-The arc is identical in both, and fills with usage either way, so they are two
-variants of one mark rather than two icons. The popup header always shows the
-needle, as the constant logotype. A full ring was tried first and read as a
-notification badge.
-
-At 100% the icon shows `!`. Three digits were tried, shrunk to fit, and in a real
-panel they came out weaker than `99` - the one reading that most needs to carry.
-A full red arc around an exclamation mark says it more firmly, and the tooltip
-still gives the figure.
+The arc is the same in both and fills with usage either way, so they are two
+styles of one dial rather than two icons. The popup header always shows the
+needle, as the constant logotype.
 
 When the data is stale the whole mark fades, so a glance at the panel tells you
 the number is the last one ClaudeDial managed to fetch.
 
-Three colour roles, kept apart on purpose:
+Colour has three separate jobs:
 
-| | |
+| Role | Meaning |
 | --- | --- |
-| **Terracotta** | ClaudeDial's identity - the application icon, and nothing else |
-| **Your Plasma accent** | the settings window's controls, so they look like the rest of your desktop |
+| **Terracotta** | ClaudeDial's identity - the application icon and the popup's header mark |
+| **Your Plasma accent** | interactive controls, so they match the rest of your desktop |
 | **neutral → amber → orange → red** | how much of a limit is spent |
 
-Making the whole application "Claude orange" would be worse than useless: the
-usage ramp would lose its meaning, and the controls would stop matching the
-desktop they sit on. The brand colour earns its place in one artefact.
+The usage ramp steps at your warning threshold, your critical threshold, 95% and
+100% - the same points the notifications fire on. The tray icon stays monochrome
+below the warning threshold, because a panel icon is on screen permanently and
+should not be a standing splash of colour.
 
-Colour steps at the warning threshold, the critical threshold, 95% and 100% -
-the same points the notifications fire on, so what you see and what you are told
-agree. The icon stays monochrome below the warning threshold: a panel icon is on
-screen permanently and should not be a standing splash of colour.
-
-Both themes, and both are the popup's own colours rather than the desktop
-palette - which is what lets the Light and Dark settings work on a desktop whose
-platform theme declines to switch:
+Both themes are drawn from the popup's own palette rather than the desktop's,
+which is what lets Light and Dark work even on a desktop whose platform theme
+declines to switch:
 
 <img src="docs/images/popup-light.png" alt="The popup in the light theme" width="340">
 
-The tray icon stays monochrome until the warning threshold, then goes amber, then
-red - a panel icon is on screen permanently and should not be a standing splash
-of colour. The popup uses a longer ramp with an accent step, because it is only
-visible while you are reading it.
+Why any of it looks the way it does, and what was tried and rejected:
+[docs/design.md](docs/design.md).
 
 ## Notifications
+
 
 <img src="docs/images/notification.png" alt="A ClaudeDial notification" width="347">
 
@@ -249,6 +248,7 @@ then the daemon draws a blank document, which makes the banner look broken.
 
 ## Refresh behaviour
 
+
 Every 5 minutes by default, and on start, on manual refresh, when Claude Code
 refreshes its token, and after waking from suspend. The interval floor is 60
 seconds on purpose: the rate-limit bucket is per access token and shared with
@@ -256,20 +256,8 @@ any other usage monitor you run, and this endpoint does return 429 if you push
 it. A failure never clears good data - the last known usage stays on screen,
 marked stale.
 
-## Known issue in the AppImage
-
-Up to and including v0.1.1 the AppImage carries no Wayland client buffer
-integration, so on a native Wayland session the tray icon appears but the popup
-does not. Until you are on a later build, run it under XWayland:
-
-```console
-$ QT_QPA_PLATFORM=xcb ./ClaudeDial-x86_64.AppImage
-```
-
-The tarball and a distribution package are unaffected - they use the system Qt,
-which has the plugin.
-
 ## If TLS fails from the AppImage
+
 
 The AppImage bundles OpenSSL, because distributions ship incompatible versions
 of it and ClaudeDial makes one HTTPS request. On a host whose own OpenSSL
@@ -280,6 +268,46 @@ help; the escape hatch is to neutralise the host configuration for this process:
 $ OPENSSL_CONF= ./ClaudeDial-x86_64.AppImage
 ```
 
+## Building
+
+
+Needs Qt 6.8+, CMake 3.21+ and a C++20 compiler. No other runtime dependencies -
+no Electron, no webview, no Python, no Node.
+
+6.8 rather than something older because `QStyleHints::setColorScheme()`, which
+is the whole Light/Dark setting, arrived there; `QPalette::Accent`, which is how
+the settings window follows your desktop's accent colour, arrived in 6.6. Qt Svg
+is needed for the application icon.
+
+```console
+$ cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+$ cmake --build build
+$ ctest --test-dir build
+$ sudo cmake --install build
+```
+
+On Arch: `pacman -S qt6-base qt6-declarative qt6-svg cmake ninja`.
+
+## Development
+
+
+`CLAUDEDIAL_SIMULATE` reports a usage figure instead of asking the server:
+
+```console
+$ CLAUDEDIAL_SIMULATE=99 claudedial          # tray, popup and notifications
+$ CLAUDEDIAL_SIMULATE=63,41 claudedial --json
+```
+
+One or two percentages, five-hour first. It makes no request, so it works
+offline and costs no quota, and it is the only way to reach the top of the scale:
+the 95% and 100% steps are fixed, so without it their colours, the `!` glyph and
+their notifications cannot be exercised short of actually spending a limit.
+Simulated numbers are never recorded as announced, so a run at 100% will not
+silence the real notification later.
+
+Screenshots in this README were taken with it.
+
 ## License
+
 
 MIT. See [LICENSE](LICENSE).
