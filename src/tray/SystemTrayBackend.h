@@ -28,15 +28,14 @@ public:
     /// can appear. Confirm with hasVisibleIcon() once the icon has been shown.
     [[nodiscard]] static bool isAvailable();
 
-    /// Whether our icon actually reached a panel - measured, not predicted.
+    /// Whether anything on this system could display our icon.
     ///
-    /// Qt chooses its tray implementation from the platform theme, and the two
-    /// paths fail differently. A D-Bus theme with no StatusNotifierHost on the
-    /// bus registers nothing and shows nothing, while the XEmbed tracker still
-    /// answers isAvailable() with true. So ask the two mechanisms directly: a
-    /// docked XEmbed window has a geometry, and an SNI item appears in the
-    /// watcher's list owned by this process. See docs/platform-support.md for
-    /// the measurement this is built on.
+    /// Weaker than it sounds, on purpose. It answers "is there a mechanism"
+    /// rather than "did the icon appear", because no reliable way to prove the
+    /// latter exists: registration is asynchronous and hosts disagree about what
+    /// they report. Trying to prove it produced a false alarm on GNOME with the
+    /// AppIndicator extension, where the icon was working in the top bar.
+    /// See docs/platform-support.md.
     [[nodiscard]] bool hasVisibleIcon() const override;
 
     void setIcon(const QIcon& icon) override;

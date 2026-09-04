@@ -82,7 +82,7 @@ in this project.
 | KDE Plasma / X11 | SNI | compositor's choice | yes | **partly** — the xcb path, under XWayland |
 | Xfce | SNI | compositor's choice | yes | no |
 | Cinnamon, MATE, LXQt, DDE | SNI | unknown | likely | no |
-| GNOME | needs the [AppIndicator extension][appind] | n/a — reached from the menu | **no** | no |
+| GNOME | needs the [AppIndicator extension][appind] | n/a — reached from the menu | **no** | **yes** — Debian 13, Wayland |
 | COSMIC | SNI, menu only reported elsewhere | unknown | unknown | no |
 | i3 + an XEmbed tray | XEmbed | **anchored to the icon** — *measured* | n/a | **yes** — Debian 13, i3bar |
 | Sway, Hyprland, Awesome | Waybar/i3blocks via `--json` | n/a | n/a | no |
@@ -303,6 +303,67 @@ together; nobody has checked that. And redirecting `XDG_CONFIG_HOME` to isolate
 a test config also hides `kdeglobals` from Qt, so Auto measured that way
 reports a palette the desktop is not using — the explicit tones are unaffected,
 which is how that was noticed.
+
+### What clean Debian 13 VMs added
+
+Tested on v0.1.4 artefacts, i3 on X11 and GNOME on Wayland, and the headline is
+that the portability bet holds: `QSystemTrayIcon` works on both, so no
+desktop-specific tray backend is needed anywhere. What came back were detection
+and polish faults, and two of them corrected things written above.
+
+**i3bar was light, not black.** The fallback here assumed panels are
+overwhelmingly dark — "i3bar, polybar and waybar all default that way" — and
+on this Debian i3 the bar was very light, so a light mark was invisible. The
+palette had also reported light on that machine, where forcing
+`XDG_CURRENT_DESKTOP=i3` inside a Plasma session reported black. So the palette
+is unreliable in both directions on a desktop with no Qt integration, and so is
+any assumption about which way panels lean. The fallback no longer picks a side:
+`brand::kTrayNeutral` is the grey that maximises the worse case, and anyone who
+wants crisp uses the Tray icon setting.
+
+Plasma is unaffected by that — the declared panel colour still wins, and the
+stock `default` theme, which declares nothing because it follows the
+application colour scheme, still uses the palette. Ignorance and
+"Plasma says it follows the apps" are now told apart rather than sharing a
+branch.
+
+**The tray verification produced a false alarm on GNOME.** With the
+AppIndicator extension the icon appeared in the top bar and worked, while
+ClaudeDial printed that it had not appeared. The check looked itself up in the
+watcher's `RegisteredStatusNotifierItems` and matched by pid, which Plasma
+answers and that extension does not. It now asks only whether a
+`StatusNotifierWatcher` exists at all: registration is asynchronous and hosts
+disagree about what they report, so anything more specific is guesswork
+dressed as a check — and a false warning is worse than no warning. It still
+catches what it was built for, a desktop claiming a tray with no host on the bus.
+
+**Tiling layout, measured.** Under xcb the popup already declares
+`_NET_WM_WINDOW_TYPE_UTILITY` first, which i3 floats; the settings window
+declared only `NORMAL`, so i3 tiled a form into a workspace column. It is now a
+`Qt::Dialog` and declares `DIALOG`, which i3 floats by default. If the popup is
+still tiled, that is i3 reading the type list differently and the remedy is a
+rule:
+
+```
+for_window [class="claudedial" title="ClaudeDial"] floating enable
+```
+
+**The 15x15 icon has no padding to reclaim.** The report suspected internal
+padding; measured, the ink already spans the full pixmap width at every size:
+at 15 px it is 15x12 with margins L0 R0 T0 B3. The three rows at the bottom are
+the dial's own opening, not spare room. Rendering the mark larger would mean
+changing its proportions, which are frozen. What *would* help a panel asking
+for an unusual size is a scalable icon engine instead of six baked pixmaps,
+since 15 is not among them and Qt scales 16 down to reach it. Not done.
+
+**Packaging, now documented:** the AppImage needs FUSE on the host unless run
+with `--appimage-extract-and-run`, and the tarball is an install tree that
+links the system Qt rather than a portable bundle — it stops at
+`libQt6QuickControls2.so.6` on a Debian box with no Qt.
+
+**Confirmed as supported:** GNOME on Wayland with the AppIndicator extension —
+tray, popup, notifications and the icon inside the notification all work. Stock
+GNOME without the extension correctly reports no tray and points at `--json`.
 
 ## Degradation
 

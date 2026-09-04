@@ -3,8 +3,7 @@
 #include <QAction>
 #include <QCoreApplication>
 #include <QDBusConnection>
-#include <QDBusInterface>
-#include <QDBusReply>
+#include <QDBusConnectionInterface>
 #include <QMenu>
 #include <QStringList>
 #include <QSystemTrayIcon>
@@ -71,43 +70,34 @@ bool SystemTrayBackend::isAvailable()
 
 bool SystemTrayBackend::hasVisibleIcon() const
 {
-    // The XEmbed path docks a real window into the panel, so any geometry at
-    // all means the icon is on screen.
+    // Positive evidence only, and deliberately weak.
+    //
+    // This exists to catch one situation: the desktop reports a tray while
+    // nothing on the system can actually display our item. It must never
+    // contradict a panel that is plainly showing the icon, and the first version
+    // did exactly that. It looked our own item up in the watcher's
+    // RegisteredStatusNotifierItems and matched it by pid, which works on
+    // Plasma; on GNOME with the AppIndicator extension the icon was visible and
+    // working in the top bar while this reported "did not appear". A false
+    // warning is worse than no warning, so the bar is now: is there anything at
+    // all that could show an item?
+    //
+    // A docked XEmbed window has a geometry.
     if (!m_tray->geometry().isEmpty())
         return true;
 
-    // Otherwise Qt should have registered a StatusNotifierItem for us. Match by
-    // process rather than by bus name: Qt registers the item on a connection of
-    // its own, so our default session bus name is not the one in the list.
-    QDBusConnection bus = QDBusConnection::sessionBus();
+    // Otherwise the item travels over StatusNotifierItem, and the one thing that
+    // can be established without trusting a host's bookkeeping is whether a host
+    // exists. Registration is asynchronous and hosts differ in what they report
+    // about it, so anything more specific than this is guesswork dressed as a
+    // check.
+    const QDBusConnection bus = QDBusConnection::sessionBus();
     if (!bus.isConnected())
         return false;
 
-    QDBusInterface watcher(QStringLiteral("org.kde.StatusNotifierWatcher"),
-                           QStringLiteral("/StatusNotifierWatcher"),
-                           QStringLiteral("org.kde.StatusNotifierWatcher"), bus);
-    if (!watcher.isValid())
-        return false;
-
-    const QStringList items = watcher.property("RegisteredStatusNotifierItems").toStringList();
-    if (items.isEmpty())
-        return false;
-
-    QDBusInterface daemon(QStringLiteral("org.freedesktop.DBus"),
-                          QStringLiteral("/org/freedesktop/DBus"),
-                          QStringLiteral("org.freedesktop.DBus"), bus);
-    const auto self = static_cast<uint>(QCoreApplication::applicationPid());
-    for (const QString& entry : items) {
-        // Entries are "<bus name>/<object path>".
-        const QString name = entry.left(entry.indexOf(QLatin1Char('/')));
-        if (name.isEmpty())
-            continue;
-        const QDBusReply<uint> owner =
-            daemon.call(QStringLiteral("GetConnectionUnixProcessID"), name);
-        if (owner.isValid() && owner.value() == self)
-            return true;
-    }
-    return false;
+    QDBusConnectionInterface* daemon = bus.interface();
+    return daemon != nullptr
+        && daemon->isServiceRegistered(QStringLiteral("org.kde.StatusNotifierWatcher"));
 }
 
 void SystemTrayBackend::setIcon(const QIcon& icon)

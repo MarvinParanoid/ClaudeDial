@@ -45,6 +45,12 @@ inline const QColor kIdentity { 0xd9, 0x77, 0x57 };
 /// on both. Contrast has a ceiling for a fixed colour, so the tone is a setting
 /// (core::Config::TrayTone) and these are its two ends. Each is crisp: 11.1 on
 /// a dark panel, 13.3 on a light one.
+/// The fallback for a panel nothing describes: the grey that maximises the
+/// worse of a light and a dark panel, at 3.64 and 3.66. No single colour can do
+/// better than that, which is exactly why it is a fallback and not the default
+/// everywhere.
+inline const QColor kTrayNeutral { 0x7c, 0x7c, 0x7c };
+
 inline const QColor kTrayNeutralLight { 0xdc, 0xdc, 0xdc };
 inline const QColor kTrayNeutralDark { 0x23, 0x26, 0x29 };
 

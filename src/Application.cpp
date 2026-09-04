@@ -202,7 +202,19 @@ namespace {
 /// apart at worst. Caching would mean watching both plasmarc and kdeglobals to
 /// stay correct through a look-and-feel change, which is more machinery than
 /// the reads cost.
-std::optional<core::Rgb> plasmaPanelBackground()
+/// What could be learned about the panel.
+///
+/// `plasma` without a `background` is not ignorance: it is Plasma saying the
+/// panel follows the application colour scheme, which the stock "default" theme
+/// does by shipping no colours at all. That is the one case where QPalette is
+/// the right answer, and it has to be told apart from there being no Plasma to
+/// ask.
+struct PanelKnowledge {
+    bool plasma = false;
+    std::optional<core::Rgb> background;
+};
+
+PanelKnowledge panelKnowledge()
 {
     const auto read = [](const QString& path) -> QString {
         QFile file(path);
@@ -230,15 +242,20 @@ std::optional<core::Rgb> plasmaPanelBackground()
     const QString theme =
         core::plasmaThemeName(read(config + QStringLiteral("/plasmarc")), lookAndFeel);
     if (theme.isEmpty())
-        return std::nullopt;
+        return PanelKnowledge{}; // not Plasma, or Plasma has not written it down
+
+    PanelKnowledge knowledge;
+    knowledge.plasma = true;
 
     const QString relative = QStringLiteral("plasma/desktoptheme/%1/colors").arg(theme);
     for (const QString& path :
          QStandardPaths::locateAll(QStandardPaths::GenericDataLocation, relative)) {
-        if (const auto background = core::plasmaPanelBackground(read(path)))
-            return background;
+        if (const auto background = core::plasmaPanelBackground(read(path))) {
+            knowledge.background = background;
+            break;
+        }
     }
-    return std::nullopt;
+    return knowledge;
 }
 
 } // namespace
@@ -254,25 +271,30 @@ QColor Application::trayNeutral() const
         break;
     }
 
+    const PanelKnowledge panel = panelKnowledge();
+
     // Plasma writes the panel's colour down, and it is exact rather than a
     // guess: breeze-dark declares BackgroundNormal=32,35,38, which is the
     // #202326 measured off the panel itself. This is what makes Auto right on
     // Breeze Twilight, where the applications are light and the panel is not.
-    if (const auto panel = plasmaPanelBackground())
-        return panel->isDark() ? brand::kTrayNeutralLight : brand::kTrayNeutralDark;
+    if (panel.background)
+        return panel.background->isDark() ? brand::kTrayNeutralLight : brand::kTrayNeutralDark;
 
-    // Nothing declared: the stock "default" Plasma theme ships no colours
-    // because it follows the application colour scheme, and elsewhere there is
-    // no Plasma to ask. Either way the palette is now the best answer.
-    //
-    // Where the platform reports no colour scheme at all, Qt has no desktop to
-    // ask and the palette is its own default: measured as #000000 on i3 and
-    // sway, against i3bar's black. Assume a dark panel there, which is how
-    // i3bar, polybar and waybar all default.
-    if (QGuiApplication::styleHints()->colorScheme() == Qt::ColorScheme::Unknown)
-        return brand::kTrayNeutralLight;
+    // Plasma, but with a theme that declares no colours - the stock "default"
+    // theme, which follows the application colour scheme. Here the palette is
+    // not a proxy for the panel, it *is* the panel.
+    if (panel.plasma)
+        return QGuiApplication::palette().color(QPalette::WindowText);
 
-    return QGuiApplication::palette().color(QPalette::WindowText);
+    // And here nothing is known. The palette is not evidence: on a desktop with
+    // no Qt integration it is a built-in default, and it has now been wrong in
+    // both directions - #000000 where the panel was black, and light where a
+    // Debian i3bar was light. Guessing a side is what produced both reports, so
+    // the fallback does not guess: kTrayNeutral is the grey that maximises the
+    // worse of the two cases, visible against either at the cost of being crisp
+    // against neither. Anyone who wants crisp says which, with the Tray icon
+    // setting.
+    return brand::kTrayNeutral;
 }
 
 void Application::applyTheme()
@@ -315,6 +337,13 @@ void Application::showSettings()
     if (!m_settingsWindow) {
         m_settingsWindow = new QQuickView(m_engine, nullptr);
         m_settingsWindow->setTitle(tr("ClaudeDial Settings"));
+        // A dialog, which is what it is - and it is also the flag a tiling
+        // window manager reads. Measured under xcb: without it the window
+        // declares only _NET_WM_WINDOW_TYPE_NORMAL, so i3 tiles the settings
+        // form into a workspace column; with it the type is
+        // _NET_WM_WINDOW_TYPE_DIALOG, which i3 floats by default. The popup
+        // already declares UTILITY first for the same reason.
+        m_settingsWindow->setFlag(Qt::Dialog);
         m_settingsWindow->setResizeMode(QQuickView::SizeRootObjectToView);
         m_settingsWindow->setSource(QUrl(QStringLiteral("qrc:/qml/Settings.qml")));
         if (QQuickItem* root = m_settingsWindow->rootObject()) {

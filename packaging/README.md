@@ -35,7 +35,14 @@ $ cpack -G DEB
 $ cpack -G RPM
 ```
 
-TGZ works anywhere. **DEB must be built on a Debian-ish host**: dependencies are
+TGZ builds anywhere, but note what it is: an install tree that links the
+system Qt, not a portable bundle. On a Debian box with no Qt installed it stops
+at `libQt6QuickControls2.so.6`, which is worth saying in release notes because
+"tarball" invites the opposite assumption. The AppImage is the portable one, and
+even that needs FUSE on the host unless it is run with
+`--appimage-extract-and-run`.
+
+**DEB must be built on a Debian-ish host**: dependencies are
 resolved by `dpkg-shlibdeps` from the binary itself, because hard-coding them is
 a losing game - Debian and Ubuntu disagree on the Qt 6 package names, and
 Ubuntu's 64-bit time_t transition renamed them again. Without `dpkg` on PATH

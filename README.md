@@ -53,12 +53,20 @@ Two artefacts are published for each release, plus a source build.
 
 ### AppImage
 
-Self-contained: it carries Qt and OpenSSL, so it needs nothing but a Linux with
-a graphical session.
+Carries Qt and OpenSSL, so it needs nothing from your distribution but FUSE,
+which is how an AppImage mounts itself.
 
 ```console
 $ chmod +x ClaudeDial-x86_64.AppImage
 $ ./ClaudeDial-x86_64.AppImage
+```
+
+On a minimal install that can fail with `No suitable fusermount binary found on
+the $PATH`. Either install FUSE (`fuse3` on Debian) or skip the mount
+altogether, which needs nothing at all:
+
+```console
+$ ./ClaudeDial-x86_64.AppImage --appimage-extract-and-run
 ```
 
 Take v0.1.2 or later. The AppImages attached to v0.1.0 and v0.1.1 were built
@@ -68,8 +76,16 @@ not, and they need `QT_QPA_PLATFORM=xcb` to be usable.
 ### Tarball
 
 `claudedial-<version>-linux-x86_64.tar.gz` from the same release is a hundred
-times smaller, because it links your distribution's Qt rather than shipping its
+times smaller because it links your distribution's Qt rather than shipping its
 own. Unpack it over `/usr` or `~/.local`.
+
+**It is not standalone.** Qt 6.8 or newer has to be installed, including
+QtQuick and QtQuick Controls; on a Debian install with no Qt it stops at
+`error while loading shared libraries: libQt6QuickControls2.so.6`. The package
+names differ between distributions - on Arch it is `qt6-base`,
+`qt6-declarative` and `qt6-svg`, which is what the AUR package depends on - and
+`ldd claudedial-*/bin/claudedial | grep 'not found'` will name whatever is
+missing on yours. Take the AppImage if you would rather not care.
 
 ### Arch Linux
 
