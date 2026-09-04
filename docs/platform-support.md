@@ -80,12 +80,12 @@ in this project.
 | --- | --- | --- | --- | --- |
 | KDE Plasma / Wayland | SNI | compositor's choice | yes | **yes** — the development desktop |
 | KDE Plasma / X11 | SNI | compositor's choice — *measured*, see below | yes | **partly** — the xcb path, under XWayland |
-| Xfce | SNI | anchoring only if it runs no SNI host | yes | no |
+| Xfce | SNI | compositor's choice | yes | no |
 | Cinnamon, MATE, LXQt, DDE | SNI | unknown | likely | no |
 | GNOME | needs the [AppIndicator extension][appind] | n/a — reached from the menu | **no** | no |
 | COSMIC | SNI, menu only reported elsewhere | unknown | unknown | no |
 | Sway, Hyprland, i3, Awesome | Waybar/i3blocks via `--json` | n/a | n/a | no |
-| Windows, macOS | Qt supports it; we have not tried | — | — | no |
+| Windows, macOS | Qt supports it; we have not tried | the only place anchoring can work | — | no |
 
 **The X11 hypothesis was wrong, and measurement is what settled it.** The idea
 was that Qt 6 still implements the XEmbed tray protocol, so
@@ -98,18 +98,48 @@ chose the SNI backend even on xcb. SNI has no concept of icon geometry.
 
 The deciding factor is therefore **not** X11 versus Wayland. It is whether a
 `StatusNotifierHost` is registered on the session bus. Plasma registers one on
-both, so the anchor branch is unreachable there either way. It stays reachable
-only where Qt falls back to XEmbed: an X11 session whose tray offers no SNI
-host, such as i3 with `trayer` or `stalonetray`. That is the configuration to
-test if anchoring is ever worth confirming — not "X11" in general.
+both, so the anchor branch is unreachable there either way.
 
-Two caveats belong with that result. The measurement was made under XWayland
+**Nor does it become reachable on an XEmbed-only tray, which was the obvious
+next guess and is also wrong.** Tested directly, on an isolated `Xwayland :77`
+with a purpose-built spec-compliant XEmbed tray — owning
+`_NET_SYSTEM_TRAY_S0`, advertising `_NET_SYSTEM_TRAY_VISUAL` and
+`_NET_SYSTEM_TRAY_ORIENTATION` — and with a private D-Bus session so that no
+`StatusNotifierWatcher` existed. Qt 6.11 never sent a dock request, and
+`geometry()` stayed empty. The harness was validated in the same run by a bare
+XEmbed client, which docked and was reported at its true `22x22+110+204`.
+
+The library explains it. `libQt6XcbQpa` still carries the `_NET_SYSTEM_TRAY*`
+atoms, `QXcbWindow::requestSystemTrayWindowDock()` and a tracker — but there is
+no xcb platform tray-icon class any more, and `QSystemTrayIcon` uses only the
+D-Bus/SNI implementation. The tracker survives just far enough to answer
+`isSystemTrayAvailable()`.
+
+So on Linux the anchored branch in `PopupWindow::placeAndShow` is unreachable on
+Qt 6, full stop. It is kept because it is not dead everywhere: `geometry()` is
+implemented on Windows and macOS, which is the only place anchoring could ever
+apply.
+
+**And the same measurement found a real defect, which matters more than the
+placement question.** On an XEmbed-only X11 desktop — i3 with `trayer` or
+`stalonetray`, and older panels — `isSystemTrayAvailable()` returns **true**
+while no icon is ever docked. Measured across three cases on the same display:
+no tray and a private bus gave `false`; the XEmbed tray and a private bus gave
+`true` with no icon; the real SNI host gave `true` with a working icon. So
+ClaudeDial would start, report a tray, and show nothing — and because
+availability is true, the "no usable tray" rung below never fires. A silent
+no-op is worse than a clean failure. The honest guard is to treat the tray as
+usable only when an SNI host is actually on the bus, and otherwise say so and
+point at `--json`.
+
+Two caveats belong with these results. Everything was measured under XWayland
 inside a Plasma Wayland session rather than a real X11 login, so it establishes
 the mechanism rather than the whole environment — though the mechanism is what
-decides the outcome, since a Plasma X11 session registers the same SNI host.
-And separately: the popup opened on most activations but failed to appear once,
-against a longer-running instance. That single non-appearance was never
-reproduced and remains unexplained.
+decides the outcome, since a Plasma X11 session registers the same SNI host, and
+the XEmbed test ran against a tray built for the purpose rather than against
+`stalonetray` itself. And separately: the popup opened on most activations but
+failed to appear once, against a longer-running instance. That single
+non-appearance was never reproduced and remains unexplained.
 
 GNOME's missing tray is not a bug for us to fix. GNOME removed the system tray;
 applications reach it through an extension. ClaudeDial's job is to say so
@@ -156,10 +186,13 @@ tray, menu only                          →  native menu; "Show usage" opens th
 no usable tray                           →  --json / --once
 ```
 
-Implemented today: rungs 2, 3 and 4. Rung 1 has never been observed on any
-desktop available to test: it needs a tray that speaks XEmbed rather than SNI,
-which rules out Plasma on both X11 and Wayland. The code path exists and reads
-correctly, but treat it as unexercised.
+Implemented today: rungs 2, 3 and 4. Rung 1 is unreachable on Linux with Qt 6
+and is retained only for Windows and macOS; see the measurement above.
+
+Rung 4 has a hole worth fixing before anyone hits it: it is selected by
+`isSystemTrayAvailable()`, which returns true on an XEmbed-only tray where no
+icon can actually appear. Keying it on the presence of a `StatusNotifierHost`
+instead would close that.
 
 **On a capability struct.** A `PlatformCapabilities { trayAvailable,
 trayActivation, reliablePopupPositioning, notifications, autostart }` is the

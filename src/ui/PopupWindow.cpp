@@ -98,9 +98,10 @@ void PopupWindow::placeAndShow(const QRect& anchor)
     QPoint position;
 
     if (!anchor.isEmpty()) {
-        // A tray speaking XEmbed rather than SNI: anchor to the icon. Not
-        // "X11" - Plasma reports no geometry on xcb either, because Qt picks
-        // the SNI backend whenever a StatusNotifierHost is on the bus.
+        // Anchor to the icon. Unreachable on Linux with Qt 6, which has no
+        // xcb tray-icon class left and reports no geometry over SNI; kept
+        // for Windows and macOS, where geometry() is implemented. See
+        // docs/platform-support.md for the measurement.
         position.setX(anchor.center().x() - popup.width() / 2);
         position.setY(anchor.center().y() < available.center().y()
                           ? anchor.bottom() + kMargin
