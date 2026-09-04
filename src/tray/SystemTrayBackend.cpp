@@ -13,6 +13,14 @@ SystemTrayBackend::SystemTrayBackend(QObject* parent)
 {
     // The context menu is rendered by the panel itself over DBusMenu, so it must
     // stay plain actions - a custom widget would simply not appear.
+
+    // First, and deliberately: on desktops where a left click opens this menu
+    // instead of activating the item, this is the only way to reach the popup.
+    auto* show = m_menu->addAction(tr("Show usage"));
+    connect(show, &QAction::triggered, this, &TrayBackend::showRequested);
+
+    m_menu->addSeparator();
+
     auto* refresh = m_menu->addAction(tr("Refresh now"));
     connect(refresh, &QAction::triggered, this, &TrayBackend::refreshRequested);
 
@@ -28,8 +36,20 @@ SystemTrayBackend::SystemTrayBackend(QObject* parent)
 
     connect(m_tray, &QSystemTrayIcon::activated, this,
             [this](QSystemTrayIcon::ActivationReason reason) {
-                if (reason == QSystemTrayIcon::Trigger)
+                switch (reason) {
+                case QSystemTrayIcon::Trigger:
                     Q_EMIT activated();
+                    break;
+                case QSystemTrayIcon::DoubleClick:
+                    // Show rather than toggle: a double click arrives as Trigger
+                    // followed by DoubleClick, so the pair must be idempotent.
+                    // GNOME's AppIndicator extension reaches an application's UI
+                    // only this way.
+                    Q_EMIT showRequested();
+                    break;
+                default:
+                    break;
+                }
             });
 }
 

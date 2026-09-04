@@ -22,6 +22,12 @@ public:
     /// cursor's corner of the screen. Hides again if already visible.
     void toggle(const QRect& anchor);
 
+    /// Show it, or raise it if it is already up.
+    ///
+    /// Distinct from toggle(): a menu item named "Show usage" must not close the
+    /// popup, and on some desktops that menu is the only way to open it.
+    void present(const QRect& anchor);
+
     /// Hands an interactive move to the compositor, so the header acts as a
     /// drag handle. This is the only way to move the window on Wayland, where a
     /// client cannot position its own top-levels - and it is why the popup would

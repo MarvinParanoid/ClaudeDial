@@ -157,7 +157,13 @@ the sandbox:
 
 <img src="docs/images/settings.png" alt="The Claudometer settings window" width="381">
 
-Right-click the tray icon, or use the gear in the popup. Start on login, refresh
+Right-click the tray icon for **Show usage**, **Refresh now**, **Settings** and
+**Quit**, or use the gear in the popup.
+
+"Show usage" is in that menu for a reason: on GNOME, where the tray comes from
+the AppIndicator extension, a single left click opens the menu rather than
+activating the icon, so the menu is the only route to the popup. A double click
+opens it there too. On Plasma a single click toggles it, as you would expect. Start on login, refresh
 interval, notifications, warning and critical thresholds, tray style, and theme
 (system / light / dark). Stored in `~/.config/claudometer/claudometer.conf`;
 the `[state]` group in that file is Claudometer's own bookkeeping, not settings.

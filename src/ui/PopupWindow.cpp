@@ -68,6 +68,16 @@ void PopupWindow::toggle(const QRect& anchor)
     placeAndShow(anchor);
 }
 
+void PopupWindow::present(const QRect& anchor)
+{
+    if (isVisible()) {
+        raise();
+        requestActivate();
+        return;
+    }
+    placeAndShow(anchor);
+}
+
 void PopupWindow::beginMove()
 {
     startSystemMove();

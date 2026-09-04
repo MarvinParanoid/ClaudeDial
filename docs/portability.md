@@ -31,18 +31,22 @@ agree that the click half does not survive GNOME:
 So on GNOME with the AppIndicator extension, a single left click gives the menu,
 not our popup.
 
-**And our menu has no way to open the popup.** It is Refresh / Settings / Quit.
-On GNOME the popup would be unreachable — not degraded, unreachable. That is the
-single most actionable finding here.
+Our menu had no way to open the popup — it was Refresh / Settings / Quit — so on
+GNOME the popup would have been unreachable rather than merely awkward. That was
+the one finding in this survey that made the product not work on a whole
+desktop, so it is **fixed**:
 
-What to do, in order of cost:
-
-1. Add **"Show usage"** as the first menu item. One line, fixes reachability
-   everywhere, and costs nothing on Plasma.
-2. Handle `QSystemTrayIcon::DoubleClick` as well as `Trigger`. Currently only
-   `Trigger` is connected.
-3. Put the two percentages in the menu itself as disabled entries. DBusMenu
-   renders plain items fine, so this works where tooltips do not — see below.
+1. **"Show usage" is now the first menu item.** ✅ It emits `showRequested()`
+   rather than `activated()`, because a menu item by that name must not close
+   the popup when it is already open.
+2. **`DoubleClick` is handled as well as `Trigger`.** ✅ Mapped to *show* rather
+   than toggle, because a double click arrives as `Trigger` then `DoubleClick`
+   and the pair has to be idempotent - otherwise it would open the popup and
+   immediately shut it again. Verified: single click still toggles both ways,
+   and "Show usage" twice in a row leaves it open.
+3. **Still to do:** put the two percentages in the menu as disabled entries.
+   DBusMenu renders plain items fine, so this works where tooltips do not - see
+   below. This is the actual replacement for the missing tooltip.
 
 ### The tooltip does not exist on AppIndicator
 
@@ -128,14 +132,16 @@ The ladder, with what each rung actually needs:
 | Situation | Behaviour | Needs |
 | --- | --- | --- |
 | Plasma, left click works | popup | works today |
-| GNOME, only double click | popup on double click, and from the menu | `DoubleClick` handling + a "Show usage" item |
-| AppIndicator, no tooltip | numbers in the menu | disabled menu entries |
+| GNOME, only double click | popup on double click, and from the menu | done |
+| AppIndicator, no tooltip | numbers in the menu | disabled menu entries - not done |
 | Frameless popup misbehaves | a normal decorated window | an appearance setting — Syncthing Tray has exactly this |
 | No tray at all | `--json` / `--once` | works today: we exit with a message pointing at them |
 
-The last rung already behaves: `SystemTrayBackend::isAvailable()` is checked and
-the failure message names `--json`. That is the one part of this ladder that is
-finished.
+Three of the five rungs behave today. The bottom one always did:
+`SystemTrayBackend::isAvailable()` is checked and the failure message names
+`--json`. What is left is the tooltip replacement, and an appearance option for
+desktops where the frameless popup misbehaves - neither of which can be verified
+from here, since both only matter on desktops this was not developed on.
 
 ---
 

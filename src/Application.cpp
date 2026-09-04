@@ -76,6 +76,7 @@ bool Application::initialize()
     connect(m_tray, &tray::TrayBackend::activated, this, [this] {
         m_popup->toggle(m_tray->iconGeometry());
     });
+    connect(m_tray, &tray::TrayBackend::showRequested, this, &Application::showPopup);
     connect(m_tray, &tray::TrayBackend::refreshRequested, m_service, &UsageService::refreshNow);
     connect(m_tray, &tray::TrayBackend::settingsRequested, this, &Application::showSettings);
     connect(m_tray, &tray::TrayBackend::quitRequested, qApp, &QCoreApplication::quit);
@@ -117,8 +118,8 @@ bool Application::initialize()
 
 void Application::showPopup()
 {
-    if (m_popup && !m_popup->isVisible())
-        m_popup->toggle(m_tray ? m_tray->iconGeometry() : QRect());
+    if (m_popup)
+        m_popup->present(m_tray ? m_tray->iconGeometry() : QRect());
 }
 
 QByteArray Application::statusJson() const
