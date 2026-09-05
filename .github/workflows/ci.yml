@@ -74,6 +74,16 @@ jobs:
       # Printed rather than only asserted, for the same reason as the Windows
       # job: Actions logs need admin rights to read, so a failure would
       # otherwise be diagnosed by guesswork.
+      # macdeployqt rewrites library load paths with install_name_tool after the
+      # linker has already ad-hoc signed everything, which invalidates those
+      # signatures - and on Apple Silicon an invalid signature is fatal: the
+      # kernel kills the process and the shell reports only "killed". Re-sign
+      # ad-hoc afterwards; "-" needs no identity and no keychain.
+      - name: Sign the bundle
+        run: |
+          codesign --force --deep --sign - dist/claudedial.app
+          codesign --verify --deep --strict --verbose=2 dist/claudedial.app
+
       - name: Show what was assembled
         run: |
           find dist -maxdepth 6 | sed "s|^dist||"

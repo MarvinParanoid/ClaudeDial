@@ -130,6 +130,21 @@ system notification centre, which in practice ignores a bare binary; it wants a
 signed, bundled `.app`. Our fallback path is already in place from the Windows
 work, but it would be delivering into nothing.
 
+**A signature has to survive deployment, or the kernel kills the process.**
+`macdeployqt` rewrites library load paths with `install_name_tool` after the
+linker has already ad-hoc signed everything, which invalidates those
+signatures. On Apple Silicon that is fatal rather than a warning, and the shell
+reports it as nothing more than:
+
+```console
+$ ./claudedial.app/Contents/MacOS/claudedial --demo 96,41
+zsh: killed
+```
+
+No dialog, no message, no exit code worth reading. CI re-signs ad-hoc after
+deploying — `codesign --force --deep --sign -`, which needs no identity and no
+keychain — and verifies the result, so this cannot regress quietly.
+
 **Gatekeeper, and it bites before anything else does.** An unsigned build is
 blocked on first run. From a terminal the symptom is not a dialog and not
 "permission denied" — it is:
