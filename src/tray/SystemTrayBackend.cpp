@@ -55,8 +55,18 @@ SystemTrayBackend::SystemTrayBackend(QObject* parent)
             [this](QSystemTrayIcon::ActivationReason reason) {
                 switch (reason) {
                 case QSystemTrayIcon::Trigger:
+#ifdef Q_OS_MACOS
+                    // Not on macOS. A status item with a menu shows that menu on
+                    // any click, and Qt emits Trigger as well - so acting on it
+                    // opened the popup *and* the menu at once, one on top of the
+                    // other. The menu is the platform's own answer here, and it
+                    // already carries the two readings and Show usage, which is
+                    // the same shape GNOME ends up with.
+                    break;
+#else
                     Q_EMIT activated();
                     break;
+#endif
                 case QSystemTrayIcon::DoubleClick:
                     // Show rather than toggle: a double click arrives as Trigger
                     // followed by DoubleClick, so the pair must be idempotent.

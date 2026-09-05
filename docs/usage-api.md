@@ -60,14 +60,31 @@ file will be absent or lack `claudeAiOauth`. Claude Code models this internally 
 
 ### Not applicable on Linux
 
-- **macOS: reported, not verified here.** The claim is that Claude Code stores
-  this in the login Keychain, under service `Claude Code-credentials`. Weigh the
-  two halves separately. The *mechanism* is corroborated by a shipping
-  application — [leonardocouy/claudometer][lc] reads
-  `~/.claude/.credentials.json` on Linux and the system Keychain on macOS. The
-  *exact service name* is second-hand: it is not a string we extracted from
-  anything, and by our own note above it does not appear in the Linux binary,
-  so nothing here confirms it.
+- **macOS: the login Keychain, and now from primary sources.** Two independent
+  shipping applications read it the same way, and their code says so plainly.
+
+  [leonardocouy/claudometer][lc], in `src-tauri/src/claude.rs`: *"Reads Claude
+  Code OAuth credentials from macOS Keychain. Service: `Claude Code-credentials`,
+  Account: `$USER`"*. Note what else it does — on macOS it reads the Keychain
+  **only**, with no file fallback, while every other platform reads
+  `~/.claude/.credentials.json`. So the file is not there.
+
+  [sotthang/so-agentbar][soa], a native Swift menu-bar app, does the same and
+  explains the part that could not be established by inspection. Both invoke the
+  **`security` command line tool** rather than `SecItemCopyMatching`, and its
+  comment gives the reason: the ACL on the Keychain item Claude Code creates
+  lists the `security` tool as a trusted application, so going through it avoids
+  the approval prompt that direct API access raises every time.
+
+  That answers all three questions this section used to leave open. The service
+  is `Claude Code-credentials`; the account is `$USER`; and a third-party
+  program can read it without a prompt — by asking through a tool that is
+  already in the ACL, which is a very different thing from being in the ACL
+  itself.
+
+  What it does not answer: whether that ACL entry is a deliberate, stable
+  arrangement or an artefact of how the item happens to be created. Anything
+  built on it should fail gracefully rather than assume it.
 
   Three things a macOS port needs answered before it is designed, and one safe
   command answers the first two:
