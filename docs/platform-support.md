@@ -28,7 +28,7 @@ much care each one gets when a choice cannot serve them all.
 | Xfce, Cinnamon, MATE, LXQt, COSMIC | expected to work; unverified |
 | No tray | the CLI is the interface, not a fallback |
 | Windows | works, lightly tested; personal use |
-| macOS | not attempted — four things missing, see below |
+| macOS | runs; one session on one machine, personal use |
 
 ClaudeDial is made of exactly what Plasma is built around — a permanently
 visible tray icon, a small popup on click, settings, notifications, autostart —
@@ -98,7 +98,32 @@ written down rather than guessed at.
 It is a row of its own rather than a supported tier because "works when tried
 once" is not the same as tested.
 
-### macOS, and what it would actually take
+### macOS: what one session on a real machine established
+
+It starts, and the menu bar item is ours — the mark rendered at 96% in the
+severe colour, with the digits legible. Two things had to be got past first,
+and both are recorded below because neither announces itself usefully.
+
+**Notifications are not blocked, which contradicts what this document
+predicted.** The expectation was that an unsigned, unbundled binary would be
+ignored by the notification centre. Instead macOS put up the ordinary
+permission prompt — "ClaudeDial Notifications may include alerts, sounds and
+icon badges" — so the delivery path built for Windows works here too. Whether a
+banner then actually appears is not yet observed.
+
+**The menu bar is translucent, which makes the tray tone question sharper here
+than anywhere else.** Its background is the wallpaper, tinted. So there is not
+merely no way to *ask* what colour the panel is — there is no single colour to
+ask about, and it changes when the wallpaper does. The Tray icon setting is the
+whole answer on this platform, and Auto falls back to the mid-tone that is
+never invisible rather than to a guess.
+
+Still unobserved: whether a Dock icon appears (the real test of LSUIElement, as
+opposed to the key being present, which CI asserts), the popup, the settings
+window, whether the bundle works once moved out of the build tree, autostart,
+and the Keychain.
+
+### macOS, and what it would take to finish
 
 Worth writing down because the Windows port made the build portable in passing,
 which makes macOS look closer than it is. `if (UNIX AND NOT APPLE)` already
