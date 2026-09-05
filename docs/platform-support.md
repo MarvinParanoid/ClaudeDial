@@ -130,11 +130,29 @@ system notification centre, which in practice ignores a bare binary; it wants a
 signed, bundled `.app`. Our fallback path is already in place from the Windows
 work, but it would be delivering into nothing.
 
-**Gatekeeper.** An unsigned build is blocked on first run unless opened through
-the context menu or stripped of its quarantine attribute. Fine for personal
-use, no Developer ID needed — but ad-hoc signing changes the binary's identity
-on every rebuild, which is exactly what a Keychain ACL keys on, so the prompt
-may return after every update.
+**Gatekeeper, and it bites before anything else does.** An unsigned build is
+blocked on first run. From a terminal the symptom is not a dialog and not
+"permission denied" — it is:
+
+```console
+$ ./claudedial.app/Contents/MacOS/claudedial --demo 96,41
+operation not permitted
+```
+
+Which looks like a file-permission problem and is not: the executable bit is
+set, and the cause is `com.apple.quarantine` on the whole bundle. Observed with
+the attribute reading `0087;6a9c2f30;Telegram;` — it is stamped by whatever
+delivered the file, a messenger as readily as a browser, so it will be there
+however the artefact travels. One command clears it, and it has to be recursive
+because the attribute is on the tree rather than on the binary alone:
+
+```console
+$ xattr -dr com.apple.quarantine claudedial.app
+```
+
+ Fine for personal use, no Developer ID needed — but ad-hoc signing changes
+the binary's identity on every rebuild, which is exactly what a Keychain ACL
+keys on, so the prompt may return after every update.
 
 None of this is hard in isolation. It is unverifiable without a Mac, and the
 credential path is the wrong place to ship code nobody has run.
