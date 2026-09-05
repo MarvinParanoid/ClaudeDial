@@ -1,11 +1,8 @@
 #include "Config.h"
 
-#include <QCoreApplication>
-#include <QDir>
-#include <QFile>
-#include <QFileInfo>
+#include "Autostart.h"
+
 #include <QSettings>
-#include <QStandardPaths>
 
 #include <algorithm>
 
@@ -30,30 +27,6 @@ QString firedResetKey(const QString& windowKey)
 {
     return QStringLiteral("state/fired_%1_reset").arg(windowKey);
 }
-
-#ifdef Q_OS_WIN
-/// Where Windows keeps per-user startup entries. QSettings reaches the registry
-/// natively, so this needs no platform API of its own.
-constexpr auto kRunKey = R"(HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Run)";
-constexpr auto kRunValue = "ClaudeDial";
-#elif defined(Q_OS_MACOS)
-/// A LaunchAgent, which is how macOS starts something at login.
-///
-/// Not the XDG autostart entry the branch below writes: on macOS that would
-/// land in ~/Library/Preferences/autostart, where nothing reads it, and the
-/// toggle would appear to work while doing nothing at all.
-QString autostartFilePath()
-{
-    return QDir::homePath()
-        + QStringLiteral("/Library/LaunchAgents/io.github.marvinparanoid.claudedial.plist");
-}
-#else
-QString autostartFilePath()
-{
-    return QStandardPaths::writableLocation(QStandardPaths::GenericConfigLocation)
-        + QStringLiteral("/autostart/claudedial.desktop");
-}
-#endif
 
 } // namespace
 
@@ -221,80 +194,16 @@ void Config::setTheme(Theme theme)
 
 bool Config::startOnLogin() const
 {
-#ifdef Q_OS_WIN
-    return QSettings(QLatin1String(kRunKey), QSettings::NativeFormat)
-        .contains(QLatin1String(kRunValue));
-#else
-    return QFile::exists(autostartFilePath());
-#endif
+    return autostart::isEnabled();
 }
 
 void Config::setStartOnLogin(bool enabled)
 {
-#ifdef Q_OS_WIN
-    QSettings run(QLatin1String(kRunKey), QSettings::NativeFormat);
-    if (enabled) {
-        // Quoted: the path contains spaces on any normal install.
-        run.setValue(QLatin1String(kRunValue),
-                     QStringLiteral("\"%1\"").arg(
-                         QDir::toNativeSeparators(QCoreApplication::applicationFilePath())));
-    } else {
-        run.remove(QLatin1String(kRunValue));
-    }
+    // changed() fires whether or not the write worked. It is what makes the UI
+    // re-read the real state, so a toggle that could not be written snaps back
+    // instead of showing an entry that does not exist.
+    autostart::setEnabled(enabled);
     Q_EMIT changed();
-    return;
-#else
-    const QString path = autostartFilePath();
-
-    if (!enabled) {
-        QFile::remove(path);
-        Q_EMIT changed();
-        return;
-    }
-
-    QDir().mkpath(QFileInfo(path).absolutePath());
-    QFile file(path);
-    if (!file.open(QIODevice::WriteOnly | QIODevice::Truncate))
-        return;
-
-#ifdef Q_OS_MACOS
-    // Dropped into ~/Library/LaunchAgents, this takes effect at the next login
-    // without launchctl. The path is the running binary's, which inside a
-    // bundle is Contents/MacOS/claudedial - launching that directly is correct
-    // for an LSUIElement app.
-    file.write(QStringLiteral(
-                   "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
-                   "<!DOCTYPE plist PUBLIC \"-//Apple//DTD PLIST 1.0//EN\" "
-                   "\"http://www.apple.com/DTDs/PropertyList-1.0.dtd\">\n"
-                   "<plist version=\"1.0\">\n"
-                   "<dict>\n"
-                   "    <key>Label</key>\n"
-                   "    <string>io.github.marvinparanoid.claudedial</string>\n"
-                   "    <key>ProgramArguments</key>\n"
-                   "    <array>\n"
-                   "        <string>%1</string>\n"
-                   "    </array>\n"
-                   "    <key>RunAtLoad</key>\n"
-                   "    <true/>\n"
-                   "</dict>\n"
-                   "</plist>\n")
-                   .arg(QCoreApplication::applicationFilePath())
-                   .toUtf8());
-#else
-    file.write(
-        "[Desktop Entry]\n"
-        "Type=Application\n"
-        "Name=ClaudeDial\n"
-        "Comment=Claude Code usage at a glance\n"
-        "Exec=claudedial\n"
-        "Icon=claudedial\n"
-        "Terminal=false\n"
-        "Categories=Utility;\n"
-        "X-GNOME-Autostart-enabled=true\n");
-#endif
-    file.close();
-    Q_EMIT changed();
-#endif
 }
 
 } // namespace claudedial::core

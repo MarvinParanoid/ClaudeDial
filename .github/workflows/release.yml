@@ -27,12 +27,30 @@ jobs:
           path: ClaudeDial-windows-x86_64.zip
           retention-days: 1
 
+  # macOS ships as an asset because a build somebody can download is the only
+  # way the Keychain reader ever gets tried on a real subscription. It is not a
+  # supported tier, and the release notes below say exactly what is unknown
+  # about it rather than leaving the filename to imply everything is fine.
+  macos:
+    name: macOS arm64
+    # macos-14, for the same AGL reason as ci.yml; see the comment there.
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/macos-build
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: macos-zip
+          path: ClaudeDial-macos-arm64.zip
+          retention-days: 1
+
   linux:
     name: Linux x86_64
     runs-on: ubuntu-22.04
-    # So a tag never publishes half a release: if Windows fails to build, the
-    # release is not cut at all rather than cut without it.
-    needs: windows
+    # So a tag never publishes half a release: if either of the other platforms
+    # fails to build, the release is not cut at all rather than cut without it.
+    needs: [windows, macos]
     steps:
       - uses: actions/checkout@v7
 
@@ -183,6 +201,11 @@ jobs:
         with:
           name: windows-zip
 
+      - name: Collect the macOS build
+        uses: actions/download-artifact@v8
+        with:
+          name: macos-zip
+
       - name: Publish
         uses: softprops/action-gh-release@v2
         if: startsWith(github.ref, 'refs/tags/')
@@ -191,6 +214,27 @@ jobs:
             build/claudedial-*-linux-x86_64.tar.gz
             ClaudeDial-x86_64.AppImage
             ClaudeDial-windows-x86_64.zip
+            ClaudeDial-macos-arm64.zip
+          # Prepended to the generated notes. Every line here answers a question
+          # somebody has actually had to ask about one of these files.
+          body: |
+            Linux is the supported platform. Windows and macOS are built from
+            the same tree and are not supported tiers - see
+            [docs/platform-support.md](docs/platform-support.md).
+
+            **macOS** - Apple Silicon only; an Intel Mac has never been tried.
+            The build is ad-hoc signed rather than notarized, so whatever
+            delivers the file stamps it and the first run fails with
+            `operation not permitted`. Clear it once:
+
+            ```
+            xattr -dr com.apple.quarantine claudedial.app
+            ```
+
+            Claude Code keeps its token in the login Keychain on macOS.
+            ClaudeDial reads it through `security`, but that path has never run
+            against a real subscription - if it comes up empty, set
+            `CLAUDE_CODE_OAUTH_TOKEN`, which is the supported way in.
           generate_release_notes: true
 
       # A manual run builds the same artefacts but has no tag to publish to, so

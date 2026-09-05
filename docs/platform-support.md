@@ -72,10 +72,11 @@ One Windows-specific wrinkle: Qt links this as a GUI binary, which there means
 no console at all, so `claudedial --json` from a terminal would print into
 nothing. It borrows the parent console when given any flag.
 
-**The macOS build does not compile yet**, contrary to what the section below
-first claimed on the strength of the D-Bus guards alone. CI says the build step
-fails; the reason is not yet known, because Actions logs need admin rights to
-read and there is no cross compiler here. Recorded rather than explained.
+**The macOS build did not compile at first**, contrary to what this section
+claimed on the strength of the D-Bus guards alone — the runner's Xcode SDK had
+dropped a framework Qt still asks the linker for. Pinning `macos-14` fixed it,
+and the reason is written into [ci.yml](../.github/workflows/ci.yml) beside the
+pin rather than left here. It compiles, tests and packages on every push now.
 
 **Run on a real Windows desktop, and it works.** Confirmed there: the tray icon
 appears, the CLI prints to the terminal that launched it, and the small-size
@@ -186,15 +187,19 @@ Still unobserved: whether a notification banner actually lands after the prompt
 is accepted, and whether the LaunchAgent starts the app at the next login. Also untried by anyone: an Intel Mac. CI builds on an arm64 runner,
 so the artefact is arm64 only.
 
-### macOS, and what it would take to finish
+### macOS: the traps, and which of them are now sprung
 
-Worth writing down because the Windows port made the build portable in passing,
-which makes macOS look closer than it is. `if (UNIX AND NOT APPLE)` already
-excludes D-Bus and the XDG install rules, and every use of it is behind
+Written in the order they were hit, and kept after the fact: every one of these
+announced itself as something other than what it was, and the next person to
+touch this will meet them again. **All but the last are now handled** — what
+remains open is the credential path, and only because it cannot be tested here.
+
+The first was the free-looking part not being free. `if (UNIX AND NOT APPLE)`
+already excludes D-Bus and the XDG install rules, and every use of it is behind
 `CLAUDEDIAL_HAVE_DBUS`, from which this document concluded the tree would
-compile there. **It does not** — the first CI run on macOS failed at the build
-step. So even the free-looking part was not free, which is the second time in
-this file that "the mechanism implies it works" has been wrong.
+compile there. It did not — the first CI run failed at the build step, on a
+framework Qt asks the linker for and the runner's SDK had dropped. That is the
+second time in this file that "the mechanism implies it works" has been wrong.
 
 **The token is in the Keychain**, service `Claude Code-credentials`, so the file
 reader finds nothing. That is now handled, above — but the unknown it carries is
@@ -206,17 +211,16 @@ security rules say to be most careful, which is the opposite of the Windows
 case, where the token turned out to be a plain file and `core::Credentials` was
 never touched.
 
-**Autostart currently lies there.** `startOnLogin` branches on `Q_OS_WIN` and
-everything else writes an XDG `.desktop` entry — on macOS into
-`~/Library/Preferences/autostart/`, where nothing will ever read it. The toggle
-would appear to work and do nothing. A `LaunchAgent` plist in
-`~/Library/LaunchAgents` is the real answer, and until it exists the setting
-should refuse rather than pretend.
+**Autostart used to lie there.** `startOnLogin` branched on `Q_OS_WIN` and
+everything else wrote an XDG `.desktop` entry — on macOS into
+`~/Library/Preferences/autostart/`, where nothing would ever read it, so the
+toggle appeared to work and did nothing. It now writes a `LaunchAgent` plist to
+`~/Library/LaunchAgents`, from `core/Autostart.cpp`. Whether launchd then
+actually starts it at the next login is still unobserved.
 
-**Notifications need a bundle.** `QSystemTrayIcon::showMessage` goes through the
-system notification centre, which in practice ignores a bare binary; it wants a
-signed, bundled `.app`. Our fallback path is already in place from the Windows
-work, but it would be delivering into nothing.
+**Notifications need a bundle**, and there is one: `cmake --install` assembles a
+proper `.app`, and on a real machine macOS put up its ordinary permission prompt
+rather than ignoring us. Whether a banner then arrives is still unobserved.
 
 **A signature has to survive deployment, or the kernel kills the process.**
 `macdeployqt` rewrites library load paths with `install_name_tool` after the
@@ -257,8 +261,10 @@ $ xattr -dr com.apple.quarantine claudedial.app
 the binary's identity on every rebuild, which is exactly what a Keychain ACL
 keys on, so the prompt may return after every update.
 
-None of this is hard in isolation. It is unverifiable without a Mac, and the
-credential path is the wrong place to ship code nobody has run.
+None of this was hard in isolation, and none of it was guessable either. What
+is left is the credential path — written, unrun, and the one place in this
+project where shipping code nobody has executed is worth saying out loud every
+time it comes up.
 
 ## Three tiers of guarantee
 
@@ -721,14 +727,21 @@ Written down rather than quietly tolerated.
    false and `main` exits 1 with a message pointing at `--json`. That honours
    Tier 1 but contradicts the spirit of the ladder: with no tray it could still
    show the popup as an ordinary window. Not decided, not implemented.
-2. **The menu does not carry the numbers.** On AppIndicator there is no tooltip,
-   so the two percentages exist only inside the popup. Disabled menu entries are
-   the fix; DBusMenu renders plain items fine.
-3. **Autostart is XDG-specific code inside `core`.** `Config::setStartOnLogin`
-   writes `~/.config/autostart/claudedial.desktop` directly. Core is otherwise
-   free of platform assumptions, and this is the one place a second platform
-   would force a change. It belongs behind an interface — but only once there is
-   a second implementation to put behind it.
+
+Two entries that used to sit here are closed, and are named rather than
+deleted so the reasoning stays checkable:
+
+- *The menu does not carry the numbers.* It does now — `format::menuEntry()`
+  puts both percentages at the top of the tray menu as disabled items, which is
+  what AppIndicator's missing tooltip needed.
+- *Autostart is XDG-specific code inside `core`.* The condition attached to that
+  entry was "only once there is a second implementation to put behind it", and
+  the Windows and macOS ports supplied a second and a third. It now lives in
+  `core/Autostart.{h,cpp}` — a three-function namespace, not a class hierarchy,
+  because there is nothing to polymorph over — and `Config` delegates to it. The
+  move also fixed a quiet lie: a write that failed used to leave the toggle
+  looking enabled, and `changed()` is now emitted either way so the UI re-reads
+  the truth.
 
 ---
 

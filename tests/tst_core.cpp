@@ -1,3 +1,4 @@
+#include "core/Autostart.h"
 #include "core/Config.h"
 #include "core/Credentials.h"
 #include "core/Format.h"
@@ -66,6 +67,8 @@ private Q_SLOTS:
     void roundTripsSettings();
     void defaultsSuitALinuxTray();
     void remembersAnnouncedThresholdsAcrossRestarts();
+
+    void writesTheAutostartEntryWhereTheDesktopReadsIt();
 
     void classifiesTheCredentialFile();
     void prefersAnExplicitTokenFromTheEnvironment();
@@ -837,6 +840,54 @@ void writeCredentials(const QString& path, qint64 expiresAt, qint64 refreshExpir
 }
 
 } // namespace
+
+void CoreTest::writesTheAutostartEntryWhereTheDesktopReadsIt()
+{
+#if defined(Q_OS_WIN) || defined(Q_OS_MACOS)
+    // Both write outside anything QStandardPaths test mode redirects - the real
+    // registry, the real ~/Library/LaunchAgents - so exercising them here would
+    // change the machine running the tests. Left to the platform.
+    QSKIP("autostart writes outside the test sandbox on this platform");
+#else
+    // The path is asserted rather than round-tripped through isEnabled(): GNOME
+    // and KDE read exactly this location, so a change of mind about it is a
+    // change to the contract, not an implementation detail.
+    const QString expected = QStandardPaths::writableLocation(QStandardPaths::GenericConfigLocation)
+        + QStringLiteral("/autostart/claudedial.desktop");
+    QCOMPARE(autostart::location(), expected);
+
+    QFile::remove(expected);
+    QVERIFY(!autostart::isEnabled());
+
+    QVERIFY(autostart::setEnabled(true));
+    QVERIFY(autostart::isEnabled());
+    QVERIFY(QFile::exists(expected));
+
+    QFile entry(expected);
+    QVERIFY(entry.open(QIODevice::ReadOnly));
+    const QString written = QString::fromUtf8(entry.readAll());
+    entry.close();
+
+    // A .desktop file without Type= is ignored in silence, which is the worst
+    // possible failure for a toggle that claims to have worked.
+    QVERIFY(written.startsWith(QLatin1String("[Desktop Entry]")));
+    QVERIFY(written.contains(QLatin1String("Type=Application")));
+    QVERIFY(written.contains(QLatin1String("Exec=claudedial")));
+
+    // Turning it off removes the entry, and doing so twice is still a success.
+    QVERIFY(autostart::setEnabled(false));
+    QVERIFY(!autostart::isEnabled());
+    QVERIFY(autostart::setEnabled(false));
+
+    // Config reports what is on disk rather than a remembered flag.
+    Config config(QStringLiteral("claudedial-test"), QStringLiteral("autostart"));
+    QVERIFY(!config.startOnLogin());
+    config.setStartOnLogin(true);
+    QVERIFY(config.startOnLogin());
+    config.setStartOnLogin(false);
+    QVERIFY(!config.startOnLogin());
+#endif
+}
 
 void CoreTest::classifiesTheCredentialFile()
 {

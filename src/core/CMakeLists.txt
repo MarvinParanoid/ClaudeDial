@@ -1,4 +1,6 @@
 add_library(claudedial_core STATIC
+    Autostart.cpp
+    Autostart.h
     Config.cpp
     Config.h
     Credentials.cpp

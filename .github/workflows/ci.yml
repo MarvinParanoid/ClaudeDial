@@ -34,11 +34,10 @@ jobs:
           path: ClaudeDial-windows-x86_64.zip
           retention-days: 30
 
-  # macOS is not in a release and is not a supported tier: the token lives in
-  # the Keychain there, so until that is read this build is usable only with
-  # CLAUDE_CODE_OAUTH_TOKEN set. Compiled, tested and packaged here anyway,
-  # because the alternative is discovering the port has rotted later, and
-  # because somebody has a Mac to try it on.
+  # macOS is not a supported tier. The token lives in the Keychain there and the
+  # reader for it has never run against a real subscription, so this build is
+  # only known to work with CLAUDE_CODE_OAUTH_TOKEN set - which is what the
+  # release notes say too.
   macos:
     name: macOS (compile, test, package)
     # Not macos-latest, and not by preference. Its Xcode 26 SDK no longer ships
@@ -55,90 +54,12 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
-      - uses: jurplel/install-qt-action@v4
-        with:
-          version: '6.8.*'
-          cache: true
-
-      - name: Build
-        run: |
-          cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
-          cmake --build build
-
-      - name: Test
-        run: ctest --test-dir build --output-on-failure
-
-      - name: Assemble the bundle
-        run: cmake --install build --prefix "$PWD/dist"
-
-      # Printed rather than only asserted, for the same reason as the Windows
-      # job: Actions logs need admin rights to read, so a failure would
-      # otherwise be diagnosed by guesswork.
-      # macdeployqt rewrites library load paths with install_name_tool after the
-      # linker has already ad-hoc signed everything, which invalidates those
-      # signatures - and on Apple Silicon an invalid signature is fatal: the
-      # kernel kills the process and the shell reports only "killed". Re-sign
-      # ad-hoc afterwards; "-" needs no identity and no keychain.
-      - name: Sign the bundle
-        run: |
-          codesign --force --deep --sign - dist/claudedial.app
-          codesign --verify --deep --strict --verbose=2 dist/claudedial.app
-
-      - name: Show what was assembled
-        run: |
-          find dist -maxdepth 6 | sed "s|^dist||"
-          echo '--- the bundle Info.plist, which decides the Dock icon ---'
-          cat "$(find dist -name Info.plist -path '*claudedial.app/Contents/Info.plist' -print -quit)" || true
-
-      # Searched across the whole tree rather than at paths chosen in advance.
-      # Every guess about this layout has been wrong once: the bundle turned up
-      # under bin/, the QML modules outside the bundle, and the name of the TLS
-      # plugin on macOS is not something anyone here can check.
-      - name: Check what was assembled
-        run: |
-          fail=0
-          need() {
-            find dist \( -name "$1" -o -type d -name "$1" \) -print -quit | grep -q . \
-              || { echo "MISSING $2 ($1)"; fail=1; }
-          }
-          need 'claudedial.app'  'the app bundle'
-          need 'claudedial'      'the executable'
-          need 'QtQuick.framework' 'QtQuick - nothing would render'
-
-          find dist -type d -name Basic -path '*Controls*' -print -quit | grep -q . \
-            || { echo 'MISSING QtQuick.Controls.Basic - the settings window will not load'; fail=1; }
-
-          # Any TLS backend plugin, whatever it is called here.
-          find dist -name '*backend*.dylib' -print -quit | grep -q . \
-            || { echo 'MISSING a TLS backend - api.anthropic.com will be unreachable'; fail=1; }
-
-          # The bundle's own plist, not a framework's. '*claudedial.app*' matches
-          # every framework nested inside the bundle as well, and -quit then took
-          # whichever came first - so this assertion spent three rounds reading
-          # QtQuickControls2's Info.plist and reporting it as ours.
-          plist=$(find dist -path '*/claudedial.app/Contents/Info.plist' -print -quit)
-          if [ -n "$plist" ]; then
-            if ! grep -q LSUIElement "$plist"; then
-              echo 'MISSING LSUIElement - it would take a Dock icon'
-              # Printed here, not only in the step above: whoever pastes a
-              # failure pastes the failing step, and the answer to "whose plist
-              # is this" is in the file rather than in the absence of a key.
-              echo "--- $plist ---"
-              cat "$plist"
-              fail=1
-            fi
-          else
-            echo 'MISSING the bundle Info.plist'; fail=1
-          fi
-          exit $fail
-
-      - name: Zip it
-        run: ditto -c -k --sequesterRsrc --keepParent dist ClaudeDial-macos.zip
+      - uses: ./.github/actions/macos-build
 
       - uses: actions/upload-artifact@v7
         with:
-          name: ClaudeDial-macos
-          path: ClaudeDial-macos.zip
+          name: ClaudeDial-macos-arm64
+          path: ClaudeDial-macos-arm64.zip
           retention-days: 30
 
   build:

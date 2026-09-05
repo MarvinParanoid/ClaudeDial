@@ -1,0 +1,110 @@
+name: Build ClaudeDial for macOS
+description: >
+  Compiles, tests, signs and zips the .app bundle. Shared by ci.yml, which
+  attaches it to every push, and release.yml, which attaches it to a tag - one
+  copy, for the same reason the Windows recipe is one copy.
+
+  arm64 only: the runner is Apple Silicon, and nobody has tried an Intel Mac.
+
+outputs:
+  zip:
+    description: The assembled archive, at the repository root.
+    value: ClaudeDial-macos-arm64.zip
+
+runs:
+  using: composite
+  steps:
+    - uses: jurplel/install-qt-action@v4
+      with:
+        version: '6.8.*'
+        cache: true
+
+    - name: Build
+      shell: bash
+      run: |
+        cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+        cmake --build build
+
+    - name: Test
+      shell: bash
+      run: ctest --test-dir build --output-on-failure
+
+    - name: Assemble the bundle
+      shell: bash
+      run: cmake --install build --prefix "$PWD/dist"
+
+    # Printed rather than only asserted, for the same reason as the Windows
+    # job: Actions logs need admin rights to read, so a failure would
+    # otherwise be diagnosed by guesswork.
+    # macdeployqt rewrites library load paths with install_name_tool after the
+    # linker has already ad-hoc signed everything, which invalidates those
+    # signatures - and on Apple Silicon an invalid signature is fatal: the
+    # kernel kills the process and the shell reports only "killed". Re-sign
+    # ad-hoc afterwards; "-" needs no identity and no keychain.
+    - name: Sign the bundle
+      shell: bash
+      run: |
+        codesign --force --deep --sign - dist/claudedial.app
+        codesign --verify --deep --strict --verbose=2 dist/claudedial.app
+
+    - name: Show what was assembled
+      shell: bash
+      run: |
+        find dist -maxdepth 6 | sed "s|^dist||"
+        echo '--- the bundle Info.plist, which decides the Dock icon ---'
+        cat "$(find dist -name Info.plist -path '*claudedial.app/Contents/Info.plist' -print -quit)" || true
+
+    # Searched across the whole tree rather than at paths chosen in advance.
+    # Every guess about this layout has been wrong once: the bundle turned up
+    # under bin/, the QML modules outside the bundle, and the name of the TLS
+    # plugin on macOS is not something anyone here can check.
+    - name: Check what was assembled
+      shell: bash
+      run: |
+        fail=0
+        need() {
+          find dist \( -name "$1" -o -type d -name "$1" \) -print -quit | grep -q . \
+            || { echo "MISSING $2 ($1)"; fail=1; }
+        }
+        need 'claudedial.app'  'the app bundle'
+        need 'claudedial'      'the executable'
+        need 'QtQuick.framework' 'QtQuick - nothing would render'
+
+        find dist -type d -name Basic -path '*Controls*' -print -quit | grep -q . \
+          || { echo 'MISSING QtQuick.Controls.Basic - the settings window will not load'; fail=1; }
+
+        # Any TLS backend plugin, whatever it is called here.
+        find dist -name '*backend*.dylib' -print -quit | grep -q . \
+          || { echo 'MISSING a TLS backend - api.anthropic.com will be unreachable'; fail=1; }
+
+        # The bundle's own plist, not a framework's. '*claudedial.app*' matches
+        # every framework nested inside the bundle as well, and -quit then took
+        # whichever came first - so this assertion spent three rounds reading
+        # QtQuickControls2's Info.plist and reporting it as ours.
+        plist=$(find dist -path '*/claudedial.app/Contents/Info.plist' -print -quit)
+        if [ -n "$plist" ]; then
+          if ! grep -q LSUIElement "$plist"; then
+            echo 'MISSING LSUIElement - it would take a Dock icon'
+            # Printed here, not only in the step above: whoever pastes a
+            # failure pastes the failing step, and the answer to "whose plist
+            # is this" is in the file rather than in the absence of a key.
+            echo "--- $plist ---"
+            cat "$plist"
+            fail=1
+          fi
+        else
+          echo 'MISSING the bundle Info.plist'; fail=1
+        fi
+        exit $fail
+
+    - name: Zip the bundle
+      shell: bash
+      run: |
+        # Found rather than assumed. The bundle has turned up at more than one
+        # path under the install prefix, and every guess about it has been wrong
+        # once already.
+        app=$(find dist -maxdepth 4 -type d -name 'claudedial.app' -print -quit)
+        [ -n "$app" ] || { echo 'no claudedial.app to zip'; exit 1; }
+        # ditto, not zip: it is the one that preserves the symlinks inside a
+        # framework and the code signature that was just verified.
+        ditto -c -k --sequesterRsrc --keepParent "$app" ClaudeDial-macos-arm64.zip
