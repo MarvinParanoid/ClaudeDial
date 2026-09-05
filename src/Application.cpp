@@ -7,6 +7,7 @@
 #include "core/Format.h"
 #include "core/PanelTheme.h"
 #include "core/UsageJson.h"
+#include "core/UsageLevel.h"
 #include "core/UsageService.h"
 #include "tray/IconRenderer.h"
 #include "tray/Notifier.h"
@@ -194,7 +195,24 @@ void Application::updateTray()
         ? std::optional<double>(state.fiveHour->percentage)
         : std::nullopt;
 
-    m_tray->setIcon(IconRenderer::render(percentage, options));
+    QIcon icon = IconRenderer::render(percentage, options);
+
+    // A template image, which macOS tints itself to match the menu bar. That is
+    // the only correct answer on a platform where the panel's background is the
+    // wallpaper: reported from a real Mac that the neutral looked washed out on
+    // Auto while the explicit tones were legible, and no fixed grey can fix
+    // that, because the background changes when the wallpaper does.
+    //
+    // Only for the neutral state, and only on Auto. A warning must keep its
+    // colour - amber and red are the reading, not decoration - and an explicit
+    // tone is the user having overridden us. setIsMask does nothing off macOS.
+    const bool neutral = !percentage
+        || core::levelFor(*percentage, options.warningThreshold, options.criticalThreshold)
+            == core::UsageLevel::Normal;
+    if (neutral && m_config->trayTone() == Config::TrayTone::Auto)
+        icon.setIsMask(true);
+
+    m_tray->setIcon(icon);
 
     const QString tooltip = state.isValid() ? core::format::tooltip(state)
                                             : QStringLiteral("ClaudeDial\n%1").arg(

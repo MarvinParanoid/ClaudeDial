@@ -111,12 +111,24 @@ permission prompt — "ClaudeDial Notifications may include alerts, sounds and
 icon badges" — so the delivery path built for Windows works here too. Whether a
 banner then actually appears is not yet observed.
 
-**The menu bar is translucent, which makes the tray tone question sharper here
-than anywhere else.** Its background is the wallpaper, tinted. So there is not
-merely no way to *ask* what colour the panel is — there is no single colour to
-ask about, and it changes when the wallpaper does. The Tray icon setting is the
-whole answer on this platform, and Auto falls back to the mid-tone that is
-never invisible rather than to a guess.
+**The menu bar is translucent, and that is what finally answers the tray tone
+question.** Its background is the wallpaper, tinted. There is not merely no way
+to *ask* what colour the panel is — there is no single colour to ask about, and
+it changes when the wallpaper does. Reported from the machine: on Auto the
+neutral looked washed out, while Light and Dark were both legible, which is
+exactly what a fixed mid-tone must do there.
+
+macOS solves this itself, for applications that ask. A template image is tinted
+by the system to match the menu bar, and `QIcon::setIsMask(true)` is how Qt
+requests that. So on Auto the neutral mark is now a template, and the platform
+picks the colour — which is better than any guess of ours, because it is not a
+guess.
+
+Only the neutral, and only on Auto. The warning colours stay colours: amber and
+red are the reading, not decoration, and a template would erase them. An
+explicit Light or Dark means the user has overridden us and is honoured as
+written. `setIsMask` does nothing off macOS, verified — the Linux tray icon
+still carries its own `#7c7c7c` pixels.
 
 **The popup opens, and it is anchored to the icon** — centred beneath it,
 which is the branch in `PopupWindow::placeAndShow` that takes a non-empty
@@ -126,11 +138,12 @@ unreachable there, kept on the argument that Windows and macOS implement
 popup renders correctly too: the header mark, the ramp colour at 96%, the pace
 line, the light theme.
 
-Still unobserved: whether a Dock icon appears (the real test of LSUIElement, as
-opposed to the key being present, which CI asserts), the settings window,
-whether the bundle works once moved out of the build tree, autostart, the
-neutral tone below the warning threshold against a translucent menu bar, and
-the Keychain.
+**No Dock icon, and the settings window opens.** LSUIElement works in practice
+and not only as a key in a plist, which is the part CI can assert.
+
+Still unobserved: whether the bundle works once moved out of the build tree,
+whether a notification banner actually lands after the prompt is accepted,
+autostart, and the Keychain.
 
 ### macOS, and what it would take to finish
 
