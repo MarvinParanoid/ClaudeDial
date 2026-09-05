@@ -21,8 +21,18 @@ SystemTrayBackend::SystemTrayBackend(QObject* parent)
     // The context menu is rendered by the panel itself over DBusMenu, so it must
     // stay plain actions - a custom widget would simply not appear.
 
-    // First, and deliberately: on desktops where a left click opens this menu
-    // instead of activating the item, this is the only way to reach the popup.
+    // The readings first, because on a desktop with no tooltips this menu is
+    // where they live. Disabled: they are a display, not a command, and a menu
+    // entry that looks clickable and does nothing is worse than a greyed one.
+    m_fiveHourEntry = m_menu->addAction(QString());
+    m_fiveHourEntry->setEnabled(false);
+    m_sevenDayEntry = m_menu->addAction(QString());
+    m_sevenDayEntry->setEnabled(false);
+    m_summarySeparator = m_menu->addSeparator();
+
+    // First among the commands, and deliberately: on desktops where a left
+    // click opens this menu instead of activating the item, this is the only
+    // way to reach the popup.
     auto* show = m_menu->addAction(tr("Show usage"));
     connect(show, &QAction::triggered, this, &TrayBackend::showRequested);
 
@@ -127,6 +137,19 @@ void SystemTrayBackend::setIcon(const QIcon& icon)
 void SystemTrayBackend::setToolTip(const QString& tooltip)
 {
     m_tray->setToolTip(tooltip);
+}
+
+void SystemTrayBackend::setSummary(const QString& fiveHour, const QString& sevenDay)
+{
+    const auto apply = [](QAction* action, const QString& text) {
+        action->setText(text);
+        // Hidden rather than blank when a window has no data: an empty entry
+        // reads as a rendering fault.
+        action->setVisible(!text.isEmpty());
+    };
+    apply(m_fiveHourEntry, fiveHour);
+    apply(m_sevenDayEntry, sevenDay);
+    m_summarySeparator->setVisible(!fiveHour.isEmpty() || !sevenDay.isEmpty());
 }
 
 void SystemTrayBackend::show()

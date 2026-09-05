@@ -215,10 +215,12 @@ neither of these is a bug we can fix.
 
 <img src="docs/images/settings.png" alt="The ClaudeDial settings window" width="381">
 
-Right-click the tray icon for **Show usage**, **Refresh now**, **Settings** and
-**Quit**, or use the gear in the popup. On GNOME a left click opens that menu
-instead of the popup, so **Show usage** is the way in there; on Plasma a single
-click toggles it.
+Right-click the tray icon for the two readings and then **Show usage**,
+**Refresh now**, **Settings** and **Quit**, or use the gear in the popup. The
+numbers are in the menu because a tooltip cannot be relied on - AppIndicator,
+which is how GNOME has a tray at all, supports none. On GNOME a left click
+opens that menu instead of the popup, so **Show usage** is the way in there; on
+Plasma a single click toggles it.
 
 Configurable: start on login, refresh interval, notifications, warning and
 critical thresholds, tray style, tray icon tone, and theme. Settings live in

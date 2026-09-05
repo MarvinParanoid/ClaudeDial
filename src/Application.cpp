@@ -200,6 +200,10 @@ void Application::updateTray()
                                             : QStringLiteral("ClaudeDial\n%1").arg(
                                                   m_service->unavailableReason());
     m_tray->setToolTip(tooltip);
+
+    // The same two readings again, for a desktop whose tray has no tooltips.
+    m_tray->setSummary(core::format::menuEntry(PeriodKind::FiveHour, state),
+                       core::format::menuEntry(PeriodKind::SevenDay, state));
 }
 
 namespace {

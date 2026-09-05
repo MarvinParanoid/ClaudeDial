@@ -48,5 +48,18 @@ QString updatedAgo(const QDateTime& updatedAt, const QDateTime& now = QDateTime:
 /// The multi-line tray tooltip.
 QString tooltip(const UsageState& state, const QDateTime& now = QDateTime::currentDateTimeUtc());
 
+/// One window as a line for the tray menu: "Session 63% · resets in 2h".
+///
+/// The menu carries these because a tooltip cannot be relied on. AppIndicator,
+/// which is how GNOME has a tray at all, supports no tooltips whatsoever - so
+/// on that desktop the middle tier of the information hierarchy is simply
+/// absent unless the menu carries it. DBusMenu renders plain entries fine,
+/// which is what makes this work where a tooltip does not.
+///
+/// Empty when that window has no data, so the caller can leave the entry out
+/// rather than show a placeholder.
+QString menuEntry(PeriodKind kind, const UsageState& state,
+                  const QDateTime& now = QDateTime::currentDateTimeUtc());
+
 } // namespace format
 } // namespace claudedial::core

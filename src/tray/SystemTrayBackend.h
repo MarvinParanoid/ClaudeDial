@@ -2,6 +2,7 @@
 
 #include "TrayBackend.h"
 
+class QAction;
 class QMenu;
 class QSystemTrayIcon;
 
@@ -40,6 +41,7 @@ public:
 
     void setIcon(const QIcon& icon) override;
     void setToolTip(const QString& tooltip) override;
+    void setSummary(const QString& fiveHour, const QString& sevenDay) override;
     void show() override;
     void showMessage(const QString& title, const QString& body, const QImage& icon,
                      bool critical) override;
@@ -48,6 +50,11 @@ public:
 private:
     QSystemTrayIcon* m_tray;
     QMenu* m_menu;
+
+    /// Disabled entries, not commands: they are a reading the menu displays.
+    QAction* m_fiveHourEntry;
+    QAction* m_sevenDayEntry;
+    QAction* m_summarySeparator;
 };
 
 } // namespace claudedial::tray

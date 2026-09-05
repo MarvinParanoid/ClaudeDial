@@ -118,6 +118,25 @@ QString updatedAgo(const QDateTime& updatedAt, const QDateTime& now)
     return QCoreApplication::translate("format", "Updated %1d ago").arg(seconds / (24 * 3600));
 }
 
+QString menuEntry(PeriodKind kind, const UsageState& state, const QDateTime& now)
+{
+    const auto& period = state.period(kind);
+    if (!period)
+        return {};
+
+    // The same words the popup and the notifications use. Someone reading this
+    // in a menu and then opening the popup should not have to match up two
+    // namings of the same window.
+    const QString label = kind == PeriodKind::FiveHour
+        ? QCoreApplication::translate("format", "Session")
+        : QCoreApplication::translate("format", "Weekly");
+
+    QString line = QStringLiteral("%1 %2%").arg(label).arg(qRound(period->percentage));
+    if (const QString reset = resetFor(kind, *period, now); !reset.isEmpty())
+        line += QStringLiteral(" · %1").arg(reset);
+    return line;
+}
+
 QString tooltip(const UsageState& state, const QDateTime& now)
 {
     QStringList lines { QStringLiteral("ClaudeDial") };

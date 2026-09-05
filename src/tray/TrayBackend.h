@@ -31,6 +31,14 @@ public:
     /// StatusNotifierItem, and always the case on Wayland.
     [[nodiscard]] virtual QRect iconGeometry() const = 0;
 
+    /// The two readings, shown in the menu itself.
+    ///
+    /// Because a tooltip cannot be relied on: AppIndicator, which is how GNOME
+    /// has a tray at all, supports none whatsoever. Plain menu entries render
+    /// there, so this is the one place the numbers can appear without opening
+    /// the popup. An empty string leaves that entry out.
+    virtual void setSummary(const QString& fiveHour, const QString& sevenDay) = 0;
+
     /// Show a message from the tray icon itself.
     ///
     /// The delivery of last resort, used where there is no notification bus.

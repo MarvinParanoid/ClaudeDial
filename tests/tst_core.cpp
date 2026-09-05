@@ -43,6 +43,7 @@ private Q_SLOTS:
     void formatsResetPerWindowKind();
     void roundsAbsoluteResetToNearestMinute();
     void buildsTooltip();
+    void buildsMenuEntries();
     void measuresPositionWithinTheFiveHourWindow();
     void refusesToGuessTheWindowWhenItCannotKnow();
     void formatsUpdatedAgoWithoutPluralPlaceholders();
@@ -777,6 +778,37 @@ void CoreTest::alignsToAResetOnlyWhenNotRateLimited()
     // And while rate-limited the alignment is skipped entirely: polling on the
     // stroke of a new window is the burst a rate limiter is objecting to.
     QCOMPARE(nextRefreshMs(60, 1, 0, stateResettingIn(now, 60), now), 3 * 60 * 1000);
+}
+
+/// The menu carries the readings because AppIndicator has no tooltips at all,
+/// so on GNOME this is the only place they appear without opening the popup.
+void CoreTest::buildsMenuEntries()
+{
+    const QDateTime now(QDate(2026, 9, 5), QTime(12, 0, 0), QTimeZone::UTC);
+
+    UsageState state;
+    UsagePeriod session;
+    session.percentage = 63;
+    session.resetAt = now.addSecs(2 * 3600);
+    state.fiveHour = session;
+    state.updatedAt = now;
+
+    QCOMPARE(format::menuEntry(PeriodKind::FiveHour, state, now),
+             QStringLiteral("Session 63% · resets in 2h"));
+
+    // The same words as the popup and the notifications, so nobody has to match
+    // up two namings of one window.
+    QVERIFY(format::menuEntry(PeriodKind::FiveHour, state, now).startsWith(QLatin1String("Session")));
+
+    // A window with no data yields nothing, so the caller leaves the entry out
+    // rather than showing a placeholder.
+    QVERIFY(format::menuEntry(PeriodKind::SevenDay, state, now).isEmpty());
+
+    // And a window with no reset timestamp still reports its percentage.
+    UsagePeriod weekly;
+    weekly.percentage = 41;
+    state.sevenDay = weekly;
+    QCOMPARE(format::menuEntry(PeriodKind::SevenDay, state, now), QStringLiteral("Weekly 41%"));
 }
 
 QTEST_GUILESS_MAIN(CoreTest)

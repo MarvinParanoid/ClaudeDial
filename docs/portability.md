@@ -44,13 +44,13 @@ desktop, so it is **fixed**:
    and the pair has to be idempotent - otherwise it would open the popup and
    immediately shut it again. Verified: single click still toggles both ways,
    and "Show usage" twice in a row leaves it open.
-3. **Deliberately waiting on evidence:** put the two percentages in the menu as
-   disabled entries. DBusMenu renders plain items fine, so this works where
-   tooltips do not - see below - and it is the actual replacement for the
-   missing tooltip. Held until GNOME has been run for real, because how badly
-   it is needed depends on how reachable the popup turns out to be there, and
-   guessing that from the protocols is exactly what has been wrong three times
-   in this file's history.
+3. **Done.** The two percentages are disabled entries at the top of the menu,
+   which is the actual replacement for the missing tooltip: DBusMenu renders
+   plain items fine where tooltips do not exist at all. Verified on the bus
+   rather than by reading the code — the panel is handed `Session 63% · resets
+   in 2h` and `Weekly 41% · resets in 4d`, and when there is no data those two
+   entries and their separator come across as `visible=false`, so the menu looks
+   exactly as it did before rather than growing two blank rows.
 
 ### The tooltip does not exist on AppIndicator
 
