@@ -130,6 +130,8 @@ explicit Light or Dark means the user has overridden us and is honoured as
 written. `setIsMask` does nothing off macOS, verified — the Linux tray icon
 still carries its own `#7c7c7c` pixels.
 
+Confirmed on the machine afterwards: on Auto the mark now reads correctly.
+
 **The popup opens, and it is anchored to the icon** — centred beneath it,
 which is the branch in `PopupWindow::placeAndShow` that takes a non-empty
 `QSystemTrayIcon::geometry()`. That branch was written for Plasma, found to be
@@ -141,9 +143,14 @@ line, the light theme.
 **No Dock icon, and the settings window opens.** LSUIElement works in practice
 and not only as a key in a plist, which is the part CI can assert.
 
-Still unobserved: whether the bundle works once moved out of the build tree,
-whether a notification banner actually lands after the prompt is accepted,
-autostart, and the Keychain.
+**Autostart writes its LaunchAgent**, so the plist and its path are right; that
+it actually starts the app at the next login is a separate question and not yet
+seen.
+
+Still unobserved: whether the bundle works once moved out of the build tree {D}
+an attempt from `~/Applications` stopped at `permission denied`, which is the
+executable bit rather than quarantine and is being chased {D} whether a
+notification banner lands after the prompt is accepted, and the Keychain.
 
 ### macOS, and what it would take to finish
 
