@@ -147,10 +147,22 @@ and not only as a key in a plist, which is the part CI can assert.
 it actually starts the app at the next login is a separate question and not yet
 seen.
 
-Still unobserved: whether the bundle works once moved out of the build tree {D}
-an attempt from `~/Applications` stopped at `permission denied`, which is the
-executable bit rather than quarantine and is being chased {D} whether a
-notification banner lands after the prompt is accepted, and the Keychain.
+**The bundle is self-contained.** Copied to `~/Applications` and run from
+there, the popup renders — which is the test that matters, because the QML
+modules are installed both inside the bundle and beside it in `dist/qml`, and
+only opening a window shows which copy is in use. Launching alone would not
+have: the app starts and the icon appears either way.
+
+Worth writing down for whoever tries next: `permission denied` from a bundle
+almost always means a directory is being executed. `.app` is a folder, and the
+executable is `Contents/MacOS/claudedial`. Two other explanations were offered
+here first — a lost executable bit, then `cp -r` mangling the framework
+symlinks — and both were wrong.
+
+Still unobserved: whether a notification banner actually lands after the prompt
+is accepted, whether the LaunchAgent starts the app at the next login, and the
+Keychain. Also untried by anyone: an Intel Mac. CI builds on an arm64 runner,
+so the artefact is arm64 only.
 
 ### macOS, and what it would take to finish
 
