@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.21)
 
 project(claudedial
-    VERSION 0.1.8
+    VERSION 0.1.9
     DESCRIPTION "Claude Code usage at a glance"
     LANGUAGES CXX
 )
