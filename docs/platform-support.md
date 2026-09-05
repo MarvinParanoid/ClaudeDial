@@ -736,6 +736,21 @@ Written down rather than quietly tolerated.
    Tier 1 but contradicts the spirit of the ladder: with no tray it could still
    show the popup as an ordinary window. Not decided, not implemented.
 
+   Half of this is now closed, and from prior art rather than from thinking
+   about it. [Syncthing Tray][st] answers the same question with two flags:
+   `--windowed`, which opens the tray menu as an ordinary window, and `--wait`,
+   which waits for a tray instead of refusing to start. The second is not a
+   design question at all — it is a bug this project had and had not noticed. A
+   panel registers its StatusNotifierHost some way into the login, an autostart
+   entry can easily run first, and the application would then exit and leave the
+   session with no icon and nothing on screen saying why. `--wait` exists now
+   and every autostart entry passes it; a manual launch does not, so a session
+   with genuinely no tray still says so in fifteen milliseconds rather than
+   after a minute.
+
+   What remains open is the `--windowed` half: whether the popup should stand in
+   as an ordinary window where there is no tray at all.
+
 Two entries that used to sit here are closed, and are named rather than
 deleted so the reasoning stays checkable:
 
@@ -796,4 +811,5 @@ reports from real desktops replace guesses. Even Syncthing Tray, with a far
 longer list than ours, does not claim to test every combination.
 
 [appind]: https://github.com/ubuntu/gnome-shell-extension-appindicator
+[st]: https://github.com/Martchus/syncthingtray
 [lc]: https://github.com/leonardocouy/claudometer

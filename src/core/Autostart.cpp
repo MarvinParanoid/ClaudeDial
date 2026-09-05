@@ -10,6 +10,14 @@
 namespace claudedial::core::autostart {
 namespace {
 
+// Every entry below launches with --wait, and that is the only reason the flag
+// exists. A panel registers its tray host some way into the login and an
+// autostart entry can easily run first; without this the application finds no
+// tray, exits, and leaves the user with no icon for the session and nothing on
+// screen saying why. Spelled out in each entry rather than shared, because the
+// three formats quote it differently and a constant would not survive any of
+// them intact.
+
 #ifdef Q_OS_WIN
 /// Where Windows keeps per-user startup entries. QSettings reaches the registry
 /// natively, so this needs no platform API of its own.
@@ -50,6 +58,7 @@ QByteArray entryContents()
                           "    <key>ProgramArguments</key>\n"
                           "    <array>\n"
                           "        <string>%1</string>\n"
+                          "        <string>--wait</string>\n"
                           "    </array>\n"
                           "    <key>RunAtLoad</key>\n"
                           "    <true/>\n"
@@ -62,7 +71,7 @@ QByteArray entryContents()
                              "Type=Application\n"
                              "Name=ClaudeDial\n"
                              "Comment=Claude Code usage at a glance\n"
-                             "Exec=claudedial\n"
+                             "Exec=claudedial --wait\n"
                              "Icon=claudedial\n"
                              "Terminal=false\n"
                              "Categories=Utility;\n"
@@ -91,7 +100,7 @@ bool setEnabled(bool enabled)
     if (enabled) {
         // Quoted: the path contains spaces on any normal install.
         run.setValue(QLatin1String(kRunValue),
-                     QStringLiteral("\"%1\"").arg(
+                     QStringLiteral("\"%1\" --wait").arg(
                          QDir::toNativeSeparators(QCoreApplication::applicationFilePath())));
     } else {
         run.remove(QLatin1String(kRunValue));

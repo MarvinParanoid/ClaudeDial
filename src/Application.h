@@ -43,7 +43,10 @@ public:
 
     /// False when there is no system tray to live in - the caller should report
     /// that and exit rather than run invisibly.
-    bool initialize();
+    /// waitForTrayMs > 0 makes startup tolerate a panel that is not up yet.
+    /// Autostart passes it; a manual launch does not, so a session with no tray
+    /// at all still says so immediately.
+    bool initialize(int waitForTrayMs = 0);
 
     /// Show the popup - used when a second launch asks the running instance to
     /// surface itself.

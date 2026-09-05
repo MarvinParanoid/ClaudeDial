@@ -2,6 +2,9 @@
 
 #include <QAction>
 #include <QCoreApplication>
+#include <QElapsedTimer>
+#include <QEventLoop>
+#include <QTimer>
 #ifdef CLAUDEDIAL_HAVE_DBUS
 #include <QDBusConnection>
 #include <QDBusConnectionInterface>
@@ -93,6 +96,30 @@ SystemTrayBackend::~SystemTrayBackend()
 bool SystemTrayBackend::isAvailable()
 {
     return QSystemTrayIcon::isSystemTrayAvailable();
+}
+
+bool SystemTrayBackend::waitUntilAvailable(int timeoutMs)
+{
+    if (isAvailable())
+        return true;
+
+    // Qt has no signal for this, so it has to be asked repeatedly. Called
+    // before the main event loop starts, hence a nested one.
+    constexpr int kPollMs = 250;
+    QElapsedTimer elapsed;
+    elapsed.start();
+
+    QEventLoop loop;
+    QTimer poll;
+    poll.setInterval(kPollMs);
+    QObject::connect(&poll, &QTimer::timeout, &loop, [&] {
+        if (isAvailable() || elapsed.elapsed() >= timeoutMs)
+            loop.quit();
+    });
+    poll.start();
+    loop.exec();
+
+    return isAvailable();
 }
 
 void SystemTrayBackend::showMessage(const QString& title, const QString& body,

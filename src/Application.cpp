@@ -51,10 +51,14 @@ Application::Application(QObject* parent)
 {
 }
 
-bool Application::initialize()
+bool Application::initialize(int waitForTrayMs)
 {
-    if (!tray::SystemTrayBackend::isAvailable())
+    if (waitForTrayMs > 0) {
+        if (!tray::SystemTrayBackend::waitUntilAvailable(waitForTrayMs))
+            return false;
+    } else if (!tray::SystemTrayBackend::isAvailable()) {
         return false;
+    }
 
     // The static identity mark - not the tray indicator, which is a different
     // job with different constraints. Without this the compositor shows a

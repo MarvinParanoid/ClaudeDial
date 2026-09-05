@@ -29,6 +29,15 @@ public:
     /// can appear. Confirm with hasVisibleIcon() once the icon has been shown.
     [[nodiscard]] static bool isAvailable();
 
+    /// Spins until a tray turns up, or until timeoutMs has passed. Returns what
+    /// isAvailable() says at the end.
+    ///
+    /// For autostart only. A panel registers its StatusNotifierHost some way
+    /// into the login, and an autostart entry can easily run first - at which
+    /// point isAvailable() is false, the application exits, and the user has no
+    /// tray icon for the whole session with nothing on screen to say why.
+    static bool waitUntilAvailable(int timeoutMs);
+
     /// Whether anything on this system could display our icon.
     ///
     /// Weaker than it sounds, on purpose. It answers "is there a mechanism"

@@ -50,6 +50,7 @@ void printUsage(QTextStream& out)
            "  claudedial --once     Print current usage and exit\n"
            "  claudedial --json     Print current usage as JSON and exit\n"
            "  claudedial --demo     Run on invented numbers, with no credentials\n"
+           "  claudedial --wait     Wait up to a minute for a tray to appear\n"
            "  claudedial --help     Show this help\n"
            "  claudedial --version  Show the version\n\n"
            "The JSON output includes Waybar's text/tooltip/class keys, so a\n"
@@ -170,8 +171,22 @@ int main(int argc, char** argv)
     if (!instance.acquire())
         return 0;
 
+    // --wait exists for autostart, which is why the autostart entries this
+    // application writes pass it and nothing else does. A panel registers its
+    // tray host some way into the login and an autostart entry can run first;
+    // without this the application exits and there is no icon for the session.
+    // Bounded rather than indefinite: if no tray has appeared in a minute, one
+    // is not coming, and the message pointing at --json is more use than a
+    // process waiting forever.
+    constexpr int kWaitForTrayMs = 60 * 1000;
+    bool waitForTray = false;
+    for (int i = 1; i < argc; ++i) {
+        if (std::strcmp(argv[i], "--wait") == 0)
+            waitForTray = true;
+    }
+
     claudedial::Application application;
-    if (!application.initialize()) {
+    if (!application.initialize(waitForTray ? kWaitForTrayMs : 0)) {
         QTextStream err(stderr);
         err << "claudedial: no system tray is available on this desktop.\n"
                "Try `claudedial --json` for status-bar integration instead.\n";

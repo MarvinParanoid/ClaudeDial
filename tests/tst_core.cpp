@@ -918,7 +918,10 @@ void CoreTest::writesTheAutostartEntryWhereTheDesktopReadsIt()
     // possible failure for a toggle that claims to have worked.
     QVERIFY(written.startsWith(QLatin1String("[Desktop Entry]")));
     QVERIFY(written.contains(QLatin1String("Type=Application")));
-    QVERIFY(written.contains(QLatin1String("Exec=claudedial")));
+    // --wait, and it matters: an autostart entry frequently runs before the
+    // panel has registered a tray host, and without the flag the application
+    // would find none, exit, and leave the session with no icon at all.
+    QVERIFY(written.contains(QLatin1String("Exec=claudedial --wait")));
 
     // Turning it off removes the entry, and doing so twice is still a success.
     QVERIFY(autostart::setEnabled(false));
