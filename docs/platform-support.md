@@ -85,9 +85,17 @@ the same level of detail added for GNOME and i3, so Percentage shows the number
 with a bar rather than the dial. Selecting the Gauge style keeps the dial, which
 survives 16 px with no number inside it.
 
-Not exercised there: notifications, autostart, and reading real credentials.
-The last one has a trap worth repeating — if Claude Code runs inside WSL its
+Not exercised there: notifications, autostart, and reading real credentials —
+which, since the tray icon and the CLI both work, is most of what a supported
+tier would have to guarantee. The credentials one has a trap worth repeating — if Claude Code runs inside WSL its
 credentials are in the WSL filesystem, where a native build will not find them.
+
+Not a Windows thing but worth parking beside it, because it looks alarming and
+is not: run from the build tree on Linux, Qt prints `Failed to register with
+host portal ... App info not found for 'claudedial'`. xdg-desktop-portal
+resolves an app ID by finding a matching `.desktop` file, and an uninstalled
+build has none — `cmake --install` puts one in `share/applications`, so nobody
+running an installed copy sees it. It changes no behaviour.
 
 One unexplained symptom, kept because it is real: exiting prints
 `QObject::killTimer: Timers cannot be stopped from another thread`. It does not
@@ -775,12 +783,12 @@ Against the tiers above, what is done and what is not:
 | `QSystemTrayIcon` the only tray backend | done |
 | No KDE Frameworks | done — core links `Qt6::Core` and `Qt6::Network`, nothing else |
 | `UsageState` separated from tray and QML | done |
-| Native context menu | done, minus the numbers (gap 2) |
+| Native context menu | done, and it carries the numbers |
 | `--json` / `--once` as public interface | done, documented here and in the README |
 | Absence of a tray does not kill the application | **not done** (gap 1) |
-| Autostart behind an interface | **not done** (gap 3) |
-| AppImage | not done |
-| `claudedial-bin` in the AUR | not done — the PKGBUILD is a source package |
+| Autostart behind an interface | done — `core/Autostart.{h,cpp}` |
+| AppImage | done — built and attached to every tag |
+| `claudedial-bin` in the AUR | written, not published — AUR registration was closed when it was tried |
 | Compatibility matrix in the README | done — a short version, linking here |
 
 And then the part no amount of preparation replaces: release it, and let real
