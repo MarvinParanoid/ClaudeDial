@@ -26,7 +26,15 @@ token history, no accounts, no telemetry, no cloud backend.
 ## Please read this before installing
 
 
-Two things you are entitled to know up front.
+Three things you are entitled to know up front.
+
+**0. It reports the usage limits of a Claude subscription.** ClaudeDial asks an
+OAuth endpoint about the five-hour and seven-day windows, which is what Claude
+Code has when it is signed in with a Claude account. If you use Claude Code
+against an API key and pay per token instead, there are no such windows and
+nothing here to show you {D} ClaudeDial will simply report that it has no
+credentials. That follows from the endpoint rather than from anyone having
+tried it, so it is reasoning, not a test result.
 
 **1. ClaudeDial reads Claude Code's credential file.** It needs the OAuth access
 token Claude Code stores at `~/.claude/.credentials.json` in order to ask

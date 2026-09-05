@@ -159,9 +159,19 @@ executable is `Contents/MacOS/claudedial`. Two other explanations were offered
 here first — a lost executable bit, then `cp -r` mangling the framework
 symlinks — and both were wrong.
 
+**The Keychain question is blocked on evidence, not on effort.** The machine
+this was tested on does not have Claude Code installed, so
+`security find-generic-password -s "Claude Code-credentials"` would find
+nothing — and finding nothing where the program is absent says nothing about
+where the program puts its token. Writing a Keychain reader against that would
+be shipping unverified code into the one place these rules say never to, so it
+waits for a Mac that actually runs Claude Code.
+
+Until then `CLAUDE_CODE_OAUTH_TOKEN` is the supported mode on macOS, and the
+support table says so.
+
 Still unobserved: whether a notification banner actually lands after the prompt
-is accepted, whether the LaunchAgent starts the app at the next login, and the
-Keychain. Also untried by anyone: an Intel Mac. CI builds on an arm64 runner,
+is accepted, and whether the LaunchAgent starts the app at the next login. Also untried by anyone: an Intel Mac. CI builds on an arm64 runner,
 so the artefact is arm64 only.
 
 ### macOS, and what it would take to finish
