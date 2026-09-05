@@ -51,89 +51,61 @@ API key (`ANTHROPIC_API_KEY`) or via Bedrock/Vertex have **no** plan rate limits
 file will be absent or lack `claudeAiOauth`. Claude Code models this internally as
 `rate_limits_available: false`.
 
-### Alternative sources, in the order ClaudeDial should try them
+### Alternative sources, in the order ClaudeDial tries them
 
 1. `$CLAUDE_CODE_OAUTH_TOKEN` — environment variable. Claude Code honours it
    (129 references in the binary); a bare access token, no refresh token.
 2. `$CLAUDE_CONFIG_DIR/.credentials.json`
 3. `~/.claude/.credentials.json`
+4. macOS only: the login Keychain, item `Claude Code-credentials` — see below.
+
+### macOS: the login Keychain
+
+On macOS Claude Code normally keeps the same JSON in the login keychain instead
+of a file, under service `Claude Code-credentials`, account `$USER`.
+`Credentials::loadFromKeychain()` reads it, after the file attempt fails.
+
+**It shells out to `/usr/bin/security` rather than calling
+`SecItemCopyMatching`.** That looks like the lazy choice and is not. A keychain
+item carries an access control list naming the programs allowed to read it
+without asking, and the item Claude Code creates lists the `security` tool.
+Asking through `security` therefore goes through silently; asking directly would
+raise an approval dialog on every poll, and ClaudeDial polls all day. Two
+independent shipping applications reach the same conclusion in their own source:
+[leonardocouy/claudometer][lc] (`src-tauri/src/claude.rs`) and
+[sotthang/so-agentbar][soa], a native Swift menu-bar app. Both read the Keychain
+on macOS with **no** file fallback, and both go through the tool.
+
+The read is bounded by a three-second timeout and its output is wiped after
+parsing. If the ACL does not cooperate — a possibility, since nobody has shown
+that entry is a deliberate, stable arrangement rather than an artefact of how
+the item is created — the timeout fires, the status is `Missing`, and
+`CLAUDE_CODE_OAUTH_TOKEN` still works. Nothing hangs and nothing prompts twice.
+
+**None of this is verified on a Mac.** The machine available for testing has no
+Claude Code subscription, so the code path has never run against a real item.
+Until it has, `CLAUDE_CODE_OAUTH_TOKEN` remains the supported way to authenticate
+on macOS, and the README says so.
+
+Verifying it takes two commands on a Mac with Claude Code signed in:
+
+```console
+$ security find-generic-password -s "Claude Code-credentials"
+$ claudedial.app/Contents/MacOS/claudedial --json
+```
+
+The first prints the item's *attributes* — whether it exists, its service, its
+account — and no secret. **Do not add `-w`**, which prints the password itself;
+`-g` does too, and `security dump-keychain -d` prints every password in the
+keychain. None of that belongs in a terminal, a log, or a screenshot. If the
+second command prints real numbers, the reader works.
+
+One thing a success does not prove: permission is granted per binary identity,
+and an ad-hoc signed build changes identity on every rebuild — which is exactly
+what such an ACL keys on.
 
 ### Not applicable on Linux
 
-- **macOS: the login Keychain, and now from primary sources.** Two independent
-  shipping applications read it the same way, and their code says so plainly.
-
-  [leonardocouy/claudometer][lc], in `src-tauri/src/claude.rs`: *"Reads Claude
-  Code OAuth credentials from macOS Keychain. Service: `Claude Code-credentials`,
-  Account: `$USER`"*. Note what else it does — on macOS it reads the Keychain
-  **only**, with no file fallback, while every other platform reads
-  `~/.claude/.credentials.json`. So the file is not there.
-
-  [sotthang/so-agentbar][soa], a native Swift menu-bar app, does the same and
-  explains the part that could not be established by inspection. Both invoke the
-  **`security` command line tool** rather than `SecItemCopyMatching`, and its
-  comment gives the reason: the ACL on the Keychain item Claude Code creates
-  lists the `security` tool as a trusted application, so going through it avoids
-  the approval prompt that direct API access raises every time.
-
-  That answers all three questions this section used to leave open. The service
-  is `Claude Code-credentials`; the account is `$USER`; and a third-party
-  program can read it without a prompt — by asking through a tool that is
-  already in the ACL, which is a very different thing from being in the ACL
-  itself.
-
-  What it does not answer: whether that ACL entry is a deliberate, stable
-  arrangement or an artefact of how the item happens to be created. Anything
-  built on it should fail gracefully rather than assume it.
-
-  Three things a macOS port needs answered before it is designed, and one safe
-  command answers the first two:
-
-  ```console
-  $ security find-generic-password -s "Claude Code-credentials"
-  ```
-
-  It prints the item's *attributes* — whether it exists, its service and its
-  account — and no secret. **Do not add `-w`**, which prints the password
-  itself. If that finds nothing, try `security dump-keychain | grep -i claude`
-  to learn the real service name, again without any flag that reveals a value.
-
-  **Do the cheap step first.** With Claude Code signed in, just run ClaudeDial
-  and look:
-
-  ```console
-  $ claudedial.app/Contents/MacOS/claudedial --json
-  ```
-
-  If that prints real numbers, macOS keeps the token in a file exactly as Linux
-  does, `core::Credentials` already reads it, and none of the rest of this
-  applies. The Keychain claim here is second-hand, and this is the one command
-  that can retire it. Failing that, `ls -l ~/.claude/.credentials.json` says
-  whether the file exists at all.
-
-  The third question cannot be answered by inspection: whether a *different*
-  binary may read the item at all. A Keychain item carries an access control
-  list, so the answer depends on how Claude Code created it and on the user
-  accepting a prompt — and an ad-hoc signed build changes identity on every
-  rebuild, which is what such an ACL keys on.
-
-  It can be probed without revealing anything, by reading the secret straight
-  into a byte count so it never reaches the terminal or the scrollback:
-
-  ```console
-  $ security find-generic-password -s "Claude Code-credentials" -w | wc -c
-  ```
-
-  A number means another program was allowed to read it; a refusal or an empty
-  result means it was not. **Never run that without the pipe.** `-w` and `-g`
-  both print the password itself, and `security dump-keychain -d` prints every
-  password in the keychain — none of which belongs in a terminal, a log, or a
-  screenshot pasted into a chat.
-
-  What a success there does not prove: the prompt names the *calling* program,
-  and permission is granted per binary identity. `security` being allowed says
-  nothing about ClaudeDial being allowed, and an ad-hoc signed build's identity
-  changes every time it is rebuilt.
 - `libsecret` appears twice in the binary but is not used for these credentials on Linux —
   Claude Code writes the plain `0600` JSON file. ClaudeDial therefore does not need a
   keyring dependency.

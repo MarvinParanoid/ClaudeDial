@@ -1,4 +1,5 @@
 #include "core/Config.h"
+#include "core/Credentials.h"
 #include "core/Format.h"
 #include "core/PanelTheme.h"
 #include "core/RefreshSchedule.h"
@@ -9,6 +10,8 @@
 #include "core/UsageState.h"
 
 #include <QJsonDocument>
+#include <QNetworkRequest>
+#include <QTemporaryDir>
 #include <QJsonObject>
 #include <QFile>
 #include <QRegularExpression>
@@ -63,6 +66,10 @@ private Q_SLOTS:
     void roundTripsSettings();
     void defaultsSuitALinuxTray();
     void remembersAnnouncedThresholdsAcrossRestarts();
+
+    void classifiesTheCredentialFile();
+    void prefersAnExplicitTokenFromTheEnvironment();
+    void neverNamesTheTokenItHolds();
 };
 
 void CoreTest::initTestCase()
@@ -809,6 +816,130 @@ void CoreTest::buildsMenuEntries()
     weekly.percentage = 41;
     state.sevenDay = weekly;
     QCOMPARE(format::menuEntry(PeriodKind::SevenDay, state, now), QStringLiteral("Weekly 41%"));
+}
+
+namespace {
+
+/// Writes a credential file shaped exactly like Claude Code's own.
+void writeCredentials(const QString& path, qint64 expiresAt, qint64 refreshExpiresAt,
+                      const QString& token = QStringLiteral("sk-ant-oat01-test"))
+{
+    QJsonObject oauth;
+    oauth.insert(QStringLiteral("accessToken"), token);
+    oauth.insert(QStringLiteral("expiresAt"), static_cast<double>(expiresAt));
+    oauth.insert(QStringLiteral("refreshTokenExpiresAt"), static_cast<double>(refreshExpiresAt));
+    QJsonObject root;
+    root.insert(QStringLiteral("claudeAiOauth"), oauth);
+
+    QFile file(path);
+    QVERIFY(file.open(QIODevice::WriteOnly | QIODevice::Truncate));
+    file.write(QJsonDocument(root).toJson());
+}
+
+} // namespace
+
+void CoreTest::classifiesTheCredentialFile()
+{
+    QTemporaryDir dir;
+    QVERIFY(dir.isValid());
+    qunsetenv("CLAUDE_CODE_OAUTH_TOKEN");
+    qputenv("CLAUDE_CONFIG_DIR", dir.path().toUtf8());
+    const QString path = dir.filePath(QStringLiteral(".credentials.json"));
+
+    Credentials credentials;
+
+    // Nothing there at all: not an error, just no subscription credentials.
+    QCOMPARE(credentials.reload(), Credentials::Status::Missing);
+
+    const qint64 now = QDateTime::currentMSecsSinceEpoch();
+    const qint64 hour = 60 * 60 * 1000;
+
+    writeCredentials(path, now + hour, now + 30 * 24 * hour);
+    QCOMPARE(credentials.reload(), Credentials::Status::Ok);
+    QCOMPARE(credentials.sourceDescription(), path);
+
+    // A file on disk is watched, so nobody needs to poll it.
+    QVERIFY(credentials.watchesForChanges());
+
+    // Expired access token, live refresh token: Claude Code will fix this itself.
+    writeCredentials(path, now - hour, now + 30 * 24 * hour);
+    QCOMPARE(credentials.reload(), Credentials::Status::Expired);
+
+    // Claude Code treats a token as expired a minute early, and so do we.
+    writeCredentials(path, now + 30 * 1000, now + 30 * 24 * hour);
+    QCOMPARE(credentials.reload(), Credentials::Status::Expired);
+
+    // Refresh token gone too: only the user can fix this.
+    writeCredentials(path, now - hour, now - hour);
+    QCOMPARE(credentials.reload(), Credentials::Status::RefreshExpired);
+
+    // An API-key or Bedrock setup writes a file with no OAuth block in it.
+    QFile other(path);
+    QVERIFY(other.open(QIODevice::WriteOnly | QIODevice::Truncate));
+    other.write("{\"apiKey\":\"nope\"}");
+    other.close();
+    QCOMPARE(credentials.reload(), Credentials::Status::Missing);
+
+    // And a half-written file must not be mistaken for anything.
+    QVERIFY(other.open(QIODevice::WriteOnly | QIODevice::Truncate));
+    other.write("{\"claudeAiOauth\": {\"accessTok");
+    other.close();
+    QCOMPARE(credentials.reload(), Credentials::Status::Missing);
+
+    qunsetenv("CLAUDE_CONFIG_DIR");
+}
+
+void CoreTest::prefersAnExplicitTokenFromTheEnvironment()
+{
+    QTemporaryDir dir;
+    QVERIFY(dir.isValid());
+    const QString path = dir.filePath(QStringLiteral(".credentials.json"));
+    qputenv("CLAUDE_CONFIG_DIR", dir.path().toUtf8());
+
+    const qint64 now = QDateTime::currentMSecsSinceEpoch();
+    writeCredentials(path, now - 1000, now - 1000, QStringLiteral("from-the-file"));
+
+    // The environment wins even over a file, and carries no expiry of its own.
+    qputenv("CLAUDE_CODE_OAUTH_TOKEN", "sk-ant-oat01-from-the-environment");
+    Credentials credentials;
+    QCOMPARE(credentials.reload(), Credentials::Status::Ok);
+    QVERIFY(credentials.sourceDescription().contains(QLatin1String("CLAUDE_CODE_OAUTH_TOKEN")));
+
+    QNetworkRequest request { QUrl(QStringLiteral("https://example.invalid/")) };
+    QVERIFY(credentials.authorize(request));
+    QCOMPARE(request.rawHeader("Authorization"), QByteArray("Bearer sk-ant-oat01-from-the-environment"));
+
+    qunsetenv("CLAUDE_CODE_OAUTH_TOKEN");
+    qunsetenv("CLAUDE_CONFIG_DIR");
+}
+
+void CoreTest::neverNamesTheTokenItHolds()
+{
+    QTemporaryDir dir;
+    QVERIFY(dir.isValid());
+    qunsetenv("CLAUDE_CODE_OAUTH_TOKEN");
+    qputenv("CLAUDE_CONFIG_DIR", dir.path().toUtf8());
+
+    const qint64 now = QDateTime::currentMSecsSinceEpoch();
+    const QString secret = QStringLiteral("sk-ant-oat01-do-not-leak-me");
+    writeCredentials(dir.filePath(QStringLiteral(".credentials.json")),
+                     now + 60 * 60 * 1000, now + 60 * 60 * 1000, secret);
+
+    Credentials credentials;
+    QCOMPARE(credentials.reload(), Credentials::Status::Ok);
+
+    // sourceDescription() is the one thing about the token that reaches the UI,
+    // the logs and the crash reports. It must never be the token.
+    QVERIFY(!credentials.sourceDescription().contains(secret));
+
+    // An unusable token authorizes nothing, so no stale header can leak either.
+    writeCredentials(dir.filePath(QStringLiteral(".credentials.json")), now - 1, now - 1, secret);
+    QCOMPARE(credentials.reload(), Credentials::Status::RefreshExpired);
+    QNetworkRequest request { QUrl(QStringLiteral("https://example.invalid/")) };
+    QVERIFY(!credentials.authorize(request));
+    QVERIFY(!request.hasRawHeader("Authorization"));
+
+    qunsetenv("CLAUDE_CONFIG_DIR");
 }
 
 QTEST_GUILESS_MAIN(CoreTest)

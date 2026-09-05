@@ -10,7 +10,10 @@ class QFileSystemWatcher;
 
 namespace claudedial::core {
 
-/// Reads the OAuth access token Claude Code stores on disk, and nothing else.
+/// Reads the OAuth access token Claude Code stores, and nothing else.
+///
+/// The token lives in ~/.claude/.credentials.json on Linux and Windows, and in
+/// the login keychain on macOS. Either way it is read, never written.
 ///
 /// This class is the *only* place a token exists in the process. It is never
 /// logged, never copied into ClaudeDial's own configuration, never exposed to
@@ -37,8 +40,14 @@ public:
 
     [[nodiscard]] Status status() const { return m_status; }
 
-    /// Where the token came from - a path or "environment". Never the token.
+    /// Where the token came from - a path, "environment", the keychain. Never
+    /// the token itself.
     [[nodiscard]] QString sourceDescription() const { return m_source; }
+
+    /// True when a change to the current source will either be announced by
+    /// changed() or cannot happen at all. False for the macOS keychain, which
+    /// offers nothing to watch: callers must re-read it before they rely on it.
+    [[nodiscard]] bool watchesForChanges() const { return m_watched; }
 
     /// Sets the Authorization header. Returns false when there is no usable token.
     [[nodiscard]] bool authorize(QNetworkRequest& request) const;
@@ -50,6 +59,10 @@ Q_SIGNALS:
 private:
     void watch(const QString& path);
     bool loadFromFile(const QString& path);
+    bool loadFromJson(const QByteArray& raw);
+#ifdef Q_OS_MACOS
+    bool loadFromKeychain();
+#endif
     void clearToken();
 
     QByteArray m_token;
@@ -57,6 +70,7 @@ private:
     QDateTime m_refreshExpiresAt;
     QString m_source;
     Status m_status = Status::Missing;
+    bool m_watched = true;
     QFileSystemWatcher* m_watcher = nullptr;
 };
 

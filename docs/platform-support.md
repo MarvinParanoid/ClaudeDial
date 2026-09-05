@@ -168,9 +168,19 @@ account `$USER`, read through the `security` tool rather than
 `SecItemCopyMatching`, because that tool is in the item's ACL and direct API
 access prompts every time.
 
-So a reader can be written. It cannot be *verified* without a Mac running
-Claude Code under a subscription, and until it is, `CLAUDE_CODE_OAUTH_TOKEN`
-remains the supported mode on macOS.
+So a reader can be written, and now is: `Credentials::loadFromKeychain()` runs
+`security find-generic-password -s "Claude Code-credentials" -a $USER -w` after
+the file attempt fails, with a three-second timeout so a prompt cannot hang the
+tray, and wipes the output after parsing. It cannot be *verified* without a Mac
+running Claude Code under a subscription, and until it is,
+`CLAUDE_CODE_OAUTH_TOKEN` remains the supported mode on macOS.
+
+The Keychain also has nothing to watch, where a file has `QFileSystemWatcher`.
+That is why `Credentials::watchesForChanges()` exists: it is false for the
+Keychain, which makes `UsageService` re-read the credentials before every poll
+instead of only after a failure, and stops it from parking the timer forever
+when there are no credentials yet. Otherwise signing in to Claude Code would
+never be noticed on macOS.
 
 Still unobserved: whether a notification banner actually lands after the prompt
 is accepted, and whether the LaunchAgent starts the app at the next login. Also untried by anyone: an Intel Mac. CI builds on an arm64 runner,
@@ -187,14 +197,14 @@ step. So even the free-looking part was not free, which is the second time in
 this file that "the mechanism implies it works" has been wrong.
 
 **The token is in the Keychain**, service `Claude Code-credentials`, so the file
-reader finds nothing. This is the one that decides the whole thing, and it
-carries an unknown that cannot be settled from here: a Keychain item has an
-access control list, and whether a *different* binary may read the one Claude
-Code created depends on that ACL and on the user answering a prompt. Reading it
-is perhaps forty lines of `SecItemCopyMatching`; finding out whether it can be
-read at all needs a Mac. And it is new code in the one place the security rules
-say to be most careful, which is the opposite of the Windows case, where the
-token turned out to be a plain file and `core::Credentials` was never touched.
+reader finds nothing. That is now handled, above — but the unknown it carries is
+not settled and cannot be settled from here: a Keychain item has an access
+control list, and whether a *different* binary may read the one Claude Code
+created depends on that ACL and on the user answering a prompt. Finding out
+needs a Mac with a subscription. Note this is new code in the one place the
+security rules say to be most careful, which is the opposite of the Windows
+case, where the token turned out to be a plain file and `core::Credentials` was
+never touched.
 
 **Autostart currently lies there.** `startOnLogin` branches on `Q_OS_WIN` and
 everything else writes an XDG `.desktop` entry — on macOS into

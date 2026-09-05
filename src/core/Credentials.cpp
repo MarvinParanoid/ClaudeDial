@@ -10,6 +10,10 @@
 #include <QProcessEnvironment>
 #include <QTimeZone>
 
+#ifdef Q_OS_MACOS
+#include <QProcess>
+#endif
+
 namespace claudedial::core {
 namespace {
 
@@ -35,6 +39,19 @@ QString credentialFilePath()
         return QDir(configDir).filePath(QStringLiteral(".credentials.json"));
     return QDir::homePath() + QStringLiteral("/.claude/.credentials.json");
 }
+
+#ifdef Q_OS_MACOS
+/// The keychain item is filed under the login name, as Claude Code writes it.
+QString keychainAccount()
+{
+    const auto env = QProcessEnvironment::systemEnvironment();
+    const QString user = env.value(QStringLiteral("USER"));
+    return user.isEmpty() ? QDir::home().dirName() : user;
+}
+
+/// Long enough for a cold keychain, short enough that the tray never looks hung.
+constexpr int kKeychainTimeoutMs = 3000;
+#endif
 
 } // namespace
 
@@ -82,6 +99,7 @@ Credentials::Status Credentials::reload()
     if (!envToken.isEmpty()) {
         m_token = envToken.toUtf8();
         m_source = QStringLiteral("environment (CLAUDE_CODE_OAUTH_TOKEN)");
+        m_watched = true; // it cannot change under a running process
         m_status = Status::Ok;
         return m_status;
     }
@@ -90,8 +108,22 @@ Credentials::Status Credentials::reload()
     const QString path = credentialFilePath();
     watch(path);
     m_source = path;
+    m_watched = true;
+    bool loaded = loadFromFile(path);
 
-    if (!loadFromFile(path)) {
+#ifdef Q_OS_MACOS
+    // 3. On macOS Claude Code normally keeps the same JSON in the login
+    // keychain instead, and there is nothing there to watch.
+    if (!loaded) {
+        loaded = loadFromKeychain();
+        if (loaded) {
+            m_source = QStringLiteral("macOS keychain (Claude Code-credentials)");
+            m_watched = false;
+        }
+    }
+#endif
+
+    if (!loaded) {
         m_status = Status::Missing;
         return m_status;
     }
@@ -100,7 +132,8 @@ Credentials::Status Credentials::reload()
     if (m_refreshExpiresAt.isValid() && m_refreshExpiresAt.toMSecsSinceEpoch() <= now) {
         m_status = Status::RefreshExpired;
     } else if (m_expiresAt.isValid() && m_expiresAt.toMSecsSinceEpoch() - kExpiryBufferMs <= now) {
-        // Do not refresh. Claude Code will, next time it runs, and changed() fires.
+        // Do not refresh. Claude Code will, next time it runs; a watched file
+        // announces that, and an unwatched source is re-read on the next poll.
         m_status = Status::Expired;
     } else {
         m_status = Status::Ok;
@@ -115,9 +148,16 @@ bool Credentials::loadFromFile(const QString& path)
         return false;
 
     // Read-only, always. This file belongs to Claude Code.
-    const QByteArray raw = file.readAll();
+    QByteArray raw = file.readAll();
     file.close();
 
+    const bool loaded = loadFromJson(raw);
+    secureClear(raw);
+    return loaded;
+}
+
+bool Credentials::loadFromJson(const QByteArray& raw)
+{
     QJsonParseError error {};
     const QJsonDocument doc = QJsonDocument::fromJson(raw, &error);
     if (error.error != QJsonParseError::NoError || !doc.isObject())
@@ -136,6 +176,40 @@ bool Credentials::loadFromFile(const QString& path)
 
     return true;
 }
+
+#ifdef Q_OS_MACOS
+bool Credentials::loadFromKeychain()
+{
+    // Read the item through /usr/bin/security rather than SecItemCopyMatching.
+    // Claude Code puts that binary in the item's access control list, so it is
+    // let through silently; this process is not, and would make macOS ask the
+    // user for permission on every single poll.
+    QProcess security;
+    security.setProgram(QStringLiteral("/usr/bin/security"));
+    security.setArguments({
+        QStringLiteral("find-generic-password"),
+        QStringLiteral("-s"), QStringLiteral("Claude Code-credentials"),
+        QStringLiteral("-a"), keychainAccount(),
+        QStringLiteral("-w"), // print the secret, and only the secret
+    });
+    security.setStandardErrorFile(QProcess::nullDevice());
+    security.start(QIODevice::ReadOnly);
+
+    // If it does prompt after all, do not freeze the tray waiting for an answer.
+    if (!security.waitForFinished(kKeychainTimeoutMs)) {
+        security.kill();
+        security.waitForFinished(kKeychainTimeoutMs);
+        return false;
+    }
+    if (security.exitStatus() != QProcess::NormalExit || security.exitCode() != 0)
+        return false;
+
+    QByteArray raw = security.readAllStandardOutput();
+    const bool loaded = loadFromJson(raw);
+    secureClear(raw);
+    return loaded;
+}
+#endif
 
 bool Credentials::authorize(QNetworkRequest& request) const
 {

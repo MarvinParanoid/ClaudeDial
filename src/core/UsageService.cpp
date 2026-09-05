@@ -142,8 +142,9 @@ void UsageService::refreshNow()
     m_timer->stop();
 
     // Re-read before every attempt: the token may have been refreshed by Claude
-    // Code since the last poll, and it costs one small file read.
-    if (m_credentials->status() != Credentials::Status::Ok)
+    // Code since the last poll, and it costs one small file read. A source that
+    // cannot be watched has to be re-read even when the last read was good.
+    if (m_credentials->status() != Credentials::Status::Ok || !m_credentials->watchesForChanges())
         m_credentials->reload();
 
     m_fetching = true;
@@ -188,8 +189,11 @@ void UsageService::onFailed(FetchError error, int retryAfterSeconds)
     Q_EMIT fetchFailed(error);
     Q_EMIT stateChanged();
 
-    // Nothing to poll for until the credentials change; the watcher wakes us.
-    if (error == FetchError::NoCredentials || error == FetchError::TokenExpired) {
+    // Nothing to poll for until the credentials change. Where they are watched
+    // the watcher wakes us, so stop; where they are not, polling is the only way
+    // to notice Claude Code signing in again.
+    if ((error == FetchError::NoCredentials || error == FetchError::TokenExpired)
+        && m_credentials->watchesForChanges()) {
         m_timer->stop();
         return;
     }
