@@ -81,11 +81,42 @@ file will be absent or lack `claudeAiOauth`. Claude Code models this internally 
   itself. If that finds nothing, try `security dump-keychain | grep -i claude`
   to learn the real service name, again without any flag that reveals a value.
 
+  **Do the cheap step first.** With Claude Code signed in, just run ClaudeDial
+  and look:
+
+  ```console
+  $ claudedial.app/Contents/MacOS/claudedial --json
+  ```
+
+  If that prints real numbers, macOS keeps the token in a file exactly as Linux
+  does, `core::Credentials` already reads it, and none of the rest of this
+  applies. The Keychain claim here is second-hand, and this is the one command
+  that can retire it. Failing that, `ls -l ~/.claude/.credentials.json` says
+  whether the file exists at all.
+
   The third question cannot be answered by inspection: whether a *different*
   binary may read the item at all. A Keychain item carries an access control
   list, so the answer depends on how Claude Code created it and on the user
   accepting a prompt — and an ad-hoc signed build changes identity on every
   rebuild, which is what such an ACL keys on.
+
+  It can be probed without revealing anything, by reading the secret straight
+  into a byte count so it never reaches the terminal or the scrollback:
+
+  ```console
+  $ security find-generic-password -s "Claude Code-credentials" -w | wc -c
+  ```
+
+  A number means another program was allowed to read it; a refusal or an empty
+  result means it was not. **Never run that without the pipe.** `-w` and `-g`
+  both print the password itself, and `security dump-keychain -d` prints every
+  password in the keychain — none of which belongs in a terminal, a log, or a
+  screenshot pasted into a chat.
+
+  What a success there does not prove: the prompt names the *calling* program,
+  and permission is granted per binary identity. `security` being allowed says
+  nothing about ClaudeDial being allowed, and an ad-hoc signed build's identity
+  changes every time it is rebuilt.
 - `libsecret` appears twice in the binary but is not used for these credentials on Linux —
   Claude Code writes the plain `0600` JSON file. ClaudeDial therefore does not need a
   keyring dependency.
