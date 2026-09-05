@@ -27,5 +27,13 @@ target_include_directories(claudedial_render_tests PRIVATE ${CMAKE_SOURCE_DIR}/s
 
 add_test(NAME render COMMAND claudedial_render_tests)
 
+# Console programs, not GUI ones. qt_add_executable makes a Windows GUI binary
+# by default, which has no console at all - so on Windows both suites have been
+# printing into nothing. The core suite passes, so nobody noticed; the render
+# suite failed and ctest reported it with no output whatsoever, even verbose.
+set_target_properties(claudedial_tests claudedial_render_tests
+    PROPERTIES WIN32_EXECUTABLE FALSE
+)
+
 # Offscreen, so it runs in a container and on a build machine with no display.
 set_tests_properties(render PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
