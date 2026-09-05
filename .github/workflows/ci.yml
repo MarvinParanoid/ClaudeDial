@@ -102,7 +102,11 @@ jobs:
           find dist -name '*backend*.dylib' -print -quit | grep -q . \
             || { echo 'MISSING a TLS backend - api.anthropic.com will be unreachable'; fail=1; }
 
-          plist=$(find dist -name 'Info.plist' -path '*claudedial.app*' -print -quit)
+          # The bundle's own plist, not a framework's. '*claudedial.app*' matches
+          # every framework nested inside the bundle as well, and -quit then took
+          # whichever came first - so this assertion spent three rounds reading
+          # QtQuickControls2's Info.plist and reporting it as ours.
+          plist=$(find dist -path '*/claudedial.app/Contents/Info.plist' -print -quit)
           if [ -n "$plist" ]; then
             if ! grep -q LSUIElement "$plist"; then
               echo 'MISSING LSUIElement - it would take a Dock icon'
