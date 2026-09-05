@@ -24,13 +24,28 @@ runs:
         cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
         cmake --build build --config Release
 
-    # -V rather than --output-on-failure: the render test failed here while
-    # printing nothing at all, and --output-on-failure cannot help with that.
-    # Two small suites, so the noise costs nothing and a failure becomes
-    # readable - which matters because Actions logs need admin rights to fetch.
+    # Neither --output-on-failure nor -V produced a single line from these
+    # suites here - not even from the one that passes - so the stdout of a Qt
+    # test binary is not reaching this log, and chasing why has already cost two
+    # rounds. QTest can write its results to a file instead, which depends on no
+    # console at all, so on failure that is what we read.
     - name: Test
       shell: pwsh
-      run: ctest --test-dir build -C Release -V
+      env:
+        QT_QPA_PLATFORM: offscreen
+      run: |
+        ctest --test-dir build -C Release -V
+        if ($LASTEXITCODE -ne 0) {
+          foreach ($suite in 'claudedial_tests', 'claudedial_render_tests') {
+            $exe = Get-ChildItem -Recurse -Filter "$suite.exe" build | Select-Object -First 1
+            if ($exe) {
+              Write-Host "--- $suite ---"
+              & $exe.FullName -o "$suite.txt,txt" | Out-Null
+              if (Test-Path "$suite.txt") { Get-Content "$suite.txt" }
+            }
+          }
+          exit 1
+        }
 
     # Qt's own deployment script, through install. A hand-written windeployqt
     # call deployed every DLL and then no QML modules at all.
