@@ -159,16 +159,18 @@ executable is `Contents/MacOS/claudedial`. Two other explanations were offered
 here first — a lost executable bit, then `cp -r` mangling the framework
 symlinks — and both were wrong.
 
-**The Keychain question is blocked on evidence, not on effort.** The machine
-this was tested on does not have Claude Code installed, so
-`security find-generic-password -s "Claude Code-credentials"` would find
-nothing — and finding nothing where the program is absent says nothing about
-where the program puts its token. Writing a Keychain reader against that would
-be shipping unverified code into the one place these rules say never to, so it
-waits for a Mac that actually runs Claude Code.
+**The Keychain question is answered, and not from a Mac.** The machine tested on
+has no Claude Code installed, so probing it there would have found nothing —
+and finding nothing where the program is absent establishes nothing. The answer
+came instead from reading two shipping applications that already do this, which
+is written up in [usage-api.md](usage-api.md): service `Claude Code-credentials`,
+account `$USER`, read through the `security` tool rather than
+`SecItemCopyMatching`, because that tool is in the item's ACL and direct API
+access prompts every time.
 
-Until then `CLAUDE_CODE_OAUTH_TOKEN` is the supported mode on macOS, and the
-support table says so.
+So a reader can be written. It cannot be *verified* without a Mac running
+Claude Code under a subscription, and until it is, `CLAUDE_CODE_OAUTH_TOKEN`
+remains the supported mode on macOS.
 
 Still unobserved: whether a notification banner actually lands after the prompt
 is accepted, and whether the LaunchAgent starts the app at the next login. Also untried by anyone: an Intel Mac. CI builds on an arm64 runner,
