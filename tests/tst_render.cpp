@@ -170,9 +170,15 @@ void RenderTest::showsOneGlyphRatherThanThreeDigitsAtTheLimit()
     const int two = centreInkWidth(render(22, 99, Style::Percentage));
     const int limit = centreInkWidth(render(22, 100, Style::Percentage));
     QVERIFY2(limit > 0, "something should be drawn at the limit");
-    QVERIFY2(limit < two / 2,
+
+    // Narrower than two digits, and by enough that a third digit could not hide
+    // in the margin - but not "less than half", which is a fact about one
+    // font's exclamation mark rather than about the mark. Measured: DejaVu
+    // draws it 2px against 12, and whatever Windows falls back to draws it 7
+    // against 12. Both are one glyph; only the first is under half.
+    QVERIFY2(limit < two * 4 / 5,
              qPrintable(QStringLiteral("one narrow glyph expected, not three digits: "
-                                       "99%% is %1px wide, 100%% is %2px")
+                                       "99% is %1px wide, 100% is %2px")
                             .arg(two)
                             .arg(limit)));
 }
