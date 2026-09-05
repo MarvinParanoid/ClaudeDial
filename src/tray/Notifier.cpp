@@ -20,9 +20,8 @@ constexpr auto kPath = "/org/freedesktop/Notifications";
 constexpr auto kInterface = "org.freedesktop.Notifications";
 #endif
 
-/// The `image-data` hint's wire format: (iiibiiay).
 #ifdef CLAUDEDIAL_HAVE_DBUS
-// The image-data hint's wire format. D-Bus only, and nothing else uses it.
+/// The `image-data` hint's wire format, (iiibiiay). D-Bus only.
 struct HintImage {
     int width = 0;
     int height = 0;

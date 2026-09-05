@@ -1,5 +1,6 @@
 #include "core/Autostart.h"
 #include "core/Config.h"
+#include "core/UsageService.h"
 #include "core/Credentials.h"
 #include "core/Format.h"
 #include "core/PanelTheme.h"
@@ -12,7 +13,9 @@
 
 #include <QJsonDocument>
 #include <QNetworkRequest>
+#include <QSignalSpy>
 #include <QTemporaryDir>
+#include <QTimer>
 #include <QJsonObject>
 #include <QFile>
 #include <QRegularExpression>
@@ -69,6 +72,7 @@ private Q_SLOTS:
     void remembersAnnouncedThresholdsAcrossRestarts();
 
     void writesTheAutostartEntryWhereTheDesktopReadsIt();
+    void aScheduledPollLeavesTheServiceAbleToRefreshAgain();
 
     void classifiesTheCredentialFile();
     void prefersAnExplicitTokenFromTheEnvironment();
@@ -840,6 +844,48 @@ void writeCredentials(const QString& path, qint64 expiresAt, qint64 refreshExpir
 }
 
 } // namespace
+
+void CoreTest::aScheduledPollLeavesTheServiceAbleToRefreshAgain()
+{
+    // Simulation makes UsageClient answer synchronously, which is what exposed
+    // this: the scheduled poll set its in-flight flag *after* calling fetch, so
+    // the handler cleared the flag first and the set put it back. The service
+    // then believed a request was outstanding for ever and refreshNow() returned
+    // at its guard - no more manual refreshes, no more waking on resume.
+    qputenv("CLAUDEDIAL_SIMULATE", "50,20");
+    qunsetenv("CLAUDE_CODE_OAUTH_TOKEN");
+
+    Credentials credentials;
+    Config config(QStringLiteral("claudedial-test"), QStringLiteral("service"));
+    UsageService service(&credentials, &config);
+
+    service.start();
+    QVERIFY(service.state().isValid());
+    QVERIFY(!service.isFetching());
+
+    // Fire the poll the schedule would have fired minutes from now. It rearms
+    // itself on success, so the signal is what says it happened, not the timer.
+    auto* timer = service.findChild<QTimer*>(QStringLiteral("refresh"));
+    QVERIFY(timer);
+    QVERIFY(timer->isActive());
+    QSignalSpy polled(&service, &UsageService::stateChanged);
+    timer->stop();
+    timer->setInterval(0);
+    timer->start();
+    QTRY_COMPARE_WITH_TIMEOUT(polled.count(), 1, 2000);
+
+    // The poll has been and gone, so nothing is outstanding.
+    QVERIFY(!service.isFetching());
+
+    // And the service still answers a manual refresh, which is the symptom a
+    // user would actually meet: the popup's button doing nothing at all.
+    QSignalSpy changed(&service, &UsageService::stateChanged);
+    service.refreshNow();
+    QVERIFY(!service.isFetching());
+    QCOMPARE(changed.count(), 1);
+
+    qunsetenv("CLAUDEDIAL_SIMULATE");
+}
 
 void CoreTest::writesTheAutostartEntryWhereTheDesktopReadsIt()
 {

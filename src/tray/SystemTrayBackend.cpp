@@ -82,7 +82,11 @@ SystemTrayBackend::SystemTrayBackend(QObject* parent)
 
 SystemTrayBackend::~SystemTrayBackend()
 {
-    // A QMenu is a widget and cannot take a QObject parent.
+    // A QMenu is a widget and cannot take a QObject parent, so it is deleted by
+    // hand - but detached first. m_tray is a child of this object and so is
+    // destroyed *after* this body runs, and it would otherwise spend that moment
+    // holding a pointer to freed memory.
+    m_tray->setContextMenu(nullptr);
     delete m_menu;
 }
 

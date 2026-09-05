@@ -81,13 +81,16 @@ int run(int argc, char** argv, bool jsonOutput)
     // override has to win, or it silently reports the real numbers instead.
     if (const auto shared = UsageClient::isSimulating() ? std::nullopt
                                                         : SingleInstance::queryStatus()) {
-        if (jsonOutput) {
-            out << *shared;
-            out.flush();
-            return 0;
-        }
+        // Only when it carries usable numbers. A running instance that has none
+        // yet used to be forwarded verbatim for --json, which exited 0 while the
+        // very same condition exits 1 when there is no instance to ask - and the
+        // exit codes are part of what Tier 1 promises. Falling through costs one
+        // request and answers the question properly.
         if (const auto state = json::parseStatus(*shared)) {
-            printHuman(out, *state);
+            if (jsonOutput)
+                out << *shared;
+            else
+                printHuman(out, *state);
             out.flush();
             return 0;
         }

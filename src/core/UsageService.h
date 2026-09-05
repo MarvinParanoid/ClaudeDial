@@ -56,7 +56,7 @@ private:
     void scheduleNext();
     void onSucceeded(const UsageState& state);
     void onFailed(FetchError error, int retryAfterSeconds);
-    void evaluateThresholds(const UsageState& previous, const UsageState& current);
+    void evaluateThresholds(const UsageState& current);
     void resetFiredThresholds(PeriodKind kind);
     void persistFiredThresholds(PeriodKind kind);
     [[nodiscard]] QList<int> thresholdsFor() const;

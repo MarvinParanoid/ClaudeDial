@@ -233,7 +233,6 @@ namespace {
 /// apart at worst. Caching would mean watching both plasmarc and kdeglobals to
 /// stay correct through a look-and-feel change, which is more machinery than
 /// the reads cost.
-/// What could be learned about the panel.
 ///
 /// `plasma` without a `background` is not ignorance: it is Plasma saying the
 /// panel follows the application colour scheme, which the stock "default" theme

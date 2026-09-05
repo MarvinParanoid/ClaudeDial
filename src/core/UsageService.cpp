@@ -36,14 +36,20 @@ UsageService::UsageService(Credentials* credentials, Config* config, QObject* pa
     , m_credentialDebounce(new QTimer(this))
 {
     m_timer->setSingleShot(true);
+    // Named so a test can fire it without waiting out a poll interval.
+    m_timer->setObjectName(QStringLiteral("refresh"));
     m_credentialDebounce->setSingleShot(true);
     m_credentialDebounce->setInterval(kCredentialDebounceMs);
 
-    connect(m_timer, &QTimer::timeout, this, [this] {
-        m_client->fetch();
-        m_fetching = true;
-        Q_EMIT fetchingChanged();
-    });
+    // The scheduled poll goes through refreshNow rather than straight to the
+    // client. It used to call fetch() and only then set m_fetching, which is
+    // backwards whenever fetch() answers synchronously - simulation does, and so
+    // does any bad credential status - because the handler had already cleared
+    // the flag by the time it was set. The service was then stuck believing a
+    // request was in flight, and every manual refresh after that returned at the
+    // guard. Going through refreshNow also re-reads a credential source that
+    // cannot be watched, which the direct call skipped entirely.
+    connect(m_timer, &QTimer::timeout, this, &UsageService::refreshNow);
 
     connect(m_client, &UsageClient::succeeded, this, &UsageService::onSucceeded);
     connect(m_client, &UsageClient::failed, this, &UsageService::onFailed);
@@ -159,11 +165,10 @@ void UsageService::onSucceeded(const UsageState& state)
     m_lastError.reset();
     m_retryAfterSeconds = 0;
 
-    const UsageState previous = m_state;
     m_state = state;
     m_state.stale = false;
 
-    evaluateThresholds(previous, m_state);
+    evaluateThresholds(m_state);
 
     Q_EMIT fetchingChanged();
     Q_EMIT stateChanged();
@@ -244,10 +249,8 @@ void UsageService::persistFiredThresholds(PeriodKind kind)
                                  lastReset);
 }
 
-void UsageService::evaluateThresholds(const UsageState& previous, const UsageState& current)
+void UsageService::evaluateThresholds(const UsageState& current)
 {
-    Q_UNUSED(previous)
-
     for (const auto kind : { PeriodKind::FiveHour, PeriodKind::SevenDay }) {
         const auto& period = current.period(kind);
         if (!period)
