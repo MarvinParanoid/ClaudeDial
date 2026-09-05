@@ -1,6 +1,6 @@
 # Maintainer: ClaudeDial contributors
 pkgname=claudedial
-pkgver=0.1.6
+pkgver=0.1.7
 pkgrel=1
 pkgdesc="Claude Code usage at a glance - minimal system tray indicator"
 arch=('x86_64')

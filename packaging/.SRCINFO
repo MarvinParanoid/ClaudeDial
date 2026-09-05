@@ -1,6 +1,6 @@
 pkgbase = claudedial-bin
 	pkgdesc = Claude Code usage at a glance - minimal system tray indicator
-	pkgver = 0.1.6
+	pkgver = 0.1.7
 	pkgrel = 1
 	url = https://github.com/MarvinParanoid/ClaudeDial
 	arch = x86_64
@@ -12,9 +12,9 @@ pkgbase = claudedial-bin
 	conflicts = claudedial
 	options = !strip
 	options = !debug
-	source = claudedial-0.1.6.tar.gz::https://github.com/MarvinParanoid/ClaudeDial/releases/download/v0.1.6/claudedial-0.1.6-linux-x86_64.tar.gz
-	source = LICENSE-0.1.6::https://github.com/MarvinParanoid/ClaudeDial/raw/v0.1.6/LICENSE
-	sha256sums = 7046ae8e1ed5665fe047e551ccf85c63cc1e2b2305b6d4506e3d2f8cdb88d286
+	source = claudedial-0.1.7.tar.gz::https://github.com/MarvinParanoid/ClaudeDial/releases/download/v0.1.7/claudedial-0.1.7-linux-x86_64.tar.gz
+	source = LICENSE-0.1.7::https://github.com/MarvinParanoid/ClaudeDial/raw/v0.1.7/LICENSE
+	sha256sums = 362f4cf398f6d631e352f6b52d6ce20c9025e227adbd241fbb490768572c8cf5
 	sha256sums = 4698a8696649196be7bb4e7b24a8ed90865cc8933efe8f199415bb634dbf4630
 
 pkgname = claudedial-bin
