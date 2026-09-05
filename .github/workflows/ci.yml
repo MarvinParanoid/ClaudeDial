@@ -23,12 +23,12 @@ jobs:
     name: Windows (compile, test, package)
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: ./.github/actions/windows-build
 
       # Attached to every run, so getting a Windows build is a download rather
       # than a manual dispatch or a spent version number.
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: ClaudeDial-windows-x86_64
           path: ClaudeDial-windows-x86_64.zip
@@ -53,7 +53,7 @@ jobs:
     # then this pin can go.
     runs-on: macos-14
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - uses: jurplel/install-qt-action@v4
         with:
@@ -125,7 +125,7 @@ jobs:
       - name: Zip it
         run: ditto -c -k --sequesterRsrc --keepParent dist ClaudeDial-macos.zip
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: ClaudeDial-macos
           path: ClaudeDial-macos.zip
@@ -155,7 +155,7 @@ jobs:
 
     name: ${{ matrix.name }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Install toolchain
         run: ${{ matrix.install }}
