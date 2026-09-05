@@ -118,10 +118,19 @@ ask about, and it changes when the wallpaper does. The Tray icon setting is the
 whole answer on this platform, and Auto falls back to the mid-tone that is
 never invisible rather than to a guess.
 
+**The popup opens, and it is anchored to the icon** — centred beneath it,
+which is the branch in `PopupWindow::placeAndShow` that takes a non-empty
+`QSystemTrayIcon::geometry()`. That branch was written for Plasma, found to be
+unreachable there, kept on the argument that Windows and macOS implement
+`geometry()`, and had never actually run. It runs here. Everything else in the
+popup renders correctly too: the header mark, the ramp colour at 96%, the pace
+line, the light theme.
+
 Still unobserved: whether a Dock icon appears (the real test of LSUIElement, as
-opposed to the key being present, which CI asserts), the popup, the settings
-window, whether the bundle works once moved out of the build tree, autostart,
-and the Keychain.
+opposed to the key being present, which CI asserts), the settings window,
+whether the bundle works once moved out of the build tree, autostart, the
+neutral tone below the warning threshold against a translucent menu bar, and
+the Keychain.
 
 ### macOS, and what it would take to finish
 

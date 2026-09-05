@@ -183,7 +183,7 @@ same care.
 | Xfce, Cinnamon, MATE, LXQt, COSMIC | expected to work | Same StatusNotifierItem path as Plasma. Nobody has run it; the protocol says it should. |
 | **No tray at all** - Sway, Hyprland, a bare session | `claudedial --json` | Not a fallback but the interface for that user. Stable, and free while the tray runs. |
 | **Windows** | works, lightly tested | Run on a real desktop: the tray icon appears, the small-size mark renders, and the CLI works from a terminal. Notifications, autostart and reading real credentials have not been exercised there. Personal-use scaffolding rather than a supported target. |
-| macOS | not attempted | Compiles and packages, untried. The token is reported to live in the login Keychain there, which nothing here has verified - see [usage-api.md](docs/usage-api.md) for how to check and why it decides the difficulty. |
+| macOS | runs, barely tested | One session on one machine: menu bar item, popup, notifications prompt. No release, and credentials need `CLAUDE_CODE_OAUTH_TOKEN` until the Keychain is read - see [platform-support.md](docs/platform-support.md). |
 
 The operative rule, when two of those conflict: **Plasma is not made worse to
 make another desktop better.** Where a choice cannot serve both, Plasma gets the
