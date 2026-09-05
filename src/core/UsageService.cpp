@@ -1,5 +1,7 @@
 #include "UsageService.h"
 
+#include "RefreshSchedule.h"
+
 #include "Config.h"
 #include "UsageLevel.h"
 
@@ -10,12 +12,6 @@
 
 namespace claudedial::core {
 namespace {
-
-/// Backoff ladder for 429s, in minutes, capped at the last entry.
-constexpr int kRateLimitBackoffMinutes[] = { 3, 6, 12, 15 };
-
-/// How long after a window's reset to poll, so the new window is reflected.
-constexpr int kPostResetDelayMs = 5000;
 
 /// Coalesce the burst of file-watcher events a credential rewrite produces.
 constexpr int kCredentialDebounceMs = 1000;
@@ -203,30 +199,10 @@ void UsageService::onFailed(FetchError error, int retryAfterSeconds)
 
 void UsageService::scheduleNext()
 {
-    qint64 intervalMs = static_cast<qint64>(m_config->refreshIntervalSeconds()) * 1000;
-
-    if (m_rateLimitStrikes > 0) {
-        const int index = std::min<int>(m_rateLimitStrikes - 1,
-                                        std::size(kRateLimitBackoffMinutes) - 1);
-        intervalMs = std::max<qint64>(intervalMs, kRateLimitBackoffMinutes[index] * 60LL * 1000);
-        // Never come back sooner than the server asked, whatever our own ladder
-        // says. The ladder is a guess for when it does not tell us.
-        intervalMs = std::max<qint64>(intervalMs, m_retryAfterSeconds * 1000LL);
-    } else {
-        // Align to the nearest upcoming reset so the first poll of a new window
-        // is prompt, instead of showing a full interval of stale percentages.
-        const QDateTime now = QDateTime::currentDateTimeUtc();
-        for (const auto kind : { PeriodKind::FiveHour, PeriodKind::SevenDay }) {
-            const auto& period = m_state.period(kind);
-            if (!period || !period->resetAt)
-                continue;
-            const qint64 untilReset = now.msecsTo(*period->resetAt) + kPostResetDelayMs;
-            if (untilReset > 0 && untilReset < intervalMs)
-                intervalMs = untilReset;
-        }
-    }
-
-    m_timer->start(static_cast<int>(intervalMs));
+    // The decision itself lives in RefreshSchedule, where it can be tested.
+    m_timer->start(static_cast<int>(nextRefreshMs(m_config->refreshIntervalSeconds(),
+                                                  m_rateLimitStrikes, m_retryAfterSeconds,
+                                                  m_state, QDateTime::currentDateTimeUtc())));
 }
 
 QList<int> UsageService::thresholdsFor() const

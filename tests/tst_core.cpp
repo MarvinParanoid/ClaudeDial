@@ -1,6 +1,7 @@
 #include "core/Config.h"
 #include "core/Format.h"
 #include "core/PanelTheme.h"
+#include "core/RefreshSchedule.h"
 #include "core/GaugeGeometry.h"
 #include "core/UsageClient.h"
 #include "core/UsageJson.h"
@@ -53,6 +54,9 @@ private Q_SLOTS:
     void roundTripsStatusJson();
 
     void clampsRefreshIntervalToFloor();
+    void climbsTheRateLimitLadder();
+    void neverPollsSoonerThanTheServerAsked();
+    void alignsToAResetOnlyWhenNotRateLimited();
     void shippedIconMatchesCanonicalGeometry();
     void storesSettingsAtTheDocumentedPath();
     void roundTripsSettings();
@@ -690,6 +694,89 @@ void CoreTest::readsThePlasmaPanelColour()
     QVERIFY(!plasmaPanelBackground(
                  QStringLiteral("[Colors:Window]\nBackgroundNormal=nonsense\n"))
                  .has_value());
+}
+
+namespace {
+
+/// A state whose five-hour window resets at a chosen distance from now.
+UsageState stateResettingIn(const QDateTime& now, int seconds)
+{
+    UsagePeriod period;
+    period.percentage = 40;
+    period.resetAt = now.addSecs(seconds);
+    UsageState state;
+    state.fiveHour = period;
+    state.updatedAt = now;
+    return state;
+}
+
+} // namespace
+
+/// The ladder only ever runs after something has gone wrong, so in production
+/// it is exercised for the first time on the day it matters most. These are the
+/// real numbers, read from the same function the service calls.
+void CoreTest::climbsTheRateLimitLadder()
+{
+    QCOMPARE(rateLimitBackoffMinutes(0), 0);
+    QCOMPARE(rateLimitBackoffMinutes(1), 3);
+    QCOMPARE(rateLimitBackoffMinutes(2), 6);
+    QCOMPARE(rateLimitBackoffMinutes(3), 12);
+    QCOMPARE(rateLimitBackoffMinutes(4), 15);
+
+    // Capped, not continued. A ladder that kept doubling would eventually stop
+    // polling for a day.
+    QCOMPARE(rateLimitBackoffMinutes(5), 15);
+    QCOMPARE(rateLimitBackoffMinutes(50), 15);
+
+    const QDateTime now(QDate(2026, 9, 5), QTime(12, 0, 0), QTimeZone::UTC);
+    const UsageState none;
+
+    // At the shortest interval the app allows, every rung is longer and shows.
+    QCOMPARE(nextRefreshMs(60, 1, 0, none, now), 3 * 60 * 1000);
+    QCOMPARE(nextRefreshMs(60, 3, 0, none, now), 12 * 60 * 1000);
+
+    // The ladder never shortens the wait: a user who asked for an hour gets an
+    // hour after a refusal, not three minutes.
+    QCOMPARE(nextRefreshMs(3600, 1, 0, none, now), 3600 * 1000);
+
+    // Worth knowing rather than fixing: at the default five minutes the first
+    // rung is shorter than the interval, so the ladder does nothing until the
+    // second strike. The first 429 costs no extra delay at all for most users.
+    QCOMPARE(nextRefreshMs(300, 1, 0, none, now), 300 * 1000);
+    QCOMPARE(nextRefreshMs(300, 2, 0, none, now), 6 * 60 * 1000);
+}
+
+void CoreTest::neverPollsSoonerThanTheServerAsked()
+{
+    const QDateTime now(QDate(2026, 9, 5), QTime(12, 0, 0), QTimeZone::UTC);
+    const UsageState none;
+
+    // Retry-After beats our guess when it is longer - it is the one number in
+    // this calculation that is not a guess.
+    QCOMPARE(nextRefreshMs(60, 1, 900, none, now), 900 * 1000);
+
+    // And loses when it is shorter, because the ladder is there for a server
+    // that keeps saying no.
+    QCOMPARE(nextRefreshMs(60, 3, 60, none, now), 12 * 60 * 1000);
+}
+
+void CoreTest::alignsToAResetOnlyWhenNotRateLimited()
+{
+    const QDateTime now(QDate(2026, 9, 5), QTime(12, 0, 0), QTimeZone::UTC);
+
+    // A reset sooner than the interval pulls the next poll forward to just
+    // after it, so a new window is not reported a full interval late.
+    QCOMPARE(nextRefreshMs(300, 0, 0, stateResettingIn(now, 60), now), 65 * 1000);
+
+    // A reset further out than the interval changes nothing.
+    QCOMPARE(nextRefreshMs(300, 0, 0, stateResettingIn(now, 3600), now), 300 * 1000);
+
+    // A reset already past is not a reason to poll immediately.
+    QCOMPARE(nextRefreshMs(300, 0, 0, stateResettingIn(now, -60), now), 300 * 1000);
+
+    // And while rate-limited the alignment is skipped entirely: polling on the
+    // stroke of a new window is the burst a rate limiter is objecting to.
+    QCOMPARE(nextRefreshMs(60, 1, 0, stateResettingIn(now, 60), now), 3 * 60 * 1000);
 }
 
 QTEST_GUILESS_MAIN(CoreTest)

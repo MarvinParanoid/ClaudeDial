@@ -7,6 +7,8 @@ add_library(claudedial_core STATIC
     Format.h
     PanelTheme.cpp
     PanelTheme.h
+    RefreshSchedule.cpp
+    RefreshSchedule.h
     UsageClient.cpp
     UsageClient.h
     UsageJson.cpp
