@@ -540,6 +540,29 @@ will not dismiss itself when you click elsewhere. Clicking the tray icon again,
 or the close button, always works. This is the reason focus-out dismissal was
 removed rather than fixed.
 
+### Suspend and resume
+
+Reported working on Arch with Plasma: nothing breaks across a suspend, which
+was the real risk — a dropped socket, a request left hanging, a timer that
+never fires again.
+
+What that does *not* establish is which mechanism refreshed the numbers. The
+logind path exists for promptness, not correctness: `PrepareForSleep(false)`
+triggers a refresh on wake, and without it the ordinary interval catches up
+within five minutes anyway. Both look like "fine after waking".
+
+Distinguishing them costs one reading. Note `updated_at` from `claudedial
+--json` before suspending, and read it again immediately after waking: within
+seconds of the wake means logind fired; up to a refresh interval old means the
+timer did it.
+
+It cannot be tested from a script. Injecting the signal with `dbus-send
+--system` is accepted by the bus and then not delivered — verified with a
+listener subscribed exactly as SleepWatcher is, which reported
+`connected=1 subscription=1` and received nothing. An unprivileged sender may
+not broadcast on that interface, so an app that fails to react proves nothing.
+That mistake was made here once already.
+
 ## Degradation
 
 ```
