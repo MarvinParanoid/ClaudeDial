@@ -131,18 +131,33 @@ void RenderTest::swapsTheMarkBelowSeventeenPixels()
     // takes the box and a bar carries the reading. The bar is the difference
     // that can be measured - it fills the bottom rows, where the dial's own
     // opening leaves them empty.
-    QVERIFY2(bottomFill(render(16, 63, Style::Percentage), 2) > 0.5,
-             "the small mark should carry a usage bar along the bottom");
-    QVERIFY2(bottomFill(render(22, 63, Style::Percentage), 2) < 0.05,
-             "the designed mark leaves the bottom to the dial's opening");
+    // Stated as a ratio rather than two absolute thresholds. The bar is a solid
+    // block and the dial's opening is empty, so the difference is large on any
+    // machine - but a font with a deep descender can tint the bottom rows, and
+    // an absolute "< 0.05" would then fail for a reason that has nothing to do
+    // with the mark.
+    const double small = bottomFill(render(16, 63, Style::Percentage), 2);
+    const double large = bottomFill(render(22, 63, Style::Percentage), 2);
+    const auto measured = [&](const char* what) {
+        return qPrintable(QStringLiteral("%1: small=%2 large=%3")
+                              .arg(QLatin1String(what))
+                              .arg(small, 0, 'f', 3)
+                              .arg(large, 0, 'f', 3));
+    };
+    QVERIFY2(small > 0.5, measured("the small mark should carry a usage bar"));
+    QVERIFY2(small > large * 4, measured("the designed mark leaves its bottom to the dial"));
 
     // The gauge style keeps its dial at every size, so it never grows a bar.
+    // No text is involved here, so this one can be absolute.
     QVERIFY2(bottomFill(render(16, 63, Style::Gauge), 2) < 0.05,
              "the gauge style keeps the dial below the threshold, not a bar");
 
     // The boundary itself, since it is a documented number.
-    QVERIFY(bottomFill(render(16, 63, Style::Percentage), 2) > 0.5);
-    QVERIFY(bottomFill(render(17, 63, Style::Percentage), 2) < 0.05);
+    const double justAbove = bottomFill(render(17, 63, Style::Percentage), 2);
+    QVERIFY2(justAbove < small / 4,
+             qPrintable(QStringLiteral("16px=%1 should carry a bar and 17px=%2 should not")
+                            .arg(small, 0, 'f', 3)
+                            .arg(justAbove, 0, 'f', 3)));
 }
 
 void RenderTest::showsOneGlyphRatherThanThreeDigitsAtTheLimit()
@@ -155,7 +170,11 @@ void RenderTest::showsOneGlyphRatherThanThreeDigitsAtTheLimit()
     const int two = centreInkWidth(render(22, 99, Style::Percentage));
     const int limit = centreInkWidth(render(22, 100, Style::Percentage));
     QVERIFY2(limit > 0, "something should be drawn at the limit");
-    QVERIFY2(limit < two / 2, "the limit mark should be one narrow glyph, not three digits");
+    QVERIFY2(limit < two / 2,
+             qPrintable(QStringLiteral("one narrow glyph expected, not three digits: "
+                                       "99%% is %1px wide, 100%% is %2px")
+                            .arg(two)
+                            .arg(limit)));
 }
 
 void RenderTest::paintsTheUsageRamp()

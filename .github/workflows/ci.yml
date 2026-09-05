@@ -104,8 +104,15 @@ jobs:
 
           plist=$(find dist -name 'Info.plist' -path '*claudedial.app*' -print -quit)
           if [ -n "$plist" ]; then
-            grep -q LSUIElement "$plist" \
-              || { echo 'MISSING LSUIElement - it would take a Dock icon'; fail=1; }
+            if ! grep -q LSUIElement "$plist"; then
+              echo 'MISSING LSUIElement - it would take a Dock icon'
+              # Printed here, not only in the step above: whoever pastes a
+              # failure pastes the failing step, and the answer to "whose plist
+              # is this" is in the file rather than in the absence of a key.
+              echo "--- $plist ---"
+              cat "$plist"
+              fail=1
+            fi
           else
             echo 'MISSING the bundle Info.plist'; fail=1
           fi
