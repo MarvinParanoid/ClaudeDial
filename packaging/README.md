@@ -90,6 +90,10 @@ they handle a wave of automated account creation; the page answers HTTP 503 and
 asks explicitly that nobody script retries against it. Reopening is announced on
 `aur-general` and the Arch news feed, and nothing here will know sooner.
 
+When it does land, add the fifth badge to the README - `AUR: claudedial-bin`
+alongside CI, release, licence and platforms - since a package nobody can find
+is not much better than no package.
+
 Until then Arch users install by downloading `PKGBUILD-bin` from this repository
 and running `makepkg -si`, which the README documents and which is verified to
 produce the same package the AUR would serve.
