@@ -132,14 +132,15 @@ jobs:
             install: |
               pacman -Syu --noconfirm --needed \
                 base-devel cmake ninja git \
-                qt6-base qt6-declarative qt6-svg
+                qt6-base qt6-declarative qt6-svg \
+                ttf-dejavu   # so the tray icon's digits render, and the render tests run
           - name: "Fedora 41 (near the declared Qt floor)"
             container: fedora:41
             install: |
               dnf -y install \
                 gcc-c++ cmake ninja-build git \
                 qt6-qtbase-devel qt6-qtdeclarative-devel qt6-qtsvg-devel \
-                mesa-libGL-devel
+                mesa-libGL-devel dejavu-sans-fonts
 
     name: ${{ matrix.name }}
     steps:
