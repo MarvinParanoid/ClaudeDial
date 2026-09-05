@@ -4,6 +4,7 @@
 #include <QDateTime>
 #include <QObject>
 #include <QString>
+#include <QStringList>
 
 class QNetworkRequest;
 class QFileSystemWatcher;
@@ -62,6 +63,7 @@ private:
     bool loadFromJson(const QByteArray& raw);
 #ifdef Q_OS_MACOS
     bool loadFromKeychain();
+    bool runSecurity(const QStringList& arguments);
 #endif
     void clearToken();
 

@@ -65,6 +65,12 @@ On macOS Claude Code normally keeps the same JSON in the login keychain instead
 of a file, under service `Claude Code-credentials`, account `$USER`.
 `Credentials::loadFromKeychain()` reads it, after the file attempt fails.
 
+**Two queries, not one.** The prior art disagrees about the item's account
+attribute: claudometer passes `-a $USER`, while so-agentbar — a native Swift
+application, so presumably written against a real item — matches on the service
+alone. That cannot be settled from here, so ClaudeDial tries the narrow query
+and falls back to the broad one.
+
 **It shells out to `/usr/bin/security` rather than calling
 `SecItemCopyMatching`.** That looks like the lazy choice and is not. A keychain
 item carries an access control list naming the programs allowed to read it
@@ -103,6 +109,34 @@ second command prints real numbers, the reader works.
 One thing a success does not prove: permission is granted per binary identity,
 and an ad-hoc signed build changes identity on every rebuild — which is exactly
 what such an ACL keys on.
+
+### Per-model weekly limits live in `limits[]` now
+
+Worth writing down because ClaudeDial does not read them, and the reason should
+be a decision rather than an oversight.
+
+The response in §3 carries `seven_day_opus`, `seven_day_sonnet` and friends as
+top-level keys, and for that account every one of them is `null` — while the
+`limits` array holds a `weekly_scoped` entry with `scope.model.display_name`.
+[jens-duttke/usage-monitor-for-claude][jd] reaches the same conclusion in its
+`_merge_scoped_limits`: *"Newer usage responses carry per-model weekly limits
+only inside the `limits` array (via `scope.model`), no longer as top-level
+fields like `seven_day_sonnet`."* Two sources, one of them our own capture.
+
+What that means for a Max account: a model-scoped weekly limit can bind before
+the overall weekly one does, and ClaudeDial — which reads `five_hour` and
+`seven_day` and nothing else — would show a comfortable number while the limit
+that actually stops work sits somewhere else. Nobody has seen that happen; on
+the account captured here the scoped entry reads 0%.
+
+Two other things the array knows that we compute or ignore: `severity`, which is
+the server's own view of what ClaudeDial derives from the user's thresholds, and
+`is_active`, which says which limit is currently governing. Neither is needed
+while there are two windows and the user sets their own thresholds.
+
+Not implemented, deliberately: a third reading is a design change, not a bug
+fix, and this project's whole claim is two numbers. Revisit if a Max user
+reports the weekly figure looking wrong.
 
 ### Not applicable on Linux
 
@@ -812,7 +846,6 @@ relying on a native-looking QQC2 style that will not be there.
 - Claude Code `2.1.255` binary — endpoint, headers, internal schemas, retry policy
 - Live `GET /api/oauth/usage` — response in §3
 
-[jd]: https://github.com/jens-duttke/usage-monitor-for-claude
 [issue202]: https://github.com/Maciek-roboblog/Claude-Code-Usage-Monitor/issues/202
 [xik]: https://github.com/xikxp1/claude-monitor
 [sb1]: https://github.com/StaticB1/claude_ai_usage_widget
@@ -824,3 +857,4 @@ relying on a native-looking QQC2 style that will not be there.
 [cs]: https://github.com/gmr/claude-status
 [soa]: https://github.com/sotthang/so-agentbar
 [lc]: https://github.com/leonardocouy/claudometer
+[jd]: https://github.com/jens-duttke/usage-monitor-for-claude

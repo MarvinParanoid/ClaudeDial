@@ -12,6 +12,7 @@
 
 #ifdef Q_OS_MACOS
 #include <QProcess>
+#include <QStringList>
 #endif
 
 namespace claudedial::core {
@@ -180,18 +181,34 @@ bool Credentials::loadFromJson(const QByteArray& raw)
 #ifdef Q_OS_MACOS
 bool Credentials::loadFromKeychain()
 {
+    // Two queries, and both are needed because the prior art disagrees about
+    // the item's account attribute: claudometer passes -a $USER, so-agentbar - a
+    // native Mac application - matches on the service alone. Nobody here can
+    // settle which is right without a Mac running Claude Code, so try the
+    // narrow one and fall back to the broad one rather than pick a side.
+    const QStringList service { QStringLiteral("find-generic-password"),
+                                QStringLiteral("-s"),
+                                QStringLiteral("Claude Code-credentials") };
+    QStringList withAccount = service;
+    withAccount << QStringLiteral("-a") << keychainAccount();
+
+    for (QStringList arguments : { withAccount, service }) {
+        arguments << QStringLiteral("-w"); // print the secret, and only the secret
+        if (runSecurity(arguments))
+            return true;
+    }
+    return false;
+}
+
+bool Credentials::runSecurity(const QStringList& arguments)
+{
     // Read the item through /usr/bin/security rather than SecItemCopyMatching.
     // Claude Code puts that binary in the item's access control list, so it is
     // let through silently; this process is not, and would make macOS ask the
     // user for permission on every single poll.
     QProcess security;
     security.setProgram(QStringLiteral("/usr/bin/security"));
-    security.setArguments({
-        QStringLiteral("find-generic-password"),
-        QStringLiteral("-s"), QStringLiteral("Claude Code-credentials"),
-        QStringLiteral("-a"), keychainAccount(),
-        QStringLiteral("-w"), // print the secret, and only the secret
-    });
+    security.setArguments(arguments);
     security.setStandardErrorFile(QProcess::nullDevice());
     security.start(QIODevice::ReadOnly);
 
