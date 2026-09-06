@@ -48,7 +48,7 @@ add_subdirectory(src/core)
 add_subdirectory(src)
 
 if(CLAUDEDIAL_BUILD_TESTS)
-    find_package(Qt6 6.5 QUIET COMPONENTS Test)
+    find_package(Qt6 6.8 QUIET COMPONENTS Test)
     if(Qt6Test_FOUND)
         enable_testing()
         add_subdirectory(tests)
