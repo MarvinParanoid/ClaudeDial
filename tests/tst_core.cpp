@@ -13,6 +13,7 @@
 
 #include <QJsonDocument>
 #include <QNetworkRequest>
+#include <QFileInfo>
 #include <QSignalSpy>
 #include <QTemporaryDir>
 #include <QTimer>
@@ -921,7 +922,25 @@ void CoreTest::writesTheAutostartEntryWhereTheDesktopReadsIt()
     // --wait, and it matters: an autostart entry frequently runs before the
     // panel has registered a tray host, and without the flag the application
     // would find none, exit, and leave the session with no icon at all.
-    QVERIFY(written.contains(QLatin1String("Exec=claudedial --wait")));
+    QVERIFY(written.contains(QLatin1String("--wait")));
+
+    // The Exec line must name a binary that exists. It used to say the bare
+    // `claudedial`, which works only if the session's PATH has it - and a build
+    // run from its own tree never does, so the entry pointed at nothing and the
+    // session silently started nothing.
+    QString exec;
+    for (const QString& line : written.split(QLatin1Char('\n'))) {
+        if (line.startsWith(QLatin1String("Exec=")))
+            exec = line.mid(5);
+    }
+    QVERIFY2(!exec.isEmpty(), "no Exec line at all");
+
+    // Quoted as the specification asks, so a path with a space stays one
+    // argument.
+    QVERIFY2(exec.startsWith(QLatin1Char('"')), qPrintable(exec));
+    const QString program = exec.mid(1, exec.indexOf(QLatin1Char('"'), 1) - 1);
+    QVERIFY2(QFileInfo(program).isAbsolute(), qPrintable(program));
+    QVERIFY2(QFileInfo(program).isExecutable(), qPrintable(program));
 
     // Turning it off removes the entry, and doing so twice is still a success.
     QVERIFY(autostart::setEnabled(false));

@@ -737,7 +737,12 @@ Written down rather than quietly tolerated.
    show the popup as an ordinary window. Not decided, not implemented.
 
    Half of this is now closed, and from prior art rather than from thinking
-   about it. [Syncthing Tray][st] answers the same question with two flags:
+   about it. (The flag also arrived with a bug of its own: the XDG entry named
+   the bare `claudedial`, which is on the session's PATH only for an installed
+   copy. A build run from its own tree is not, so the entry pointed at nothing
+   and the session started nothing — reported from Arch, and measured: the old
+   `Exec` line exits 127 under a login PATH. Every entry now records the real
+   binary, as Windows and macOS always did.) [Syncthing Tray][st] answers the same question with two flags:
    `--windowed`, which opens the tray menu as an ordinary window, and `--wait`,
    which waits for a tray instead of refusing to start. The second is not a
    design question at all — it is a bug this project had and had not noticed. A

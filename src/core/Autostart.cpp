@@ -18,6 +18,25 @@ namespace {
 // three formats quote it differently and a constant would not survive any of
 // them intact.
 
+/// The path the running binary actually has.
+///
+/// Not the bare name `claudedial`: an autostart entry saying that only works if
+/// the binary is on the *session's* PATH, and it frequently is not - a build
+/// run from its own tree never is, and a session's PATH is not the shell's. The
+/// entry then points at nothing and the session silently starts nothing, which
+/// is exactly what happened. Windows and macOS have always recorded the real
+/// path; this is the branch that guessed.
+QString launchPath()
+{
+    // Inside an AppImage, applicationFilePath() is a mount point that stops
+    // existing the moment the process does. APPIMAGE is the file the user
+    // actually launched, and the only one still there at the next login.
+    const QString appImage = qEnvironmentVariable("APPIMAGE");
+    if (!appImage.isEmpty())
+        return appImage;
+    return QCoreApplication::applicationFilePath();
+}
+
 #ifdef Q_OS_WIN
 /// Where Windows keeps per-user startup entries. QSettings reaches the registry
 /// natively, so this needs no platform API of its own.
@@ -64,18 +83,27 @@ QByteArray entryContents()
                           "    <true/>\n"
                           "</dict>\n"
                           "</plist>\n")
-        .arg(QCoreApplication::applicationFilePath())
+        .arg(launchPath())
         .toUtf8();
 #else
-    return QByteArrayLiteral("[Desktop Entry]\n"
-                             "Type=Application\n"
-                             "Name=ClaudeDial\n"
-                             "Comment=Claude Code usage at a glance\n"
-                             "Exec=claudedial --wait\n"
-                             "Icon=claudedial\n"
-                             "Terminal=false\n"
-                             "Categories=Utility;\n"
-                             "X-GNOME-Autostart-enabled=true\n");
+    // Quoted and escaped as the Desktop Entry specification asks, so a path with
+    // a space in it is one argument rather than two.
+    QString executable = launchPath();
+    executable.replace(QLatin1Char('\\'), QLatin1String("\\\\"));
+    for (const QChar special : { QLatin1Char('"'), QLatin1Char('`'), QLatin1Char('$') })
+        executable.replace(special, QLatin1Char('\\') + special);
+
+    return QStringLiteral("[Desktop Entry]\n"
+                          "Type=Application\n"
+                          "Name=ClaudeDial\n"
+                          "Comment=Claude Code usage at a glance\n"
+                          "Exec=\"%1\" --wait\n"
+                          "Icon=claudedial\n"
+                          "Terminal=false\n"
+                          "Categories=Utility;\n"
+                          "X-GNOME-Autostart-enabled=true\n")
+        .arg(executable)
+        .toUtf8();
 #endif
 }
 
@@ -100,8 +128,8 @@ bool setEnabled(bool enabled)
     if (enabled) {
         // Quoted: the path contains spaces on any normal install.
         run.setValue(QLatin1String(kRunValue),
-                     QStringLiteral("\"%1\" --wait").arg(
-                         QDir::toNativeSeparators(QCoreApplication::applicationFilePath())));
+                     QStringLiteral("\"%1\" --wait")
+                         .arg(QDir::toNativeSeparators(launchPath())));
     } else {
         run.remove(QLatin1String(kRunValue));
     }
