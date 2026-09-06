@@ -61,5 +61,13 @@ QString tooltip(const UsageState& state, const QDateTime& now = QDateTime::curre
 QString menuEntry(PeriodKind kind, const UsageState& state,
                   const QDateTime& now = QDateTime::currentDateTimeUtc());
 
+/// The title of the notification announcing that `threshold` was crossed.
+///
+/// Takes the user's own critical threshold rather than assuming a number: the
+/// two configurable stops are theirs to move, and a banner calling their
+/// critical threshold a mere warning tells them the wrong thing about their own
+/// setting.
+[[nodiscard]] QString thresholdTitle(int threshold, int criticalThreshold);
+
 } // namespace format
 } // namespace claudedial::core

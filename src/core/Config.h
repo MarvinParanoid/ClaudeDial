@@ -116,6 +116,10 @@ Q_SIGNALS:
     void changed();
 
 private:
+    /// The stored critical threshold, before warningThreshold() consults it.
+    /// Separate so the two getters cannot call each other in a circle.
+    [[nodiscard]] int rawCriticalThreshold() const;
+
     QSettings* m_settings;
 };
 

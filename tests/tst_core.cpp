@@ -72,6 +72,8 @@ private Q_SLOTS:
     void defaultsSuitALinuxTray();
     void remembersAnnouncedThresholdsAcrossRestarts();
 
+    void keepsTheWarningThresholdBelowTheCriticalOne();
+    void namesTheThresholdTheUserConfigured();
     void writesTheAutostartEntryWhereTheDesktopReadsIt();
     void aScheduledPollLeavesTheServiceAbleToRefreshAgain();
 
@@ -886,6 +888,58 @@ void CoreTest::aScheduledPollLeavesTheServiceAbleToRefreshAgain()
     QCOMPARE(changed.count(), 1);
 
     qunsetenv("CLAUDEDIAL_SIMULATE");
+}
+
+void CoreTest::keepsTheWarningThresholdBelowTheCriticalOne()
+{
+    Config config(QStringLiteral("claudedial-test"), QStringLiteral("thresholds"));
+    config.setWarningThreshold(75);
+    config.setCriticalThreshold(90);
+
+    // Two independent 1-100 controls used to allow warning above critical, and
+    // then the warning band did not exist: levelFor tests critical first, so
+    // everything at or above the warning stop was already critical. One of the
+    // two settings silently did nothing.
+    config.setWarningThreshold(95);
+    QVERIFY(config.warningThreshold() <= config.criticalThreshold());
+    QCOMPARE(config.warningThreshold(), 90);
+
+    // And from the other side.
+    config.setWarningThreshold(80);
+    config.setCriticalThreshold(50);
+    QVERIFY(config.warningThreshold() <= config.criticalThreshold());
+    QCOMPARE(config.criticalThreshold(), 80);
+
+    // The band the settings promise is the band the ramp actually has.
+    config.setWarningThreshold(60);
+    config.setCriticalThreshold(80);
+    QCOMPARE(levelFor(59, config.warningThreshold(), config.criticalThreshold()),
+             UsageLevel::Normal);
+    QCOMPARE(levelFor(60, config.warningThreshold(), config.criticalThreshold()),
+             UsageLevel::Warning);
+    QCOMPARE(levelFor(80, config.warningThreshold(), config.criticalThreshold()),
+             UsageLevel::Critical);
+}
+
+void CoreTest::namesTheThresholdTheUserConfigured()
+{
+    // The fixed stops read the same however the user has set theirs.
+    QCOMPARE(format::thresholdTitle(100, 90), QStringLiteral("Limit reached"));
+    QCOMPARE(format::thresholdTitle(95, 90), QStringLiteral("Almost at the limit"));
+
+    // At the defaults, which is the only case the old literal 90 got right.
+    QCOMPARE(format::thresholdTitle(90, 90), QStringLiteral("High usage"));
+    QCOMPARE(format::thresholdTitle(75, 90), QStringLiteral("Usage warning"));
+
+    // Move the critical stop down and the banner has to move with it. This is
+    // the case that was wrong: 80 is the user's critical threshold, and the
+    // notification called it a warning.
+    QCOMPARE(format::thresholdTitle(80, 80), QStringLiteral("High usage"));
+    QCOMPARE(format::thresholdTitle(70, 80), QStringLiteral("Usage warning"));
+
+    // And up, where the old code called a mere warning high usage.
+    QCOMPARE(format::thresholdTitle(92, 94), QStringLiteral("Usage warning"));
+    QCOMPARE(format::thresholdTitle(94, 94), QStringLiteral("High usage"));
 }
 
 void CoreTest::writesTheAutostartEntryWhereTheDesktopReadsIt()

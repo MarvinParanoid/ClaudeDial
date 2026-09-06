@@ -36,8 +36,8 @@ public:
     /// `resetText` is the already-formatted reset line, e.g. "Resets in 42m" -
     /// more use in a notification than repeating the percentage, which the title
     /// and the icon have both already given.
-    void notifyThreshold(core::PeriodKind kind, int threshold, const QString& resetText,
-                         const QImage& icon);
+    void notifyThreshold(core::PeriodKind kind, int threshold, int criticalThreshold,
+                         const QString& resetText, const QImage& icon);
 
 Q_SIGNALS:
     /// Emitted instead of sending, where there is no notification bus. Nothing

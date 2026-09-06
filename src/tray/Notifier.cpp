@@ -1,5 +1,6 @@
 #include "Notifier.h"
 
+#include "core/Format.h"
 #include "core/UsageLevel.h"
 
 #ifdef CLAUDEDIAL_HAVE_DBUS
@@ -91,29 +92,19 @@ Notifier::Notifier(QObject* parent)
 #endif
 }
 
-void Notifier::notifyThreshold(core::PeriodKind kind, int threshold, const QString& resetText,
-                               const QImage& icon)
+void Notifier::notifyThreshold(core::PeriodKind kind, int threshold, int criticalThreshold,
+                               const QString& resetText, const QImage& icon)
 {
     const QString window = windowName(kind);
 
-    QString title;
-    QString what;
-    bool critical = false;
-
-    if (threshold >= core::kLimitThreshold) {
-        title = tr("Limit reached");
-        what = tr("%1 limit reached").arg(window);
-        critical = true;
-    } else if (threshold >= core::kSevereThreshold) {
-        title = tr("Almost at the limit");
-        what = tr("%1 usage reached %2%").arg(window).arg(threshold);
-        critical = true;
-    } else {
-        // The configured critical threshold reads as "high", the warning one as
-        // a warning; there is no third wording to invent between them.
-        title = threshold >= 90 ? tr("High usage") : tr("Usage warning");
-        what = tr("%1 usage reached %2%").arg(window).arg(threshold);
-    }
+    // The title used to compare against a literal 90, which is only the default
+    // critical threshold - so a user who moved it was told their critical stop
+    // was a warning, or their warning was high usage.
+    const QString title = core::format::thresholdTitle(threshold, criticalThreshold);
+    const bool critical = threshold >= core::kSevereThreshold;
+    const QString what = threshold >= core::kLimitThreshold
+        ? tr("%1 limit reached").arg(window)
+        : tr("%1 usage reached %2%").arg(window).arg(threshold);
 
     const QString body = resetText.isEmpty() ? what
                                              : QStringLiteral("%1\n%2").arg(what, resetText);

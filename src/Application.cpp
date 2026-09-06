@@ -415,7 +415,8 @@ void Application::onThresholdCrossed(PeriodKind kind, int threshold, double perc
     const auto& period = m_service->state().period(kind);
     const QString reset = period ? core::format::resetSentence(kind, *period) : QString();
 
-    m_notifier->notifyThreshold(kind, threshold, reset, icon);
+    m_notifier->notifyThreshold(kind, threshold, m_config->criticalThreshold(),
+                                reset, icon);
 }
 
 } // namespace claudedial

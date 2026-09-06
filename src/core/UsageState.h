@@ -23,11 +23,6 @@ struct UsagePeriod {
     std::optional<QDateTime> resetAt;
 };
 
-/// A snapshot of usage.
-///
-/// Both windows are optional because the API returns `null` for windows that do
-/// not apply to an account, and because we parse leniently: a renamed or removed
-/// key yields no data rather than a parse failure.
 /// Length of the session window, which is what makes "how far through it are we"
 /// answerable at all.
 ///
@@ -66,6 +61,11 @@ constexpr int kFiveHourWindowSeconds = 5 * 60 * 60;
     return std::clamp(fraction, 0.0, 1.0) * 100.0;
 }
 
+/// A snapshot of usage.
+///
+/// Both windows are optional because the API returns `null` for windows that do
+/// not apply to an account, and because we parse leniently: a renamed or removed
+/// key yields no data rather than a parse failure.
 struct UsageState {
     std::optional<UsagePeriod> fiveHour;
     std::optional<UsagePeriod> sevenDay;

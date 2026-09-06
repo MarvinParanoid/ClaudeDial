@@ -115,23 +115,39 @@ void Config::setNotificationsEnabled(bool enabled)
 
 int Config::warningThreshold() const
 {
-    return std::clamp(m_settings->value(QLatin1String(kWarning), 75).toInt(), 1, 100);
+    const int warning = std::clamp(m_settings->value(QLatin1String(kWarning), 75).toInt(), 1, 100);
+    // A hand-edited file can still hold the inverted pair the setters now
+    // refuse, so the invariant is enforced on the way out as well.
+    return std::min(warning, rawCriticalThreshold());
+}
+
+int Config::rawCriticalThreshold() const
+{
+    return std::clamp(m_settings->value(QLatin1String(kCritical), 90).toInt(), 1, 100);
 }
 
 void Config::setWarningThreshold(int percent)
 {
-    m_settings->setValue(QLatin1String(kWarning), std::clamp(percent, 1, 100));
+    // Never above critical. The two are separate 1-100 controls, so nothing
+    // stopped warning being set higher - and then the warning band vanished:
+    // levelFor tests critical first, so every value at or above the warning
+    // stop was already critical, and one of the two settings silently did
+    // nothing at all.
+    m_settings->setValue(QLatin1String(kWarning),
+                         std::min(std::clamp(percent, 1, 100), criticalThreshold()));
     Q_EMIT changed();
 }
 
 int Config::criticalThreshold() const
 {
-    return std::clamp(m_settings->value(QLatin1String(kCritical), 90).toInt(), 1, 100);
+    return rawCriticalThreshold();
 }
 
 void Config::setCriticalThreshold(int percent)
 {
-    m_settings->setValue(QLatin1String(kCritical), std::clamp(percent, 1, 100));
+    // And never below warning, for the same reason from the other side.
+    m_settings->setValue(QLatin1String(kCritical),
+                         std::max(std::clamp(percent, 1, 100), warningThreshold()));
     Q_EMIT changed();
 }
 

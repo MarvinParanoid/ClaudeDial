@@ -1,5 +1,7 @@
 #include "Format.h"
 
+#include "UsageLevel.h"
+
 #include <QCoreApplication>
 #include <QLocale>
 #include <QStringList>
@@ -135,6 +137,19 @@ QString menuEntry(PeriodKind kind, const UsageState& state, const QDateTime& now
     if (const QString reset = resetFor(kind, *period, now); !reset.isEmpty())
         line += QStringLiteral(" · %1").arg(reset);
     return line;
+}
+
+QString thresholdTitle(int threshold, int criticalThreshold)
+{
+    if (threshold >= kLimitThreshold)
+        return QCoreApplication::translate("format", "Limit reached");
+    if (threshold >= kSevereThreshold)
+        return QCoreApplication::translate("format", "Almost at the limit");
+    // The configured critical threshold reads as "high", the warning one as a
+    // warning; there is no third wording to invent between them.
+    if (threshold >= criticalThreshold)
+        return QCoreApplication::translate("format", "High usage");
+    return QCoreApplication::translate("format", "Usage warning");
 }
 
 QString tooltip(const UsageState& state, const QDateTime& now)
