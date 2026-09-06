@@ -49,7 +49,6 @@ private Q_SLOTS:
 
     void formatsRelativeReset();
     void formatsResetPerWindowKind();
-    void roundsAbsoluteResetToNearestMinute();
     void buildsTooltip();
     void buildsMenuEntries();
     void measuresPositionWithinTheFiveHourWindow();
@@ -291,17 +290,6 @@ void CoreTest::formatsResetPerWindowKind()
     UsagePeriod noReset;
     noReset.percentage = 5;
     QVERIFY(format::resetFor(PeriodKind::FiveHour, noReset, now).isEmpty());
-}
-
-void CoreTest::roundsAbsoluteResetToNearestMinute()
-{
-    // The 7-day reset drifts sub-second between calls. Without rounding
-    // the displayed time flickers between two adjacent minutes.
-    const QDateTime now(QDate(2026, 9, 3), QTime(12, 0, 0), QTimeZone::UTC);
-    const QDateTime justUnder(QDate(2026, 9, 8), QTime(3, 59, 59, 600), QTimeZone::UTC);
-    const QDateTime justOver(QDate(2026, 9, 8), QTime(4, 0, 0, 400), QTimeZone::UTC);
-
-    QCOMPARE(format::resetAbsolute(justUnder, now), format::resetAbsolute(justOver, now));
 }
 
 void CoreTest::buildsTooltip()
@@ -712,6 +700,22 @@ void CoreTest::readsThePlasmaPanelColour()
     QVERIFY(!plasmaPanelBackground(
                  QStringLiteral("[Colors:Window]\nBackgroundNormal=nonsense\n"))
                  .has_value());
+
+    // Plasma writes compound group names - [Colors:Header][Inactive] is in
+    // every shipped colours file - and a prefix match would let
+    // [Colors:Window][Inactive] answer for the panel. No installed theme pairs
+    // those two today, so this guards the convention rather than a sighting.
+    QVERIFY(!plasmaPanelBackground(QStringLiteral(
+                                       "[Colors:Window][Inactive]\n"
+                                       "BackgroundNormal=32,35,38\n"))
+                 .has_value());
+
+    const auto both = plasmaPanelBackground(QStringLiteral("[Colors:Window]\n"
+                                                           "BackgroundNormal=239,240,241\n"
+                                                           "[Colors:Window][Inactive]\n"
+                                                           "BackgroundNormal=32,35,38\n"));
+    QVERIFY(both.has_value());
+    QCOMPARE(both->r, 239);
 }
 
 namespace {

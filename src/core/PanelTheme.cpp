@@ -13,7 +13,15 @@ QString valueInGroup(const QString& text, const QString& group, const QString& k
     for (const QString& raw : text.split(QLatin1Char('\n'))) {
         const QString line = raw.trimmed();
         if (line.startsWith(QLatin1Char('['))) {
-            inGroup = line.startsWith(group);
+            // Exact, not a prefix. Plasma writes compound group names -
+            // [Colors:Header][Inactive] appears in every shipped colours file
+            // here - and under a prefix match [Colors:Window][Inactive] would
+            // answer for [Colors:Window]. No installed theme currently has that
+            // particular pair, so this was latent rather than observed; it is
+            // an exact match now because the convention is real and the fix
+            // costs nothing. Compound groups stay reachable, since the caller
+            // asks for [plasmarc][Theme] whole.
+            inGroup = line == group;
             continue;
         }
         if (!inGroup || !line.startsWith(key + QLatin1Char('=')))

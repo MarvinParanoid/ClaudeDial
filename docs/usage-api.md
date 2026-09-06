@@ -601,8 +601,10 @@ an acceptable trade for never being able to log the user out.
   `03:59:59.6…` and `04:00:00.4…`. The cause was not established — do not assume
   a sliding window from this alone. Consequence for the UI: an absolute time rendered
   by truncation flickers between two adjacent minutes on successive polls. **Round
-  to the nearest minute before formatting** - ClaudeDial does this in
-  `core::format::resetAbsolute`, with a regression test.
+  to the nearest minute before formatting.** ClaudeDial no longer shows an absolute
+  time anywhere - both windows read as countdowns, and `durationText` rounds - so
+  the formatter that handled this is gone. Kept here because the drift is a fact
+  about the endpoint, and anything that displays a wall-clock reset will meet it.
 - **Team/Enterprise accounts** may report `member_dashboard_available` and org-level
   restrictions (`org_level_disabled_until`, `org_spend_cap_reached`) that change what
   limits mean. Out of scope; ignore.

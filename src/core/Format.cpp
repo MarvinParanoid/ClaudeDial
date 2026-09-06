@@ -3,37 +3,10 @@
 #include "UsageLevel.h"
 
 #include <QCoreApplication>
-#include <QLocale>
 #include <QStringList>
 
 namespace claudedial::core::format {
 namespace {
-
-QTime truncateToMinute(QTime time)
-{
-    return QTime(time.hour(), time.minute());
-}
-
-/// "Mon 09:00" inside the coming week, "14 Sep 09:00" beyond it.
-///
-/// Rounded to the nearest minute because the seven-day reset timestamp drifts by
-/// fractions of a second between calls - observed flipping 03:59:59.6 to
-/// 04:00:00.4 and back, which showed up as the displayed time flickering between
-/// two adjacent minutes. Why it drifts is not known; only that it does.
-QString absoluteWhen(const QDateTime& resetAt, const QDateTime& now)
-{
-    const QDateTime local = resetAt.addSecs(30).toLocalTime();
-    const QLocale locale;
-
-    // Inside a week a weekday reads faster than a date; beyond it, a date is clearer.
-    const qint64 days = now.toLocalTime().date().daysTo(local.date());
-    if (days >= 0 && days < 7) {
-        return QStringLiteral("%1 %2").arg(
-            locale.dayName(local.date().dayOfWeek(), QLocale::ShortFormat),
-            locale.toString(truncateToMinute(local.time()), QStringLiteral("HH:mm")));
-    }
-    return locale.toString(local, QStringLiteral("d MMM HH:mm"));
-}
 
 /// "37m", "1h 52m", "3d 5h" - two units at most, and never a zero component:
 /// "2h" rather than "2h 0m". The day tier exists because the seven-day window
@@ -64,11 +37,6 @@ QString resetRelative(const QDateTime& resetAt, const QDateTime& now)
     if (seconds <= 30)
         return QCoreApplication::translate("format", "resets now");
     return QCoreApplication::translate("format", "resets in %1").arg(durationText((seconds + 30) / 60));
-}
-
-QString resetAbsolute(const QDateTime& resetAt, const QDateTime& now)
-{
-    return QCoreApplication::translate("format", "resets %1").arg(absoluteWhen(resetAt, now));
 }
 
 QString resetSentence(PeriodKind, const UsagePeriod& period, const QDateTime& now)

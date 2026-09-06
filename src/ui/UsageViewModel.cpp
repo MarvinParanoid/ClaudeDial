@@ -26,7 +26,21 @@ UsageViewModel::UsageViewModel(UsageService* service, Config* config, QObject* p
 
     m_tick->setInterval(30 * 1000);
     connect(m_tick, &QTimer::timeout, this, &UsageViewModel::changed);
-    m_tick->start();
+    // Started by setLive() when the popup appears, not here.
+}
+
+void UsageViewModel::setLive(bool live)
+{
+    if (live == m_tick->isActive())
+        return;
+    if (live) {
+        // The strings are stale by however long the popup was closed, so refresh
+        // them before the first tick rather than up to thirty seconds into it.
+        Q_EMIT changed();
+        m_tick->start();
+    } else {
+        m_tick->stop();
+    }
 }
 
 bool UsageViewModel::available() const

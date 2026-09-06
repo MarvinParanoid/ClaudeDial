@@ -106,6 +106,12 @@ bool Application::initialize(int waitForTrayMs)
     });
     connect(m_usage, &ui::UsageViewModel::closeRequested, m_popup, &QQuickView::hide);
 
+    // The popup's clock runs only while the popup is on screen. The tray's own
+    // tooltip has its own, slower tick below, because a tooltip has to be
+    // correct the instant it is asked for.
+    connect(m_popup, &QWindow::visibleChanged, m_usage, &ui::UsageViewModel::setLive);
+    m_usage->setLive(m_popup->isVisible());
+
     // --- state ----------------------------------------------------------------
     connect(m_service, &UsageService::stateChanged, this, &Application::updateTray);
     connect(m_service, &UsageService::thresholdCrossed, this, &Application::onThresholdCrossed);

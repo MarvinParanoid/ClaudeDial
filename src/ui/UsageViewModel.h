@@ -42,6 +42,12 @@ class UsageViewModel : public QObject
 public:
     UsageViewModel(core::UsageService* service, core::Config* config, QObject* parent = nullptr);
 
+    /// Starts and stops the clock that keeps "resets in ..." and "updated ...
+    /// ago" decaying. Only the popup needs it: when nothing is on screen this
+    /// timer was waking QML every thirty seconds to recompute strings nobody
+    /// could see.
+    void setLive(bool live);
+
     [[nodiscard]] bool available() const;
     [[nodiscard]] QString unavailableReason() const;
     [[nodiscard]] bool stale() const;

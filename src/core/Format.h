@@ -13,9 +13,6 @@ namespace format {
 /// "resets in 1h 52m", "resets in 4m", "resets now".
 QString resetRelative(const QDateTime& resetAt, const QDateTime& now = QDateTime::currentDateTimeUtc());
 
-/// "resets Mon 09:00" within the next week, "resets 14 Sep 09:00" beyond it.
-QString resetAbsolute(const QDateTime& resetAt, const QDateTime& now = QDateTime::currentDateTimeUtc());
-
 /// The reset wording each window uses: a countdown for both, which is what
 /// Claude Code shows. Lower case, for use after a separator in the tooltip.
 /// Empty when there is no timestamp.
