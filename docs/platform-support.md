@@ -727,6 +727,28 @@ build the struct.
 
 ---
 
+### A QML binding survives the control that writes over it
+
+Checked because a settings form is full of the two-way shape
+`checked: settings.x` with `onToggled: settings.x = checked`, and the fear was
+that clicking a control destroys the binding - which would matter, because two
+recent fixes rely on the opposite: a write the model refuses or clamps has to
+show up on screen as the control moving back.
+
+Measured with synthetic mouse clicks against the real `Toggle` and `Stepper`,
+with a model that refuses the boolean and clamps the number at 10. Both come
+back correct: the switch returns to off, and the stepper stops at 10 after seven
+clicks past it. **A write from C++ - which is what a Controls button does to its
+own `checked` - does not remove a QML binding.** The binding is simply not
+re-evaluated until one of its dependencies changes, and the model's notify
+signal is that dependency.
+
+Recorded because the first attempt to measure this said the opposite, and was
+wrong for a reason worth knowing: `AbstractButton::toggle()` changes `checked`
+without emitting `toggled`, so the handler never ran and the probe was watching
+a click that never happened. Anything testing a Controls interaction has to
+deliver a real event.
+
 ## Gaps between this contract and the code
 
 Written down rather than quietly tolerated.
