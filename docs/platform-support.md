@@ -236,33 +236,26 @@ build the struct.
 
 Written down rather than quietly tolerated.
 
-1. **No tray means the application exits.** `Application::initialize()` returns
-   false and `main` exits 1 with a message pointing at `--json`. That honours
-   Tier 1 but contradicts the spirit of the ladder: with no tray it could still
-   show the popup as an ordinary window. Not decided, not implemented.
+The list is empty. What used to be here is below, named rather than deleted so
+the reasoning stays checkable.
 
-   Half of this is now closed, and from prior art rather than from thinking
-   about it. (The flag also arrived with a bug of its own: the XDG entry named
-   the bare `claudedial`, which is on the session's PATH only for an installed
-   copy. A build run from its own tree is not, so the entry pointed at nothing
-   and the session started nothing — reported from Arch, and measured: the old
-   `Exec` line exits 127 under a login PATH. Every entry now records the real
-   binary, as Windows and macOS always did.) [Syncthing Tray][st] answers the same question with two flags:
-   `--windowed`, which opens the tray menu as an ordinary window, and `--wait`,
-   which waits for a tray instead of refusing to start. The second is not a
-   design question at all — it is a bug this project had and had not noticed. A
-   panel registers its StatusNotifierHost some way into the login, an autostart
-   entry can easily run first, and the application would then exit and leave the
-   session with no icon and nothing on screen saying why. `--wait` exists now
-   and every autostart entry passes it; a manual launch does not, so a session
-   with genuinely no tray still says so in fifteen milliseconds rather than
-   after a minute.
+**A late tray was a real bug, and is fixed.** A panel registers its
+StatusNotifierHost some way into the login and an autostart entry can easily run
+first; `isSystemTrayAvailable()` was false at that moment, the application
+exited, and the user had no icon for the session with nothing on screen saying
+why. `--wait` covers it, and every autostart entry this application writes
+passes the flag; a manual launch does not, so a session with genuinely no tray
+still says so in fifteen milliseconds rather than after a minute. Found by
+reading [Syncthing Tray][st], which answers the same question the same way.
 
-   What remains open is the `--windowed` half: whether the popup should stand in
-   as an ordinary window where there is no tray at all.
+That flag arrived with a bug of its own, worth keeping because it is the sort
+that hides: the XDG entry named the bare `claudedial`, which is on the
+*session's* PATH only for an installed copy. A build run from its own tree is
+not, so the entry pointed at nothing and the session started nothing — reported
+from Arch, and measured: that `Exec` line exits 127 under a login PATH. Every
+entry now records the real binary, as Windows and macOS always did.
 
-Two entries that used to sit here are closed, and are named rather than
-deleted so the reasoning stays checkable:
+Two more, closed earlier:
 
 - *The menu does not carry the numbers.* It does now — `format::menuEntry()`
   puts both percentages at the top of the tray menu as disabled items, which is
@@ -282,6 +275,14 @@ deleted so the reasoning stays checkable:
 
 Declining these is a decision, not an omission:
 
+- **A window instead of a tray icon where there is no tray.** Syncthing Tray's
+  other flag is `--windowed`, and the code for it is already here: the popup
+  renders perfectly well as an ordinary window. Declined anyway, because the
+  contract above already answers that case and answers it differently — on Sway,
+  on Hyprland, in a bare session, `claudedial --json` is *the* interface for
+  that user rather than a consolation. Shipping a window would say the opposite
+  of what this document says, for a case that has a better answer already. A
+  tray that is merely late is a different thing, and `--wait` handles it.
 - **A hand-rolled StatusNotifierItem implementation.** Qt has one.
 - **A Plasmoid.** It would fix popup placement on Plasma perfectly, and it is
   the right answer eventually (see `portability.md` §3), but not before there is
@@ -310,7 +311,7 @@ Against the tiers above, what is done and what is not:
 | `UsageState` separated from tray and QML | done |
 | Native context menu | done, and it carries the numbers |
 | `--json` / `--once` as public interface | done, documented here and in the README |
-| Absence of a tray does not kill the application | half — `--wait` covers a late tray; a window instead of one is gap 1 |
+| Absence of a tray does not kill the application | `--wait` for a late tray; no tray at all is the CLI, by decision |
 | Autostart behind an interface | done — `core/Autostart.{h,cpp}` |
 | AppImage | done — built and attached to every tag |
 | `claudedial-bin` in the AUR | written, not published — AUR registration was closed when it was tried |

@@ -139,6 +139,11 @@ The ladder, with what each rung actually needs:
 | GNOME, only double click | popup on double click, and from the menu | done |
 | AppIndicator, no tooltip | numbers in the menu | done - `format::menuEntry()`, two disabled entries |
 | Frameless popup misbehaves | a normal decorated window | an appearance setting — Syncthing Tray has exactly this |
+
+Not to be confused with a window standing in for a missing tray, which is
+declined outright — see the non-goals in
+[platform-support.md](platform-support.md). This rung is for a desktop that
+*has* a tray and renders our frameless popup badly.
 | No tray at all | `--json` / `--once` | works today: we exit with a message pointing at them |
 
 Four of the five rungs behave today. The bottom one always did:
