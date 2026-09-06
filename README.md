@@ -200,9 +200,11 @@ tray icon's colour works, since Plasma is the only desktop that writes down what
 its panel looks like.
 
 [docs/platform-support.md](docs/platform-support.md) is the long version: what
-is guaranteed, what is attempted, what is declined, and the measurements behind
-each. Note that the tiers there are about *features* - the CLI, then the tray,
-then the popup - which is a different axis from this table.
+is guaranteed, what is attempted, and what is declined. Note that the tiers
+there are about *features* - the CLI, then the tray, then the popup - which is a
+different axis from this table. The measurements behind each answer live
+separately, in
+[docs/research/platform-testing.md](docs/research/platform-testing.md).
 
 [appind]: https://github.com/ubuntu/gnome-shell-extension-appindicator
 
@@ -263,8 +265,9 @@ no projection and no verdict. Experimental, and only for the 5-hour window.
 
 Why any of it looks the way it does - the colour roles, the ramp, the tray
 icon's proportions, and what was tried and rejected:
-[docs/design.md](docs/design.md). Where each desktop lands and the measurements
-behind it: [docs/platform-support.md](docs/platform-support.md).
+[docs/design.md](docs/design.md). Where each desktop lands:
+[docs/platform-support.md](docs/platform-support.md); the measurements behind
+that: [docs/research/platform-testing.md](docs/research/platform-testing.md).
 
 ## Notifications
 

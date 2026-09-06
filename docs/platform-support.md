@@ -11,6 +11,13 @@ The rule it encodes: **information must never exist in only one place.** Every
 tier below can be missing on somebody's desktop, so nothing may depend on the
 tier above it being present.
 
+This document says what is true now. How each answer was arrived at — the
+measurements, the three rounds it took to work out how Qt picks a tray backend,
+the conclusions that were stated confidently and then disproved — is in
+[research/platform-testing.md](research/platform-testing.md). Keeping the two
+apart is deliberate: a reader asking "does this work on my desktop?" should not
+have to reconstruct the answer from a chronology.
+
 ---
 
 ## Which desktops, and how far
@@ -46,233 +53,29 @@ Note what the rule does *not* license. GNOME reporting a false failure, or i3
 tiling a settings form into a column, are bugs at "supported" level and were
 fixed as such — the licence is for polish, not for defects.
 
-### Windows, as far as it has got
+### Windows and macOS, in one paragraph each
 
-Personal use, so: no installer, no signing, no Store. The release workflow
-assembles the Qt runtime with `windeployqt` and zips it; a manual run leaves
-that zip as an artefact, which is how to get a build without spending a version
-number.
+**Windows** builds, tests and packages on every push, and has been run on a real
+desktop: the tray icon appears, the small-size mark renders, the CLI prints to
+the terminal that launched it. Not exercised there: notifications, autostart and
+reading real credentials — which, since the tray and the CLI both work, is most
+of what a supported tier would have to promise. One unexplained symptom survives:
+exiting prints `QObject::killTimer: Timers cannot be stopped from another
+thread`. It does not reproduce on Linux and diagnosing it needs a Windows
+machine.
 
-The expensive part turned out not to exist. Claude Code keeps the token in a
-plain file there as on Linux — `%USERPROFILE%\.claude\.credentials.json`,
-honouring `CLAUDE_CONFIG_DIR` — corroborated by the native Windows tray
-surveyed in [usage-api.md](usage-api.md). `QDir::homePath()` resolves to
-`%USERPROFILE%`, so `core::Credentials` is untouched and nothing is written
-against DPAPI or the Credential Manager. macOS is the opposite case, and is why
-it stays unattempted: the Keychain would mean new credential code in the one
-place that must not be got wrong.
+**macOS** builds, tests and packages on every push, and ships as a release
+asset. Seen working on one machine: the menu bar item, the popup anchored under
+it, settings, no Dock icon, a LaunchAgent, a notification permission prompt.
+The one open question is credentials — the token lives in the login Keychain and
+`Credentials::loadFromKeychain()` reads it through `security`, but that has never
+run against a real subscription, so `CLAUDE_CODE_OAUTH_TOKEN` remains the
+supported way in. Also untried by anyone: an Intel Mac; CI builds arm64 only.
 
-Three things a Linux desktop answers through D-Bus needed another answer:
-notifications go out through the tray icon itself, which is native there and
-loses only `replaces_id`; suspend and resume simply never fire, already the
-documented degradation where logind is absent; and autostart is a value under
-the registry's `Run` key, reached through `QSettings`.
-
-One Windows-specific wrinkle: Qt links this as a GUI binary, which there means
-no console at all, so `claudedial --json` from a terminal would print into
-nothing. It borrows the parent console when given any flag.
-
-**The macOS build did not compile at first**, contrary to what this section
-claimed on the strength of the D-Bus guards alone — the runner's Xcode SDK had
-dropped a framework Qt still asks the linker for. Pinning `macos-14` fixed it,
-and the reason is written into [ci.yml](../.github/workflows/ci.yml) beside the
-pin rather than left here. It compiles, tests and packages on every push now.
-
-**Run on a real Windows desktop, and it works.** Confirmed there: the tray icon
-appears, the CLI prints to the terminal that launched it, and the small-size
-mark renders — Windows asks for a 16-pixel notification-area icon, which trips
-the same level of detail added for GNOME and i3, so Percentage shows the number
-with a bar rather than the dial. Selecting the Gauge style keeps the dial, which
-survives 16 px with no number inside it.
-
-Not exercised there: notifications, autostart, and reading real credentials —
-which, since the tray icon and the CLI both work, is most of what a supported
-tier would have to guarantee. The credentials one has a trap worth repeating — if Claude Code runs inside WSL its
-credentials are in the WSL filesystem, where a native build will not find them.
-
-Not a Windows thing but worth parking beside it, because it looks alarming and
-is not: run from the build tree on Linux, Qt prints `Failed to register with
-host portal ... App info not found for 'claudedial'`. xdg-desktop-portal
-resolves an app ID by finding a matching `.desktop` file, and an uninstalled
-build has none — `cmake --install` puts one in `share/applications`, so nobody
-running an installed copy sees it. It changes no behaviour.
-
-One unexplained symptom, kept because it is real: exiting prints
-`QObject::killTimer: Timers cannot be stopped from another thread`. It does not
-reproduce on Linux, on either the primary or the secondary-instance path, and
-diagnosing it needs a Windows machine — there is no cross compiler on any
-machine working on this. Harmless as far as anyone can tell, and it stays
-written down rather than guessed at.
-
-It is a row of its own rather than a supported tier because "works when tried
-once" is not the same as tested.
-
-### macOS: what one session on a real machine established
-
-It starts, and the menu bar item is ours — the mark rendered at 96% in the
-severe colour, with the digits legible. Two things had to be got past first,
-and both are recorded below because neither announces itself usefully.
-
-**Notifications are not blocked, which contradicts what this document
-predicted.** The expectation was that an unsigned, unbundled binary would be
-ignored by the notification centre. Instead macOS put up the ordinary
-permission prompt — "ClaudeDial Notifications may include alerts, sounds and
-icon badges" — so the delivery path built for Windows works here too. Whether a
-banner then actually appears is not yet observed.
-
-**The menu bar is translucent, and that is what finally answers the tray tone
-question.** Its background is the wallpaper, tinted. There is not merely no way
-to *ask* what colour the panel is — there is no single colour to ask about, and
-it changes when the wallpaper does. Reported from the machine: on Auto the
-neutral looked washed out, while Light and Dark were both legible, which is
-exactly what a fixed mid-tone must do there.
-
-macOS solves this itself, for applications that ask. A template image is tinted
-by the system to match the menu bar, and `QIcon::setIsMask(true)` is how Qt
-requests that. So on Auto the neutral mark is now a template, and the platform
-picks the colour — which is better than any guess of ours, because it is not a
-guess.
-
-Only the neutral, and only on Auto. The warning colours stay colours: amber and
-red are the reading, not decoration, and a template would erase them. An
-explicit Light or Dark means the user has overridden us and is honoured as
-written. `setIsMask` does nothing off macOS, verified — the Linux tray icon
-still carries its own `#7c7c7c` pixels.
-
-Confirmed on the machine afterwards: on Auto the mark now reads correctly.
-
-**The popup opens, and it is anchored to the icon** — centred beneath it,
-which is the branch in `PopupWindow::placeAndShow` that takes a non-empty
-`QSystemTrayIcon::geometry()`. That branch was written for Plasma, found to be
-unreachable there, kept on the argument that Windows and macOS implement
-`geometry()`, and had never actually run. It runs here. Everything else in the
-popup renders correctly too: the header mark, the ramp colour at 96%, the pace
-line, the light theme.
-
-**No Dock icon, and the settings window opens.** LSUIElement works in practice
-and not only as a key in a plist, which is the part CI can assert.
-
-**Autostart writes its LaunchAgent**, so the plist and its path are right; that
-it actually starts the app at the next login is a separate question and not yet
-seen.
-
-**The bundle is self-contained.** Copied to `~/Applications` and run from
-there, the popup renders — which is the test that matters, because the QML
-modules are installed both inside the bundle and beside it in `dist/qml`, and
-only opening a window shows which copy is in use. Launching alone would not
-have: the app starts and the icon appears either way.
-
-Worth writing down for whoever tries next: `permission denied` from a bundle
-almost always means a directory is being executed. `.app` is a folder, and the
-executable is `Contents/MacOS/claudedial`. Two other explanations were offered
-here first — a lost executable bit, then `cp -r` mangling the framework
-symlinks — and both were wrong.
-
-**The Keychain question is answered, and not from a Mac.** The machine tested on
-has no Claude Code installed, so probing it there would have found nothing —
-and finding nothing where the program is absent establishes nothing. The answer
-came instead from reading two shipping applications that already do this, which
-is written up in [usage-api.md](usage-api.md): service `Claude Code-credentials`,
-account `$USER`, read through the `security` tool rather than
-`SecItemCopyMatching`, because that tool is in the item's ACL and direct API
-access prompts every time.
-
-So a reader can be written, and now is: `Credentials::loadFromKeychain()` runs
-`security find-generic-password -s "Claude Code-credentials" -a $USER -w` after
-the file attempt fails, with a three-second timeout so a prompt cannot hang the
-tray, and wipes the output after parsing. It cannot be *verified* without a Mac
-running Claude Code under a subscription, and until it is,
-`CLAUDE_CODE_OAUTH_TOKEN` remains the supported mode on macOS.
-
-The Keychain also has nothing to watch, where a file has `QFileSystemWatcher`.
-That is why `Credentials::watchesForChanges()` exists: it is false for the
-Keychain, which makes `UsageService` re-read the credentials before every poll
-instead of only after a failure, and stops it from parking the timer forever
-when there are no credentials yet. Otherwise signing in to Claude Code would
-never be noticed on macOS.
-
-Still unobserved: whether a notification banner actually lands after the prompt
-is accepted, and whether the LaunchAgent starts the app at the next login. Also untried by anyone: an Intel Mac. CI builds on an arm64 runner,
-so the artefact is arm64 only.
-
-### macOS: the traps, and which of them are now sprung
-
-Written in the order they were hit, and kept after the fact: every one of these
-announced itself as something other than what it was, and the next person to
-touch this will meet them again. **All but the last are now handled** — what
-remains open is the credential path, and only because it cannot be tested here.
-
-The first was the free-looking part not being free. `if (UNIX AND NOT APPLE)`
-already excludes D-Bus and the XDG install rules, and every use of it is behind
-`CLAUDEDIAL_HAVE_DBUS`, from which this document concluded the tree would
-compile there. It did not — the first CI run failed at the build step, on a
-framework Qt asks the linker for and the runner's SDK had dropped. That is the
-second time in this file that "the mechanism implies it works" has been wrong.
-
-**The token is in the Keychain**, service `Claude Code-credentials`, so the file
-reader finds nothing. That is now handled, above — but the unknown it carries is
-not settled and cannot be settled from here: a Keychain item has an access
-control list, and whether a *different* binary may read the one Claude Code
-created depends on that ACL and on the user answering a prompt. Finding out
-needs a Mac with a subscription. Note this is new code in the one place the
-security rules say to be most careful, which is the opposite of the Windows
-case, where the token turned out to be a plain file and `core::Credentials` was
-never touched.
-
-**Autostart used to lie there.** `startOnLogin` branched on `Q_OS_WIN` and
-everything else wrote an XDG `.desktop` entry — on macOS into
-`~/Library/Preferences/autostart/`, where nothing would ever read it, so the
-toggle appeared to work and did nothing. It now writes a `LaunchAgent` plist to
-`~/Library/LaunchAgents`, from `core/Autostart.cpp`. Whether launchd then
-actually starts it at the next login is still unobserved.
-
-**Notifications need a bundle**, and there is one: `cmake --install` assembles a
-proper `.app`, and on a real machine macOS put up its ordinary permission prompt
-rather than ignoring us. Whether a banner then arrives is still unobserved.
-
-**A signature has to survive deployment, or the kernel kills the process.**
-`macdeployqt` rewrites library load paths with `install_name_tool` after the
-linker has already ad-hoc signed everything, which invalidates those
-signatures. On Apple Silicon that is fatal rather than a warning, and the shell
-reports it as nothing more than:
-
-```console
-$ ./claudedial.app/Contents/MacOS/claudedial --demo 96,41
-zsh: killed
-```
-
-No dialog, no message, no exit code worth reading. CI re-signs ad-hoc after
-deploying — `codesign --force --deep --sign -`, which needs no identity and no
-keychain — and verifies the result, so this cannot regress quietly.
-
-**Gatekeeper, and it bites before anything else does.** An unsigned build is
-blocked on first run. From a terminal the symptom is not a dialog and not
-"permission denied" — it is:
-
-```console
-$ ./claudedial.app/Contents/MacOS/claudedial --demo 96,41
-operation not permitted
-```
-
-Which looks like a file-permission problem and is not: the executable bit is
-set, and the cause is `com.apple.quarantine` on the whole bundle. Observed with
-the attribute reading `0087;6a9c2f30;Telegram;` — it is stamped by whatever
-delivered the file, a messenger as readily as a browser, so it will be there
-however the artefact travels. One command clears it, and it has to be recursive
-because the attribute is on the tree rather than on the binary alone:
-
-```console
-$ xattr -dr com.apple.quarantine claudedial.app
-```
-
- Fine for personal use, no Developer ID needed — but ad-hoc signing changes
-the binary's identity on every rebuild, which is exactly what a Keychain ACL
-keys on, so the prompt may return after every update.
-
-None of this was hard in isolation, and none of it was guessable either. What
-is left is the credential path — written, unrun, and the one place in this
-project where shipping code nobody has executed is worth saying out loud every
-time it comes up.
+Both are personal-use scaffolding rather than supported tiers. What was measured
+to get here — Gatekeeper, quarantine, a kernel killing an unsigned binary, a
+deployment that silently carried no QML — is in
+[research/platform-testing.md](research/platform-testing.md).
 
 ## Three tiers of guarantee
 
@@ -347,309 +150,34 @@ in this project.
 | COSMIC | SNI, menu only reported elsewhere | unknown | unknown | no |
 | i3 + an XEmbed tray | XEmbed | **anchored to the icon** — *measured* | n/a | **yes** — Debian 13, i3bar |
 | Sway, Hyprland, Awesome | Waybar/i3blocks via `--json` | n/a | n/a | no |
-| Windows, macOS | Qt supports it; we have not tried | anchoring should work | — | no |
+| Windows, macOS | Qt supports it; anchoring works | anchored to the icon | — | **yes** — one machine each |
 
-**The X11 question took three rounds to answer, and the first two answers were
-both wrong.** Worth writing down as it happened, because the wrong turns are
-where the useful mechanism is.
+### Which tray protocol, and who decides
 
-Round one. The claim was that `geometry()` might return a real rectangle on
-X11. Under `QT_QPA_PLATFORM=xcb` on Plasma it does not: both the app and a
-standalone probe get an empty rect, exactly as on Wayland. D-Bus introspection
-showed why — the probe publishes `/StatusNotifierItem` and the watcher
-registers it, so Qt chose the SNI backend even on xcb, and SNI has no concept of
-icon geometry. Conclusion drawn: the deciding factor is not X11 versus Wayland
-but whether a `StatusNotifierHost` is on the session bus.
+**Qt picks its tray implementation from the platform theme, not from the
+platform.** A D-Bus platform theme — which is what `XDG_CURRENT_DESKTOP=KDE`
+loads — takes the StatusNotifierItem path on X11 exactly as on Wayland, and SNI
+has no concept of icon geometry, so `QSystemTrayIcon::geometry()` is empty and
+the popup cannot be anchored. A non-D-Bus theme with an XEmbed tray docks and
+reports exact geometry.
 
-Round two, and the mistake. From that it seemed to follow that anchoring would
-work on an XEmbed-only tray, and a test said otherwise: on an isolated
-`Xwayland :77` with a purpose-built spec-compliant XEmbed tray — owning
-`_NET_SYSTEM_TRAY_S0`, advertising `_NET_SYSTEM_TRAY_VISUAL` and
-`_NET_SYSTEM_TRAY_ORIENTATION` — and a private D-Bus session with no watcher,
-Qt never sent a dock request. The harness was sound: a bare XEmbed client docked
-in the same run and was reported at its true `22x22+110+204`. So the conclusion
-became "Qt 6 has no XEmbed tray at all". That was wrong, and one detail
-contradicted it: `libQt6XcbQpa` exports `QXcbWindow::requestSystemTrayWindowDock()`,
-which exists for no other purpose.
+That is what makes the anchored branch in `PopupWindow::placeAndShow` live on
+i3-with-a-tray, on Windows and on macOS, and unreachable on Plasma either way.
+It took three rounds to establish and the first two answers were wrong; the
+measurements are in
+[research/platform-testing.md](research/platform-testing.md#linux-desktops).
 
-Round three, the actual answer. **Qt chooses its tray implementation from the
-platform theme, not from the platform.** Same display, same tray, only
-`XDG_CURRENT_DESKTOP` varied:
+One consequence is a guard rather than a fact: where a D-Bus platform theme is
+active but no `StatusNotifierHost` exists, `isSystemTrayAvailable()` returns
+**true** and no icon ever appears. `TrayBackend::hasVisibleIcon()` measures the
+outcome afterwards instead of trusting that answer.
 
-| `XDG_CURRENT_DESKTOP` | docked | `geometry()` |
-| --- | --- | --- |
-| `KDE` | no | empty |
-| unset | no | empty |
-| `i3` | **yes** | **`22x22+110+204`** |
+### Suspend and resume
 
-The i3 row matches the tray's ground truth exactly. So Qt 6's XEmbed tray works;
-a D-Bus platform theme shadows it. Which means the anchored branch in
-`PopupWindow::placeAndShow` is **live** on an X11 desktop that loads a non-D-Bus
-platform theme and runs an XEmbed tray — the i3-with-`stalonetray` case — and
-unreachable on Plasma, where the KDE theme takes the SNI path on both X11 and
-Wayland. It is also live on Windows and macOS, where `geometry()` is
-implemented.
-
-**The same rounds turned up a real defect, now guarded.** Where a D-Bus platform
-theme is active but no `StatusNotifierHost` exists, `isSystemTrayAvailable()`
-returns **true** and no icon ever appears. Measured on one display: no tray plus
-a private bus gave `false`; the XEmbed tray plus a private bus plus the KDE
-theme gave `true` with no icon; the same tray with the i3 theme gave `true` with
-a working icon. ClaudeDial would have started, reported a tray, shown nothing,
-and never dropped to the rung below — because that rung is keyed on the same
-check. A silent no-op is worse than a clean failure.
-
-The guard is `TrayBackend::hasVisibleIcon()`, asked 3 s and again 9 s after
-`show()` rather than predicted in advance: a docked XEmbed window has a
-geometry, and an SNI item appears in the watcher's list owned by this process
-(matched by pid, because Qt registers the item on a connection of its own, so
-our session-bus name is not the one listed). If neither holds, ClaudeDial says
-so on stderr and keeps running, since `--json` still serves from the socket.
-Verified three ways: the warning fires in the failing case, stays silent when
-the icon really docks under the i3 theme, and stays silent on Plasma/Wayland
-where the SNI item is found by pid.
-
-Two caveats belong with these results. Everything was measured under XWayland
-inside a Plasma Wayland session rather than a real X11 login, so it establishes
-the mechanism rather than the whole environment — though the mechanism is what
-decides the outcome, since a Plasma X11 session registers the same SNI host, and
-the XEmbed test ran against a tray built for the purpose rather than against
-`stalonetray` itself. And separately: the popup opened on most activations but
-failed to appear once, against a longer-running instance. That single
-non-appearance was never reproduced and remains unexplained.
-
-GNOME's missing tray is not a bug for us to fix. GNOME removed the system tray;
-applications reach it through an extension. ClaudeDial's job is to say so
-clearly and to keep working through Tier 2, not to install anything on the
-user's behalf.
-
-**And GNOME has a first-class answer that is not a tray at all.** Someone has
-already built a *GNOME Shell extension* for this problem, rendering two compact
-meters straight into the top panel and never touching the system tray - so it
-inherits none of the tray's limitations. It needs GNOME Shell 49+ and ships as a
-`.shell-extension.zip`.
-
-That generalises the Plasmoid conclusion in `portability.md` §3 into a pattern
-worth stating plainly: **where a desktop has its own panel-widget API, the
-native widget beats an SNI tray icon** - correct placement, no activation
-guessing, no missing tooltip. Both a Plasmoid and a Shell extension are
-front-ends that ClaudeDial could grow *without touching its core*, because
-`--json` and the local socket already give them everything they need. Neither is
-work for now; both are the right shape when a desktop's tray proves too thin.
-
-**A third toolkit agrees about that row.** [leonardocouy/claudometer][lc], a
-Tauri application solving the same problem, builds its Linux tray on
-`libappindicator3` — GTK AppIndicator, not StatusNotifierItem directly. It
-therefore inherits the whole AppIndicator restriction set: no tooltips, and a
-left click that opens the menu rather than activating the item. Qt, dorkbox's
-Java catalogue and a Rust/GTK application arriving at the same limitations from
-three different directions is about as much confirmation as this contract is
-going to get without a GNOME machine.
-
-It also shows what the WebView route costs on Linux: that project needs
-`libwebkit2gtk-4.1` at build *and* run time. The brief's "no embedded browser"
-constraint turns out to have had a concrete portability basis and not only an
-aesthetic one — WebKitGTK's 4.0/4.1 split has broken Tauri applications across
-distributions repeatedly. Our runtime dependencies are three Qt packages.
-
----
-
-### What a real i3 session added
-
-Run on Debian 13 with i3 on X11, and it confirmed the isolated-display result:
-Qt's XEmbed path docks correctly, `xwininfo` showing the 15x15 tray window in
-the right place in i3bar. No separate i3 support is needed.
-
-It also found a bug that no synthetic harness would have — the icon was
-invisible below 75%, and visible at or above it. 75% is the warning threshold,
-which is precisely where the brand colours take over from the neutral, so the
-neutral was the invisible part.
-
-The neutral came from `QPalette::WindowText`. Measured under xcb:
-
-| `XDG_CURRENT_DESKTOP` | `WindowText` | `colorScheme()` |
-| --- | --- | --- |
-| `KDE` | `#fcfcfc` | Dark |
-| `GNOME` | `#fcfcfc` | Dark |
-| `i3` | `#000000` | **Unknown** |
-| `sway` | `#000000` | **Unknown** |
-
-Pure black is not a light desktop. It is Qt's built-in default with no desktop
-integration to fill it in — and i3bar's background is black, so ClaudeDial was
-drawing black on black.
-
-### And then KDE's own Breeze Twilight did it differently
-
-The first fix keyed on `colorScheme() == Unknown` — treating the palette as
-uninformative rather than wrong. A second report killed that idea: on Breeze
-Twilight, a look-and-feel Plasma ships, the icon was invisible below 75% too.
-
-Measured live on that desktop: `WindowText #232629`, `Window #eff0f1`,
-`colorScheme() = Light`. The palette is *honest*. It is simply about the wrong
-thing, because on Plasma the panel is a separate setting — the look-and-feel
-package says so outright:
-
-```
-# org.kde.breezetwilight.desktop/contents/defaults
-[kdeglobals][General] ColorScheme=BreezeLight    # applications light
-[plasmarc][Theme]     name=breeze-dark           # panel dark
-```
-
-So the proxy is not merely uninformative sometimes; it can be accurate and
-useless. Chasing it further would mean reading `plasmarc`, resolving an unset
-value through the look-and-feel package's defaults, and deciding whether a
-Plasma theme name implies a dark panel — four fragile hops, for one desktop.
-
-**A fixed mid-tone was tried next, and rejected on a report.** Contrast ratios
-against a dark panel, a light panel and i3bar's black:
-
-| mark | dark | light | i3bar |
-| --- | --- | --- | --- |
-| near-black `#232629` | **1.0** | 13.3 | **1.4** |
-| light grey `#dcdcdc` | 11.1 | **1.2** | 15.3 |
-| mid grey `#9a9a9a` | 5.4 | 2.47 | 7.5 |
-| best possible grey `#7c7c7c` | 3.64 | 3.66 | 5.0 |
-| `kUsageWarning` | 5.8 | 2.3 | 8.0 |
-
-Either extreme is invisible somewhere, so `#9a9a9a` shipped — and came back as
-faint on a light panel, then faint on a dark one too. That is not a bad choice
-of grey. `#7c7c7c` is the grey that maximises the worse of the two Plasma
-panels, and 3.64 is the ceiling for *any* single colour: a fixed neutral can be
-balanced or crisp, never both. Terracotta scores comparably (4.9 / 2.7) and also
-shares a hue with the warning step, which would blunt the escalation.
-
-**And then Auto still had to be right by default.** Leaving Breeze Twilight to
-a setting was not good enough: it is a look-and-feel KDE ships, on the platform
-most of these users are on, and a default that draws an invisible icon there is
-a bug rather than a configuration question.
-
-Plasma does write the panel's colour down, and it is exact. The chain, verified
-against a screenshot of the panel:
-
-1. `~/.config/plasmarc` `[Theme] name` — absent on the machine in question,
-   while the desktop was plainly using breeze-dark, so this cannot be the only
-   source;
-2. `kdeglobals LookAndFeelPackage` — then that package's
-   `contents/defaults`, whose groups read `[plasmarc][Theme]` rather than plain
-   INI. Twilight's says `name=breeze-dark`;
-3. `plasma/desktoptheme/breeze-dark/colors` `[Colors:Window] BackgroundNormal`
-   = `32,35,38`.
-
-`#202326`. Sampling the panel's own pixels from a screenshot measured
-`#202326`, luminance 34.6. Not a heuristic — the panel's actual background.
-
-The stock `default` theme ships no `colors` file at all, which is how it says it
-follows the application colour scheme, and that is exactly the case where
-QPalette was the right answer all along. So Auto now reads the declared panel
-colour where there is one, and falls back to the palette where there is not.
-The parsing lives in `core::PanelTheme` with the real config strings as its
-tests, since core takes only Qt Core and Network and stays testable headlessly.
-
-**The tone stays a setting too.** `core::Config::TrayTone` — Auto, Light, Dark —
-with `brand::kTrayNeutralLight` (`#dcdcdc`, 11.1 on a dark panel) and
-`kTrayNeutralDark` (`#232629`, 13.3 on a light one). Both crisp, because each is
-chosen for a known background rather than hedged across two.
-
-Auto keeps the palette, which is right wherever the panel follows the
-applications — stock Breeze and Breeze Dark — and assumes a dark panel where
-the platform reports no colour scheme at all. Auto is wrong wherever the panel
-is themed independently, which is precisely what the explicit tones are for.
-
-Thresholds and the warning/critical/severe steps were never touched by any of
-this.
-
-Two notes for whoever tests this next. The notification icon takes the same
-tone, on the assumption that a notification daemon and a panel are themed
-together; nobody has checked that. And redirecting `XDG_CONFIG_HOME` to isolate
-a test config also hides `kdeglobals` from Qt, so Auto measured that way
-reports a palette the desktop is not using — the explicit tones are unaffected,
-which is how that was noticed.
-
-### What clean Debian 13 VMs added
-
-Tested on v0.1.4 artefacts, i3 on X11 and GNOME on Wayland, and the headline is
-that the portability bet holds: `QSystemTrayIcon` works on both, so no
-desktop-specific tray backend is needed anywhere. What came back were detection
-and polish faults, and two of them corrected things written above.
-
-**i3bar was light, not black.** The fallback here assumed panels are
-overwhelmingly dark — "i3bar, polybar and waybar all default that way" — and
-on this Debian i3 the bar was very light, so a light mark was invisible. The
-palette had also reported light on that machine, where forcing
-`XDG_CURRENT_DESKTOP=i3` inside a Plasma session reported black. So the palette
-is unreliable in both directions on a desktop with no Qt integration, and so is
-any assumption about which way panels lean. The fallback no longer picks a side:
-`brand::kTrayNeutral` is the grey that maximises the worse case, and anyone who
-wants crisp uses the Tray icon setting.
-
-Plasma is unaffected by that — the declared panel colour still wins, and the
-stock `default` theme, which declares nothing because it follows the
-application colour scheme, still uses the palette. Ignorance and
-"Plasma says it follows the apps" are now told apart rather than sharing a
-branch.
-
-**The tray verification produced a false alarm on GNOME.** With the
-AppIndicator extension the icon appeared in the top bar and worked, while
-ClaudeDial printed that it had not appeared. The check looked itself up in the
-watcher's `RegisteredStatusNotifierItems` and matched by pid, which Plasma
-answers and that extension does not. It now asks only whether a
-`StatusNotifierWatcher` exists at all: registration is asynchronous and hosts
-disagree about what they report, so anything more specific is guesswork
-dressed as a check — and a false warning is worse than no warning. It still
-catches what it was built for, a desktop claiming a tray with no host on the bus.
-
-**Tiling layout, measured.** Under xcb the popup already declares
-`_NET_WM_WINDOW_TYPE_UTILITY` first, which i3 floats; the settings window
-declared only `NORMAL`, so i3 tiled a form into a workspace column. It is now a
-`Qt::Dialog` and declares `DIALOG`, which i3 floats by default. If the popup is
-still tiled, that is i3 reading the type list differently and the remedy is a
-rule:
-
-```
-for_window [class="claudedial" title="ClaudeDial"] floating enable
-```
-
-**The 15x15 icon has a level of detail now.** The first measurement was right
-— there is no outer padding to reclaim, the ink already spans the full pixmap
-width at every size. What was actually wrong is that the *design* does not
-survive the pixels: a number that has to fit inside a 240-degree arc ends up at
-a fraction of the box, reported from GNOME as "an icon inside an icon" and from
-i3 as the arc turning to grey noise.
-
-Enlarging the digits inside the arc was tried and is worse, not better: at 15 px
-the two collide and both go muddy. Rendered side by side at 15 px, magnified
-without interpolation, the only variant that reads is the one that gives up the
-dial: the number at 0.86 of the box with a two-pixel usage bar beneath it,
-pixel-aligned and unantialiased. For the gauge style, which has no number
-competing for the space, the answer is the opposite — keep the dial and make
-the stroke heavier, 0.55 against 0.32, because weight is what survives few
-pixels. A one-pixel arc with antialiasing off was also tried, and turns visibly
-polygonal.
-
-So below 17 px both styles draw something simpler, and that is chosen **by the
-size of the pixmap, never by the desktop**. Which needs one caveat about the
-protocols: a StatusNotifierItem host is never asked what size it wants. We
-publish every size in `kSizes` — verified on the bus: 16, 22, 24, 32, 48, 64,
-now with 15 added for i3bar's exact request — and the host picks one and scales
-it as it likes. Baking the simpler mark into the small entries is therefore the
-only way to reach a host with a small panel at all, GNOME's included.
-
-Plasma is untouched, and by proof rather than by inspection: rendering both
-styles at 22, 24, 32, 48 and 64 hashes byte-for-byte identically before and
-after the change.
-
-*Superseded, kept because the measurement stands:* the ink already spans the
-full pixmap width at every size — 15x12 with margins L0 R0 T0 B3 at 15 px —
-and the gap at the bottom is the dial's own opening.
-
-**Packaging, now documented:** the AppImage needs FUSE on the host unless run
-with `--appimage-extract-and-run`, and the tarball is an install tree that
-links the system Qt rather than a portable bundle — it stops at
-`libQt6QuickControls2.so.6` on a Debian box with no Qt.
-
-**Confirmed as supported:** GNOME on Wayland with the AppIndicator extension —
-tray, popup, notifications and the icon inside the notification all work. Stock
-GNOME without the extension correctly reports no tray and points at `--json`.
+Nothing breaks across a suspend — reported on Arch with Plasma. Which mechanism
+refreshed the numbers, logind or the ordinary interval, is not established, and
+[research/platform-testing.md](research/platform-testing.md#suspend-and-resume)
+says how to tell them apart and why a script cannot.
 
 ### Living with the popup's position on Wayland
 
@@ -675,29 +203,6 @@ will not dismiss itself when you click elsewhere. Clicking the tray icon again,
 or the close button, always works. This is the reason focus-out dismissal was
 removed rather than fixed.
 
-### Suspend and resume
-
-Reported working on Arch with Plasma: nothing breaks across a suspend, which
-was the real risk — a dropped socket, a request left hanging, a timer that
-never fires again.
-
-What that does *not* establish is which mechanism refreshed the numbers. The
-logind path exists for promptness, not correctness: `PrepareForSleep(false)`
-triggers a refresh on wake, and without it the ordinary interval catches up
-within five minutes anyway. Both look like "fine after waking".
-
-Distinguishing them costs one reading. Note `updated_at` from `claudedial
---json` before suspending, and read it again immediately after waking: within
-seconds of the wake means logind fired; up to a refresh interval old means the
-timer did it.
-
-It cannot be tested from a script. Injecting the signal with `dbus-send
---system` is accepted by the bus and then not delivered — verified with a
-listener subscribed exactly as SleepWatcher is, which reported
-`connected=1 subscription=1` and received nothing. An unprivileged sender may
-not broadcast on that interface, so an app that fails to react proves nothing.
-That mistake was made here once already.
-
 ## Degradation
 
 ```
@@ -709,7 +214,7 @@ no usable tray                           →  --json / --once
 
 Implemented today: all four. Rung 1 is unreachable on Plasma but does occur on
 an X11 desktop whose platform theme is not D-Bus-based and whose tray speaks
-XEmbed, where `geometry()` was measured exact; see above.
+XEmbed, where `geometry()` was measured exact.
 
 Rung 4 used to be unreachable in the one case that needed it most, because it
 was selected by `isSystemTrayAvailable()`, which answers true where no icon can
@@ -726,28 +231,6 @@ set out to avoid. The moment a "use a normal window instead" option exists,
 build the struct.
 
 ---
-
-### A QML binding survives the control that writes over it
-
-Checked because a settings form is full of the two-way shape
-`checked: settings.x` with `onToggled: settings.x = checked`, and the fear was
-that clicking a control destroys the binding - which would matter, because two
-recent fixes rely on the opposite: a write the model refuses or clamps has to
-show up on screen as the control moving back.
-
-Measured with synthetic mouse clicks against the real `Toggle` and `Stepper`,
-with a model that refuses the boolean and clamps the number at 10. Both come
-back correct: the switch returns to off, and the stepper stops at 10 after seven
-clicks past it. **A write from C++ - which is what a Controls button does to its
-own `checked` - does not remove a QML binding.** The binding is simply not
-re-evaluated until one of its dependencies changes, and the model's notify
-signal is that dependency.
-
-Recorded because the first attempt to measure this said the opposite, and was
-wrong for a reason worth knowing: `AbstractButton::toggle()` changes `checked`
-without emitting `toggled`, so the handler never ran and the probe was watching
-a click that never happened. Anything testing a Controls interaction has to
-deliver a real event.
 
 ## Gaps between this contract and the code
 
@@ -827,7 +310,7 @@ Against the tiers above, what is done and what is not:
 | `UsageState` separated from tray and QML | done |
 | Native context menu | done, and it carries the numbers |
 | `--json` / `--once` as public interface | done, documented here and in the README |
-| Absence of a tray does not kill the application | **not done** (gap 1) |
+| Absence of a tray does not kill the application | half — `--wait` covers a late tray; a window instead of one is gap 1 |
 | Autostart behind an interface | done — `core/Autostart.{h,cpp}` |
 | AppImage | done — built and attached to every tag |
 | `claudedial-bin` in the AUR | written, not published — AUR registration was closed when it was tried |
@@ -839,4 +322,3 @@ longer list than ours, does not claim to test every combination.
 
 [appind]: https://github.com/ubuntu/gnome-shell-extension-appindicator
 [st]: https://github.com/Martchus/syncthingtray
-[lc]: https://github.com/leonardocouy/claudometer

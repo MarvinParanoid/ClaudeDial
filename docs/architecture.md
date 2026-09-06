@@ -10,6 +10,9 @@ claudedial_core        Qt6::Core + Qt6::Network only. No QML, no widgets, no D-B
   UsageState              UsagePeriod{ double, optional<QDateTime> } x2
   UsageService            polling, backoff, staleness, notification thresholds
   Config                  QSettings
+  Autostart               the one file per platform that starts us at login
+  RefreshSchedule         when to poll next, as a pure function
+  PanelTheme              parses what Plasma writes down about its panel
   UsageLevel              the one threshold ramp: normal/warning/critical/severe/limit
   GaugeGeometry           the canonical gauge, as pure numbers
   Format                  human strings (tooltip, "Resets in 1h 52m")
@@ -23,8 +26,8 @@ claudedial             the assembly
   Brand                   the colours, one role each
   cli/Cli                 --json / --once under QCoreApplication
   tray/TrayBackend        interface (the project's only abstraction)
-  tray/SystemTrayBackend  QSystemTrayIcon -> StatusNotifierItem over D-Bus
-  tray/IconRenderer       QPainter ring gauge, six sizes
+  tray/SystemTrayBackend  QSystemTrayIcon -> SNI or XEmbed, Qt's choice
+  tray/IconRenderer       QPainter ring gauge, seven sizes
   tray/Notifier           org.freedesktop.Notifications
   tray/SleepWatcher       logind PrepareForSleep
   ui/UsageViewModel       display values, and only display values
@@ -32,7 +35,7 @@ claudedial             the assembly
   ui/PopupWindow          frameless QQuickView; header drag via startSystemMove
   ui/Colors               the palette QML reads: brand, usage ramp, system accent
   ui/GaugeItem            QQuickPaintedItem wrapping GaugePainter for QML
-  ui/qml/*.qml            Popup, Settings, and two small components
+  ui/qml/*.qml            Popup, Settings, and the small components they share
 
 claudedial_tests       core only, headless
 ```
@@ -66,6 +69,14 @@ refreshing here would race Claude Code and could sign the user out of it.
 `Credentials` watches the file instead and `UsageService` retries when it
 changes. This is a deliberate capability we decline. See
 [usage-api.md](usage-api.md) §7.
+
+**Where the token comes from is one class's business, and it differs by
+platform.** `Credentials` tries `$CLAUDE_CODE_OAUTH_TOKEN`, then Claude Code's
+`.credentials.json`, then - on macOS only - the login Keychain, read by running
+`security` rather than calling `SecItemCopyMatching`, because that tool is in
+the item's ACL and a direct call would prompt on every poll. Only the file can
+be watched, so `Credentials::watchesForChanges()` tells `UsageService` whether
+it has to re-read before every poll. Nothing above core knows any of this.
 
 **Failures mark, never clear.** `UsageService::onFailed` sets `stale` and keeps
 the previous `UsageState`. There is no code path that replaces good data with
@@ -148,10 +159,10 @@ Checked before writing anything, per the project's own rules:
 
 | Need | Qt provides |
 | --- | --- |
-| StatusNotifierItem over D-Bus | `QSystemTrayIcon` (routes via `QDBusTrayIcon` when a watcher is present) |
+| A tray icon on any Linux desktop | `QSystemTrayIcon` - StatusNotifierItem or XEmbed, chosen by the platform theme |
 | Tray context menu on Wayland | `QMenu` on the tray icon, exported as DBusMenu |
 | XDG config file | `QSettings(NativeFormat, UserScope, …)` |
-| Autostart directory | `QStandardPaths::GenericConfigLocation` |
+| Autostart entry | `QStandardPaths::GenericConfigLocation`, plus a registry value and a LaunchAgent - `core/Autostart` |
 | Light/dark/system theme | `QStyleHints::setColorScheme()` (Qt 6.8+) - moves QML too |
 | Custom-painted QML item | `QQuickPaintedItem` |
 | Credential-file watching | `QFileSystemWatcher` |

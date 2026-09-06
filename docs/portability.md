@@ -137,15 +137,17 @@ The ladder, with what each rung actually needs:
 | --- | --- | --- |
 | Plasma, left click works | popup | works today |
 | GNOME, only double click | popup on double click, and from the menu | done |
-| AppIndicator, no tooltip | numbers in the menu | disabled menu entries - not done |
+| AppIndicator, no tooltip | numbers in the menu | done - `format::menuEntry()`, two disabled entries |
 | Frameless popup misbehaves | a normal decorated window | an appearance setting — Syncthing Tray has exactly this |
 | No tray at all | `--json` / `--once` | works today: we exit with a message pointing at them |
 
-Three of the five rungs behave today. The bottom one always did:
+Four of the five rungs behave today. The bottom one always did:
 `SystemTrayBackend::isAvailable()` is checked and the failure message names
-`--json`. What is left is the tooltip replacement, and an appearance option for
-desktops where the frameless popup misbehaves - neither of which can be verified
-from here, since both only matter on desktops this was not developed on.
+`--json` - and where the tray is merely late rather than absent, `--wait` now
+covers it, which is what every autostart entry passes. What is left is a single
+appearance option for desktops where the frameless popup misbehaves, which
+cannot be verified from here because it only matters on desktops this was not
+developed on.
 
 ---
 
