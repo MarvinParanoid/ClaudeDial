@@ -12,7 +12,7 @@
 # or, without pacman-contrib installed, sha256sum the two published files.
 pkgname=claudedial-bin
 _pkgname=claudedial
-pkgver=0.1.9
+pkgver=0.1.10
 pkgrel=1
 pkgdesc="Claude Code usage at a glance - minimal system tray indicator"
 arch=('x86_64')
@@ -28,7 +28,7 @@ provides=("$_pkgname")
 conflicts=("$_pkgname")
 source=("$_pkgname-$pkgver.tar.gz::$url/releases/download/v$pkgver/$_pkgname-$pkgver-linux-x86_64.tar.gz"
         "LICENSE-$pkgver::$url/raw/v$pkgver/LICENSE")
-sha256sums=('20cce5704d3cc3e55f7a0766e1a786ca66e680a341518db8a064014252c542e9'
+sha256sums=('6a8a0ad58fc23b649ad38ff842b6589edf2337156ac6fa3e64274851dcddab0f'
             '4698a8696649196be7bb4e7b24a8ed90865cc8933efe8f199415bb634dbf4630')
 
 package() {
