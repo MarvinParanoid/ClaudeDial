@@ -42,6 +42,28 @@ come from the stroke.
 indicator. The 240-degree arc with the gap at the bottom is what makes it an
 instrument.
 
+**Three tray styles, and the third is not a size control.** Asked for as "can
+the number be customisable in size", which measurement turned down: the digits
+sit inside the arc, two of them form a rectangle inscribed in its inner circle,
+and 0.52 of the icon is already close to the ceiling — measured at 0.56 for a
+16 px icon and 0.63 above it, so a slider's entire travel would be 8% at the
+size where it matters most. The ceiling also depends on the font, which differs
+by platform, so a maximum safe here could collide elsewhere.
+
+What does make the number substantially bigger is giving up the arc, which the
+small-size form already does: 0.86 of the icon, 18 px of digit on a 22 px icon
+against 11. So the setting is a third *style* rather than a size, it reuses the
+form that small panels already get, and the choice it offers is honest — a dial
+or a readout, not a knob with nowhere to turn.
+
+The same question was asked about the tray tone: a slider instead of
+Auto/Light/Dark. Declined, because Auto is not a point on that scale — it is
+"ask the desktop", and on Plasma the answer is exact — and because the two
+explicit values are the two ends rather than samples along a ramp. The middle of
+such a slider is `kTrayNeutral`, which is already the fallback used when nothing
+about the panel is known: visible on any background at the cost of being crisp
+on none. A control whose only useful positions are its extremes is two buttons.
+
 **At 100% the Percentage style shows `!`.** Three digits were tried at a reduced
 size; in a real panel they came out visibly weaker than `99`, the one reading
 that most needs to carry. A full red arc around an exclamation mark says it more

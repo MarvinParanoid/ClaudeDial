@@ -43,12 +43,15 @@ Rectangle {
             theme: theme
             label: qsTr("Tray style")
 
-            // Two variants of the same mark: the arc is identical, and only its
-            // middle differs. The popup header keeps the needle either way, as
-            // the constant logotype.
+            // The first two are the same mark with a different middle - the arc
+            // is identical, only a needle or a number sits inside it. The third
+            // gives up the arc: it is the form small panels already get, where
+            // the number becomes the mark and a bar carries the state, and it is
+            // the only way the digits get substantially bigger. The popup header
+            // keeps the needle in every case, as the constant logotype.
             Segmented {
                 theme: theme
-                options: [qsTr("Gauge"), qsTr("Percentage")]
+                options: [qsTr("Gauge"), qsTr("Percentage"), qsTr("Big number")]
                 currentIndex: settings.trayStyleIndex
                 onActivated: function(index) { settings.trayStyleIndex = index }
             }

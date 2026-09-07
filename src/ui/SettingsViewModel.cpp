@@ -71,7 +71,15 @@ void SettingsViewModel::setCriticalThreshold(int percent)
 
 int SettingsViewModel::trayStyleIndex() const
 {
-    return m_config->trayStyle() == Config::TrayStyle::Gauge ? 0 : 1;
+    switch (m_config->trayStyle()) {
+    case Config::TrayStyle::Gauge:
+        return 0;
+    case Config::TrayStyle::Percentage:
+        return 1;
+    case Config::TrayStyle::BigNumber:
+        return 2;
+    }
+    return 1;
 }
 
 int SettingsViewModel::trayToneIndex() const
@@ -98,7 +106,9 @@ void SettingsViewModel::setTrayToneIndex(int index)
 
 void SettingsViewModel::setTrayStyleIndex(int index)
 {
-    const auto style = index == 0 ? Config::TrayStyle::Gauge : Config::TrayStyle::Percentage;
+    const auto style = index == 0 ? Config::TrayStyle::Gauge
+        : index == 2              ? Config::TrayStyle::BigNumber
+                                  : Config::TrayStyle::Percentage;
     if (style != m_config->trayStyle())
         m_config->setTrayStyle(style);
 }

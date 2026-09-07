@@ -32,7 +32,8 @@ public:
     /// better daily driver, because it answers the question without a hover.
     enum class TrayStyle {
         Gauge,      ///< the needle - the logotype, and a reading you interpret
-        Percentage, ///< the exact number
+        Percentage, ///< the exact number, inside the dial
+        BigNumber,  ///< the number as the whole mark, with a bar under it
     };
 
     /// How light or dark the tray icon's neutral is drawn.

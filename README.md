@@ -265,11 +265,19 @@ critical thresholds, tray style, tray icon tone, and theme. Settings live in
 `HKEY_CURRENT_USER\Software\claudedial` - the `[state]` group in the file is
 ClaudeDial's own bookkeeping, not settings.
 
-**Tray style** picks what goes inside the arc: **Percentage** (default) shows
-the exact 5-hour figure, `!` at 100%; **Gauge** shows the needle. The arc is
-the same in both and fills with usage either way. Below 17 px the mark changes
-shape, because the dial with a number inside it is not legible that small -
-chosen by the size the panel asks for, never by the desktop.
+**Tray style** has three settings. **Percentage** (default) and **Gauge** are
+the same mark with a different middle - the exact 5-hour figure (`!` at 100%) or
+the needle - and the arc is identical in both, filling with usage either way.
+Below 17 px that mark changes shape on its own, because a dial with a number
+inside it is not legible that small; the switch is by the size the panel asks
+for, never by the desktop.
+
+**Big number** uses that small-size shape at every size: the number becomes the
+whole mark and a bar underneath carries the state. It is there because digits
+inside the arc cannot get much bigger - two of them are a rectangle inscribed in
+the arc's inner circle, and the current 0.52 of the icon is already near the
+measured ceiling of 0.63 - while giving up the arc allows 0.86. On a 22 px icon
+that is 18 px of digit rather than 11. The trade is the dial for a readout.
 
 **Tray icon** sets how light or dark the mark is while usage is below the
 warning threshold. **Auto** reads the panel's colour where Plasma declares one,

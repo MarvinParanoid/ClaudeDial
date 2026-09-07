@@ -603,6 +603,21 @@ void CoreTest::roundTripsSettings()
     QCOMPARE(reread.notificationsEnabled(), false);
     QVERIFY(reread.trayStyle() == Config::TrayStyle::Gauge);
     QVERIFY(reread.theme() == Config::Theme::Dark);
+
+    // Every tray style survives a restart, not just the two that existed first.
+    // A style that reads back as something else is invisible in the settings
+    // window - the segment moves, the icon does not.
+    for (const auto style : { Config::TrayStyle::Gauge, Config::TrayStyle::Percentage,
+                              Config::TrayStyle::BigNumber }) {
+        config.setTrayStyle(style);
+        QVERIFY(Config(kTestOrganisation, kTestApplication).trayStyle() == style);
+    }
+
+    for (const auto tone : { Config::TrayTone::Auto, Config::TrayTone::Light,
+                             Config::TrayTone::Dark }) {
+        config.setTrayTone(tone);
+        QVERIFY(Config(kTestOrganisation, kTestApplication).trayTone() == tone);
+    }
 }
 
 void CoreTest::defaultsSuitALinuxTray()

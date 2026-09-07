@@ -177,9 +177,19 @@ QPixmap IconRenderer::renderPixmap(int size, std::optional<double> percentage,
 
     // With no data there is no number to show, so both modes fall back to the
     // empty dial - "unknown" looks the same however the icon is configured.
-    if (percentage && options.style == core::Config::TrayStyle::Percentage) {
+    const bool numeric = options.style == core::Config::TrayStyle::Percentage
+        || options.style == core::Config::TrayStyle::BigNumber;
+    if (percentage && numeric) {
         const double clamped = std::clamp(*percentage, 0.0, 100.0);
-        if (size <= kSmallIconMax)
+        // The small-size form at every size, when asked for. Inside the dial the
+        // digits are capped by geometry - two of them are a rectangle inscribed
+        // in the arc's inner circle, and 0.52 is already close to the ceiling,
+        // measured at 0.56 for a 16 px icon and 0.63 above it. Dropping the arc
+        // for a bar raises that to 0.86: 18 px of digit on a 22 px icon rather
+        // than 11. That is the only way to make the number substantially bigger,
+        // and it is a choice between a dial and a readout rather than a size
+        // slider with nowhere to travel.
+        if (size <= kSmallIconMax || options.style == core::Config::TrayStyle::BigNumber)
             paintSmallNumber(painter, size, clamped, options);
         else
             paintNumberInArc(painter, size, clamped, options);

@@ -158,7 +158,11 @@ Config::TrayStyle Config::trayStyle() const
     // it stays the logotype in the popup header regardless of this setting.
     const QString value = m_settings->value(QLatin1String(kTrayStyle),
                                             QStringLiteral("percentage")).toString();
-    return value == QLatin1String("gauge") ? TrayStyle::Gauge : TrayStyle::Percentage;
+    if (value == QLatin1String("gauge"))
+        return TrayStyle::Gauge;
+    if (value == QLatin1String("bignumber"))
+        return TrayStyle::BigNumber;
+    return TrayStyle::Percentage;
 }
 
 Config::TrayTone Config::trayTone() const
@@ -183,9 +187,10 @@ void Config::setTrayTone(TrayTone tone)
 
 void Config::setTrayStyle(TrayStyle style)
 {
-    m_settings->setValue(QLatin1String(kTrayStyle),
-                         style == TrayStyle::Gauge ? QStringLiteral("gauge")
-                                                   : QStringLiteral("percentage"));
+    const QString value = style == TrayStyle::Gauge ? QStringLiteral("gauge")
+        : style == TrayStyle::BigNumber              ? QStringLiteral("bignumber")
+                                                     : QStringLiteral("percentage");
+    m_settings->setValue(QLatin1String(kTrayStyle), value);
     Q_EMIT changed();
 }
 

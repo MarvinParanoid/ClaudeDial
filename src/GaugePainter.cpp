@@ -45,7 +45,16 @@ void paint(QPainter& painter, const QRectF& bounds, std::optional<double> percen
     QColor track = colors.dial;
     if (fill == Fill::Usage)
         track.setAlphaF(static_cast<float>(kTrackAlpha));
-    painter.setPen(QPen(track, dialWidth, Qt::SolidLine, Qt::FlatCap));
+
+    // Round caps where a fill will be drawn over this, flat where the track is
+    // the mark itself. The fill's leading edge is round - deliberately - and a
+    // pen has one cap style for both ends, so its *starting* cap was bulging
+    // past the track's flat left end: measured 1 px lower at 22 px and 2 px at
+    // 24 and above, for every percentage between 1 and 99. The two lower ends
+    // of the dial were visibly not level. Matching the track makes the two
+    // starting caps coincide exactly.
+    const auto cap = fill == Fill::Usage ? Qt::RoundCap : Qt::FlatCap;
+    painter.setPen(QPen(track, dialWidth, Qt::SolidLine, cap));
     painter.drawArc(dial, static_cast<int>(kStartAngle * 16), static_cast<int>(kSweep * 16));
 
     if (!percentage) {

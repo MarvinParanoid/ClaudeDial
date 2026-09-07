@@ -33,6 +33,26 @@ QImage render(int size, std::optional<double> percentage, Style style, bool stal
 
 /// How much of the bottom rows is inked. The small-size percentage mark puts a
 /// usage bar there; the dial has its opening there and leaves it empty.
+/// The lowest row carrying ink, in the left and the right half.
+///
+/// The threshold is deliberately low. At 40 the faint track - 20% alpha - loses
+/// its antialiased edge while the opaque fill keeps its own, which reports a
+/// two-pixel difference where the geometry has one. That very nearly sent the
+/// investigation to the wrong conclusion.
+void lowestInkedRow(const QImage& image, int& leftY, int& rightY)
+{
+    leftY = rightY = -1;
+    const int mid = image.width() / 2;
+    for (int y = 0; y < image.height(); ++y)
+        for (int x = 0; x < image.width(); ++x)
+            if (qAlpha(image.pixel(x, y)) > 8) {
+                if (x < mid)
+                    leftY = y;
+                else
+                    rightY = y;
+            }
+}
+
 double bottomFill(const QImage& image, int rows)
 {
     int inked = 0;
@@ -104,7 +124,9 @@ class RenderTest : public QObject
 private Q_SLOTS:
     void bakesTheSizesPanelsAskFor();
     void swapsTheMarkBelowSeventeenPixels();
+    void drawsTheBigNumberFormAtEverySize();
     void showsOneGlyphRatherThanThreeDigitsAtTheLimit();
+    void keepsBothLowerEndsOfTheDialLevel();
     void paintsTheUsageRamp();
     void fadesWhenStale();
     void drawsNoReadingWithoutData();
@@ -160,6 +182,37 @@ void RenderTest::swapsTheMarkBelowSeventeenPixels()
                             .arg(justAbove, 0, 'f', 3)));
 }
 
+void RenderTest::drawsTheBigNumberFormAtEverySize()
+{
+    // The point of the setting: substantially bigger digits. Inside the dial
+    // they are capped by geometry at roughly 0.63 of the icon against the 0.52
+    // already used, so a size control would have nowhere to travel. Dropping
+    // the arc for a bar raises the cap to 0.86, and that is what this asks for.
+    for (const int size : { 22, 24, 32, 48 }) {
+        const QImage arc = render(size, 63, Style::Percentage);
+        const QImage big = render(size, 63, Style::BigNumber);
+
+        // More ink, because the digits are half again as tall.
+        QVERIFY2(meanAlpha(big) > meanAlpha(arc),
+                 qPrintable(QStringLiteral("%1 px: big %2, arc %3")
+                                .arg(size).arg(meanAlpha(big)).arg(meanAlpha(arc))));
+
+        // And the bar is there: the arc form leaves the bottom rows empty,
+        // because that is where the dial's opening is.
+        QVERIFY2(bottomFill(big, 3) > bottomFill(arc, 3) + 0.2,
+                 qPrintable(QStringLiteral("%1 px: bottom big %2, arc %3")
+                                .arg(size).arg(bottomFill(big, 3)).arg(bottomFill(arc, 3))));
+    }
+
+    // At the sizes that already used this form, the setting changes nothing.
+    QCOMPARE(render(16, 63, Style::BigNumber), render(16, 63, Style::Percentage));
+
+    // With no reading there is no number, so both fall back to the empty dial -
+    // "unknown" must look the same however the icon is configured.
+    QCOMPARE(render(24, std::nullopt, Style::BigNumber),
+             render(24, std::nullopt, Style::Percentage));
+}
+
 void RenderTest::showsOneGlyphRatherThanThreeDigitsAtTheLimit()
 {
     if (!digitsRender())
@@ -181,6 +234,37 @@ void RenderTest::showsOneGlyphRatherThanThreeDigitsAtTheLimit()
                                        "99% is %1px wide, 100% is %2px")
                             .arg(two)
                             .arg(limit)));
+}
+
+void RenderTest::keepsBothLowerEndsOfTheDialLevel()
+{
+    // The dial's 240-degree sweep is symmetric about the vertical, so its two
+    // lower ends sit at the same height by construction - and they did not.
+    // The track was drawn with a flat cap and the fill over it with a round
+    // one, and a pen has a single cap style for both ends, so the fill's
+    // *starting* cap bulged a pixel past the track's flat left end. Reported by
+    // eye first: "the lower ends of the scale look like they are not level".
+    for (const int size : { 22, 24, 32, 48, 64 }) {
+        for (const double percentage : { 1.0, 5.0, 37.0, 63.0, 99.0 }) {
+            int left = 0;
+            int right = 0;
+            lowestInkedRow(render(size, percentage, Style::Gauge), left, right);
+            QVERIFY2(left == right,
+                     qPrintable(QStringLiteral("%1 px at %2%%: left ends at %3, right at %4")
+                                    .arg(size).arg(percentage).arg(left).arg(right)));
+        }
+    }
+
+    // And the cases that were always level stay level: no fill at all, and a
+    // full one, where both ends carry the same cap either way.
+    for (const int size : { 22, 48 }) {
+        int left = 0;
+        int right = 0;
+        lowestInkedRow(render(size, std::nullopt, Style::Gauge), left, right);
+        QCOMPARE(left, right);
+        lowestInkedRow(render(size, 100.0, Style::Gauge), left, right);
+        QCOMPARE(left, right);
+    }
 }
 
 void RenderTest::paintsTheUsageRamp()
