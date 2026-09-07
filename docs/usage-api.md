@@ -59,6 +59,13 @@ file will be absent or lack `claudeAiOauth`. Claude Code models this internally 
 3. `~/.claude/.credentials.json`
 4. macOS only: the login Keychain, item `Claude Code-credentials` — see below.
 
+**None of these is written by the Claude desktop application.** It signs in to
+claude.ai and keeps that session its own way, so a machine with the desktop app
+and no Claude Code has no credential file and no keychain item — reported here
+as exactly that: a live subscription, limits visible in the official
+application, and nothing for ClaudeDial to find. `claude --version` answering in
+a terminal is the precondition, not the subscription.
+
 ### macOS: the login Keychain
 
 On macOS Claude Code normally keeps the same JSON in the login keychain instead

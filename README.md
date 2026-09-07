@@ -43,6 +43,16 @@ exactly one class, sends it only to `api.anthropic.com` over HTTPS - an address
 hard-coded at build time, not configurable - and never logs it,
 copies it, exposes it to the UI layer, or writes it anywhere.
 
+**It needs Claude Code specifically**, and this is the first thing to check when
+it reports no credentials. The Claude desktop application for macOS and Windows
+signs in to claude.ai and keeps that session its own way; it does not write
+Claude Code's credential file and does not create Claude Code's keychain item.
+Seeing your limits in that application therefore says nothing about whether
+ClaudeDial can. If `claude --version` does not answer in a terminal, there is
+nothing on the machine for ClaudeDial to read, whatever your subscription says.
+`claudedial --once` names every place it looked, which is the quickest way to
+tell that apart from a real fault.
+
 It also **never refreshes the token**, which is a deliberate limitation rather
 than an oversight: Anthropic rotates the refresh token on use, so refreshing
 here would race Claude Code and could sign you out of it. Instead, ClaudeDial
