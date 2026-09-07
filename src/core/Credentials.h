@@ -45,6 +45,15 @@ public:
     /// the token itself.
     [[nodiscard]] QString sourceDescription() const { return m_source; }
 
+    /// Every place a token was looked for, and what was found there - one line
+    /// each, in the order tried. Never the token: the whole point is that this
+    /// can be printed. Rebuilt by every reload().
+    ///
+    /// It exists because "no credentials found" is unactionable on its own. On
+    /// macOS in particular it cannot distinguish Claude Code not being signed
+    /// in from the keychain refusing to be read, and those need opposite fixes.
+    [[nodiscard]] QStringList attempts() const { return m_attempts; }
+
     /// True when a change to the current source will either be announced by
     /// changed() or cannot happen at all. False for the macOS keychain, which
     /// offers nothing to watch: callers must re-read it before they rely on it.
@@ -71,6 +80,7 @@ private:
     QDateTime m_expiresAt;
     QDateTime m_refreshExpiresAt;
     QString m_source;
+    QStringList m_attempts;
     Status m_status = Status::Missing;
     bool m_watched = true;
     QFileSystemWatcher* m_watcher = nullptr;

@@ -77,6 +77,7 @@ private Q_SLOTS:
     void aScheduledPollLeavesTheServiceAbleToRefreshAgain();
 
     void classifiesTheCredentialFile();
+    void saysWhereItLookedForAToken();
     void prefersAnExplicitTokenFromTheEnvironment();
     void neverNamesTheTokenItHolds();
 };
@@ -1062,6 +1063,48 @@ void CoreTest::classifiesTheCredentialFile()
     other.write("{\"claudeAiOauth\": {\"accessTok");
     other.close();
     QCOMPARE(credentials.reload(), Credentials::Status::Missing);
+
+    qunsetenv("CLAUDE_CONFIG_DIR");
+}
+
+void CoreTest::saysWhereItLookedForAToken()
+{
+    QTemporaryDir dir;
+    QVERIFY(dir.isValid());
+    qunsetenv("CLAUDE_CODE_OAUTH_TOKEN");
+    qputenv("CLAUDE_CONFIG_DIR", dir.path().toUtf8());
+    const QString path = dir.filePath(QStringLiteral(".credentials.json"));
+
+    Credentials credentials;
+
+    // "No credentials found" is unactionable on its own. Each place tried has
+    // to name itself and say what was there.
+    QCOMPARE(credentials.reload(), Credentials::Status::Missing);
+    QVERIFY(credentials.attempts().size() >= 2);
+    QVERIFY(credentials.attempts().at(0).contains(QLatin1String("CLAUDE_CODE_OAUTH_TOKEN")));
+    QVERIFY(credentials.attempts().at(1).contains(path));
+    QVERIFY(credentials.attempts().at(1).contains(QLatin1String("no such file")));
+
+    // A file that exists but carries no OAuth block is a different situation
+    // from not being signed in - an API-key or Bedrock setup writes one - and
+    // saying "no such file" there would send the user looking in the wrong place.
+    QFile other(path);
+    QVERIFY(other.open(QIODevice::WriteOnly | QIODevice::Truncate));
+    other.write("{\"apiKey\":\"nope\"}");
+    other.close();
+    QCOMPARE(credentials.reload(), Credentials::Status::Missing);
+    QVERIFY(credentials.attempts().at(1).contains(QLatin1String("no OAuth")));
+
+    const qint64 hour = 60 * 60 * 1000;
+    const qint64 now = QDateTime::currentMSecsSinceEpoch();
+    const QString secret = QStringLiteral("sk-ant-oat01-must-not-appear-here");
+    writeCredentials(path, now + hour, now + hour, secret);
+    QCOMPARE(credentials.reload(), Credentials::Status::Ok);
+
+    // This is printed to a terminal and pasted into bug reports, so it is held
+    // to the same rule as sourceDescription(): never the token.
+    for (const QString& line : credentials.attempts())
+        QVERIFY2(!line.contains(secret), qPrintable(line));
 
     qunsetenv("CLAUDE_CONFIG_DIR");
 }

@@ -164,6 +164,18 @@ module needs no wrapper script:
 and timestamps only: no token, no organisation id, nothing identifying, because
 status-bar configs end up in public dotfiles repos.
 
+When there are no credentials the output stays valid JSON and gains `error` plus
+`looked_in`, which names each place a token was looked for and what was there.
+That is the difference between "Claude Code is not signed in" and "the keychain
+would not be read", which need opposite fixes and are otherwise indistinguishable:
+
+```console
+$ claudedial --once
+claudedial: no Claude subscription credentials found - sign in with Claude Code
+  looked in $CLAUDE_CODE_OAUTH_TOKEN: not set
+  looked in /home/you/.claude/.credentials.json: no such file
+```
+
 `claudedial --once` prints the same thing for humans. Both run without a
 display, so they work over SSH and from a startup script before the compositor
 is up.

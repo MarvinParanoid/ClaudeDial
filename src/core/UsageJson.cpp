@@ -3,6 +3,7 @@
 #include "Format.h"
 #include "UsageLevel.h"
 
+#include <QJsonArray>
 #include <QJsonDocument>
 #include <QJsonObject>
 
@@ -64,7 +65,7 @@ QByteArray status(const UsageState& state, int warningThreshold, int criticalThr
     return QJsonDocument(root).toJson(QJsonDocument::Indented);
 }
 
-QByteArray unavailable(const QString& reason)
+QByteArray unavailable(const QString& reason, const QStringList& lookedIn)
 {
     QJsonObject root;
     root[QStringLiteral("five_hour")] = QJsonValue(QJsonValue::Null);
@@ -75,6 +76,10 @@ QByteArray unavailable(const QString& reason)
     root[QStringLiteral("tooltip")] = reason;
     root[QStringLiteral("class")] = QStringLiteral("unavailable");
     root[QStringLiteral("error")] = reason;
+    // Where a token was looked for, when that is the reason there is none. An
+    // additive key: a status bar reading text/class is unaffected.
+    if (!lookedIn.isEmpty())
+        root[QStringLiteral("looked_in")] = QJsonArray::fromStringList(lookedIn);
     return QJsonDocument(root).toJson(QJsonDocument::Indented);
 }
 

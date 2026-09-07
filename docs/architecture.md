@@ -78,6 +78,13 @@ the item's ACL and a direct call would prompt on every poll. Only the file can
 be watched, so `Credentials::watchesForChanges()` tells `UsageService` whether
 it has to re-read before every poll. Nothing above core knows any of this.
 
+`Credentials::attempts()` is the one thing about that search which does leave
+core: a line per place tried and what was found, printed by the CLI when there
+are none. It is held to the same rule as everything else here and tested for it
+- it never contains the token - and it exists because "no credentials found" is
+otherwise unactionable, especially on macOS, where an absent keychain item and
+an unreadable one need opposite fixes.
+
 **Failures mark, never clear.** `UsageService::onFailed` sets `stale` and keeps
 the previous `UsageState`. There is no code path that replaces good data with
 zeros, which is the failure mode that makes a usage indicator actively harmful.

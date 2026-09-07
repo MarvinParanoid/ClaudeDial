@@ -115,11 +115,21 @@ int run(int argc, char** argv, bool jsonOutput)
 
     QObject::connect(&client, &UsageClient::failed, &app, [&](FetchError error) {
         const QString reason = describe(error, credentials.status());
+        // "No credentials" is the one failure a user can act on, and only if
+        // they are told where we looked. On macOS especially: an absent keychain
+        // item means Claude Code is not signed in, while an unreadable one means
+        // something quite different, and the message alone cannot tell them
+        // apart. Never the token - see Credentials::attempts().
+        const QStringList lookedIn = error == FetchError::NoCredentials
+            ? credentials.attempts()
+            : QStringList();
         if (jsonOutput) {
             // Still valid JSON, so a status bar shows "--" rather than breaking.
-            out << json::unavailable(reason);
+            out << json::unavailable(reason, lookedIn);
         } else {
             err << "claudedial: " << reason << '\n';
+            for (const QString& line : lookedIn)
+                err << "  looked in " << line << '\n';
         }
         exitCode = 1;
         QCoreApplication::quit();

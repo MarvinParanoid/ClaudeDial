@@ -93,6 +93,7 @@ void Credentials::watch(const QString& path)
 Credentials::Status Credentials::reload()
 {
     clearToken();
+    m_attempts.clear();
 
     // 1. An explicit token in the environment wins, and carries no expiry.
     const auto env = QProcessEnvironment::systemEnvironment();
@@ -100,10 +101,12 @@ Credentials::Status Credentials::reload()
     if (!envToken.isEmpty()) {
         m_token = envToken.toUtf8();
         m_source = QStringLiteral("environment (CLAUDE_CODE_OAUTH_TOKEN)");
+        m_attempts << QStringLiteral("$CLAUDE_CODE_OAUTH_TOKEN: set, used");
         m_watched = true; // it cannot change under a running process
         m_status = Status::Ok;
         return m_status;
     }
+    m_attempts << QStringLiteral("$CLAUDE_CODE_OAUTH_TOKEN: not set");
 
     // 2. Claude Code's credential file.
     const QString path = credentialFilePath();
@@ -111,12 +114,24 @@ Credentials::Status Credentials::reload()
     m_source = path;
     m_watched = true;
     bool loaded = loadFromFile(path);
+    if (loaded) {
+        m_attempts << QStringLiteral("%1: read").arg(path);
+    } else if (!QFile::exists(path)) {
+        m_attempts << QStringLiteral("%1: no such file").arg(path);
+    } else {
+        // Present but useless: an API-key or Bedrock setup writes a file with no
+        // claudeAiOauth block, and that is not the same as not being signed in.
+        m_attempts << QStringLiteral("%1: no OAuth credentials in it").arg(path);
+    }
 
 #ifdef Q_OS_MACOS
     // 3. On macOS Claude Code normally keeps the same JSON in the login
     // keychain instead, and there is nothing there to watch.
     if (!loaded) {
         loaded = loadFromKeychain();
+        m_attempts << QStringLiteral("macOS keychain, service \"Claude Code-credentials\": %1")
+                          .arg(loaded ? QStringLiteral("read")
+                                      : QStringLiteral("nothing readable found"));
         if (loaded) {
             m_source = QStringLiteral("macOS keychain (Claude Code-credentials)");
             m_watched = false;

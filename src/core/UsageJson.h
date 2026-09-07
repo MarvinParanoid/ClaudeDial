@@ -4,6 +4,7 @@
 
 #include <QByteArray>
 #include <QString>
+#include <QStringList>
 
 #include <optional>
 
@@ -21,7 +22,7 @@ QByteArray status(const UsageState& state, int warningThreshold, int criticalThr
                   const QDateTime& now = QDateTime::currentDateTimeUtc());
 
 /// Emitted instead of a state when there is nothing to report.
-QByteArray unavailable(const QString& reason);
+QByteArray unavailable(const QString& reason, const QStringList& lookedIn = {});
 
 /// Reads back what status() wrote.
 ///
