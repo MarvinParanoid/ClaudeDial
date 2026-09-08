@@ -64,6 +64,20 @@ such a slider is `kTrayNeutral`, which is already the fallback used when nothing
 about the panel is known: visible on any background at the cost of being crisp
 on none. A control whose only useful positions are its extremes is two buttons.
 
+**A question mark where a reading cannot be had.** An empty dial used to say
+three things at once: no reading yet, Claude Code not signed in, and a sign-in
+too old to use. Only the first is harmless, and a tray with no tooltips - GNOME
+with AppIndicator - offered nowhere to tell them apart. The glyph is `?` rather
+than `!`, which is taken by the limit and arrives with a full red arc, and it is
+drawn in the neutral colour on purpose: the ramp means how much quota is spent,
+so "I cannot see your quota" must not wear the colour of "you have run out".
+
+Two things it deliberately does not do. It does not appear while a reading
+exists, however stale - a number the tooltip calls old beats a question mark
+that throws it away. And it does not appear for a network failure, which is
+transient and would cry wolf every time a laptop's wifi drops. Only states the
+user can act on.
+
 **At 100% the Percentage style shows `!`.** Three digits were tried at a reduced
 size; in a real panel they came out visibly weaker than `99`, the one reading
 that most needs to carry. A full red arc around an exclamation mark says it more

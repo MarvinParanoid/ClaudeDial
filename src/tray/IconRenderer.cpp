@@ -87,6 +87,13 @@ constexpr QFont::Weight kDigitWeight = QFont::DemiBold;
 /// firmly than a cramped number, and the tooltip still gives the exact figure.
 constexpr auto kLimitGlyph = "!";
 
+/// Shown instead of a reading when usage cannot be read at all.
+///
+/// Not `!`, which already means the limit is reached and comes with a full red
+/// arc. A question mark says "I do not know", which is exactly the situation,
+/// and it carries no implication about the quota itself.
+constexpr auto kUnreadableGlyph = "?";
+
 /// How far the mark fades once the data behind it is stale. Enough to read as
 /// "not current" at a glance, not so far that the number becomes unreadable.
 constexpr double kStaleOpacity = 0.45;
@@ -163,6 +170,28 @@ void IconRenderer::paintSmallNumber(QPainter& painter, int size, double percenta
     painter.drawRect(QRectF(1.0, y, width * std::clamp(percentage, 0.0, 100.0) / 100.0, height));
 }
 
+void IconRenderer::paintUnreadable(QPainter& painter, int size, const Options& options)
+{
+    const QRectF bounds(0, 0, size, size);
+
+    // Small sizes get the glyph alone, for the same reason they get the number
+    // alone: a dial with something inside it does not survive 15 px. There is
+    // no bar here because there is no value to draw one from.
+    const bool small = size <= kSmallIconMax;
+    if (!small) {
+        gauge::paint(painter, bounds, std::nullopt, { options.foreground, options.foreground },
+                     kTrayArcScale, gauge::Center::Empty);
+    }
+
+    QFont font;
+    font.setWeight(kDigitWeight);
+    font.setPixelSize(static_cast<int>(size * (small ? kSmallDigitSize : kDigitSize)));
+    painter.setFont(font);
+    painter.setPen(QPen(options.foreground));
+    painter.drawText(bounds.translated(0, small ? 0 : size * kDigitOffset), Qt::AlignCenter,
+                     QString::fromLatin1(kUnreadableGlyph));
+}
+
 QPixmap IconRenderer::renderPixmap(int size, std::optional<double> percentage,
                                    const Options& options)
 {
@@ -177,6 +206,13 @@ QPixmap IconRenderer::renderPixmap(int size, std::optional<double> percentage,
 
     // With no data there is no number to show, so both modes fall back to the
     // empty dial - "unknown" looks the same however the icon is configured.
+    // Before either style: neither of them has a reading to show, and what has
+    // to be said is the same whichever mark the user chose.
+    if (!percentage && options.unreadable) {
+        paintUnreadable(painter, size, options);
+        return pixmap;
+    }
+
     const bool numeric = options.style == core::Config::TrayStyle::Percentage
         || options.style == core::Config::TrayStyle::BigNumber;
     if (percentage && numeric) {

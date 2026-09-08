@@ -22,12 +22,14 @@ using Style = core::Config::TrayStyle;
 
 namespace {
 
-QImage render(int size, std::optional<double> percentage, Style style, bool stale = false)
+QImage render(int size, std::optional<double> percentage, Style style, bool stale = false,
+              bool unreadable = false)
 {
     tray::IconRenderer::Options options;
     options.style = style;
     options.foreground = QColor(0xdc, 0xdc, 0xdc);
     options.stale = stale;
+    options.unreadable = unreadable;
     return tray::IconRenderer::render(percentage, options).pixmap(size, size).toImage();
 }
 
@@ -130,6 +132,7 @@ private Q_SLOTS:
     void paintsTheUsageRamp();
     void fadesWhenStale();
     void drawsNoReadingWithoutData();
+    void marksUsageItCannotRead();
 };
 
 void RenderTest::bakesTheSizesPanelsAskFor()
@@ -307,6 +310,47 @@ void RenderTest::drawsNoReadingWithoutData()
     QVERIFY(meanAlpha(empty) > 0);
     QVERIFY2(meanAlpha(empty) < meanAlpha(zero) + 1.0,
              "the no-data mark must not carry more ink than a real reading");
+}
+
+void RenderTest::marksUsageItCannotRead()
+{
+    // An empty dial used to mean three different things at once: no reading
+    // yet, Claude Code not signed in, and a sign-in too old to use. Only the
+    // first is harmless, and on a desktop whose tray has no tooltips there was
+    // nowhere the difference could be read.
+    for (const int size : { 15, 16, 22, 24, 32, 48 }) {
+        const QImage quiet = render(size, std::nullopt, Style::Percentage);
+        const QImage asking = render(size, std::nullopt, Style::Percentage, false, true);
+        QVERIFY2(meanAlpha(asking) > meanAlpha(quiet),
+                 qPrintable(QStringLiteral("%1 px: asking %2, quiet %3")
+                                .arg(size).arg(meanAlpha(asking)).arg(meanAlpha(quiet))));
+    }
+
+    // The neutral colour, never the ramp. "I cannot see your quota" must not
+    // borrow the colour of "you have run out of it".
+    //
+    // Asserted as "a grey, and none of the ramp's colours" rather than as an
+    // exact value: the glyph is antialiased text in a premultiplied image, so
+    // even its solid middle reads a shade below the colour asked for.
+    const QRgb ink = dominantColour(render(24, std::nullopt, Style::Percentage, false, true));
+    QCOMPARE(qRed(ink), qGreen(ink));
+    QCOMPARE(qGreen(ink), qBlue(ink));
+    QVERIFY(qRed(ink) > 0x80); // light, as the foreground asked for
+    for (const QColor& ramp : { brand::kUsageWarning, brand::kUsageCritical, brand::kUsageSevere })
+        QVERIFY2(ink != ramp.rgb(), qPrintable(ramp.name()));
+
+    // Style-independent, for the same reason "no data" is: the question is
+    // about the data, not about which mark the user picked.
+    QCOMPARE(render(24, std::nullopt, Style::Gauge, false, true),
+             render(24, std::nullopt, Style::Percentage, false, true));
+    QCOMPARE(render(24, std::nullopt, Style::BigNumber, false, true),
+             render(24, std::nullopt, Style::Percentage, false, true));
+
+    // A reading still wins. Credentials can expire while the last numbers are
+    // worth showing, and a number the tooltip calls stale beats a question
+    // mark that discards it.
+    QCOMPARE(render(24, 63, Style::Percentage, true, true),
+             render(24, 63, Style::Percentage, true, false));
 }
 
 QTEST_MAIN(RenderTest)

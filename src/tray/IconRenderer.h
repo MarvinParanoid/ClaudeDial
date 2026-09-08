@@ -36,6 +36,18 @@ public:
         /// to fetch, and until now the tray gave no sign of that at all - only
         /// the tooltip and the popup said so, which is no use to a glance.
         bool stale = false;
+
+        /// Usage cannot be read and the user has to do something about it: no
+        /// credentials, an expired sign-in, a token the server rejects.
+        ///
+        /// Distinct from having no reading *yet*. Both used to draw the same
+        /// empty dial, so "starting up", "Claude Code is not installed" and
+        /// "sign in again" were one picture - and on a desktop whose tray has
+        /// no tooltips there was nowhere else the difference could be read.
+        /// Drawn as a question mark in the dial's middle, in the neutral
+        /// colour: the usage ramp means how much quota is spent, and "I cannot
+        /// see your quota" must not borrow the colour of "you have run out".
+        bool unreadable = false;
     };
 
     /// A multi-resolution icon; the panel picks the size it needs.
@@ -53,6 +65,8 @@ private:
     /// bar, because the dial does not survive 15 px with a number inside it.
     static void paintSmallNumber(QPainter& painter, int size, double percentage,
                                  const Options& options);
+    /// The dial with a question mark where the reading would be.
+    static void paintUnreadable(QPainter& painter, int size, const Options& options);
 };
 
 } // namespace claudedial::tray

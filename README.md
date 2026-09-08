@@ -272,6 +272,14 @@ Below 17 px that mark changes shape on its own, because a dial with a number
 inside it is not legible that small; the switch is by the size the panel asks
 for, never by the desktop.
 
+When usage cannot be read at all - Claude Code not signed in, a sign-in too old
+to use, a token the server rejects - the mark shows a **question mark** instead
+of a reading, in the neutral colour rather than a warning one: it says "I cannot
+see your quota", which is not the same claim as "you have run out of it". An
+empty dial is kept for the harmless case of having no reading *yet*. The reason
+also goes into the tray menu, which on GNOME with AppIndicator is the only place
+it can be read, since that tray has no tooltips.
+
 **Big number** uses that small-size shape at every size: the number becomes the
 whole mark and a bar underneath carries the state. It is there because digits
 inside the arc cannot get much bigger - two of them are a rectangle inscribed in

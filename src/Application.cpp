@@ -201,6 +201,15 @@ void Application::updateTray()
     options.criticalThreshold = m_config->criticalThreshold();
     options.stale = state.stale;
 
+    // "Cannot read your usage" as opposed to "no reading yet". Only where the
+    // user can act: credentials that are absent or too old, and a token the
+    // server itself rejected. A network failure is not this - it is transient,
+    // and marking it would cry wolf every time a laptop's wifi drops.
+    const auto credentials = m_service->credentialStatus();
+    const auto error = m_service->lastError();
+    options.unreadable = credentials != core::Credentials::Status::Ok
+        || (error && *error == core::FetchError::Unauthorized);
+
     const std::optional<double> percentage = state.fiveHour
         ? std::optional<double>(state.fiveHour->percentage)
         : std::nullopt;
@@ -229,9 +238,17 @@ void Application::updateTray()
                                                   m_service->unavailableReason());
     m_tray->setToolTip(tooltip);
 
-    // The same two readings again, for a desktop whose tray has no tooltips.
-    m_tray->setSummary(core::format::menuEntry(PeriodKind::FiveHour, state),
-                       core::format::menuEntry(PeriodKind::SevenDay, state));
+    // The same two readings again, for a desktop whose tray has no tooltips -
+    // and where there are none, the reason instead. Without this an
+    // AppIndicator user sees a question mark and has nowhere at all to find out
+    // what it is asking about: no tooltip, and a popup that has to be opened
+    // from this very menu.
+    if (state.isValid()) {
+        m_tray->setSummary(core::format::menuEntry(PeriodKind::FiveHour, state),
+                           core::format::menuEntry(PeriodKind::SevenDay, state));
+    } else {
+        m_tray->setSummary(m_service->unavailableReason(), QString());
+    }
 }
 
 namespace {

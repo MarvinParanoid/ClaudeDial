@@ -78,6 +78,7 @@ private Q_SLOTS:
 
     void classifiesTheCredentialFile();
     void saysWhereItLookedForAToken();
+    void explainsWhyThereIsNoReading();
     void prefersAnExplicitTokenFromTheEnvironment();
     void neverNamesTheTokenItHolds();
 };
@@ -1120,6 +1121,44 @@ void CoreTest::saysWhereItLookedForAToken()
     // to the same rule as sourceDescription(): never the token.
     for (const QString& line : credentials.attempts())
         QVERIFY2(!line.contains(secret), qPrintable(line));
+
+    qunsetenv("CLAUDE_CONFIG_DIR");
+}
+
+void CoreTest::explainsWhyThereIsNoReading()
+{
+    QTemporaryDir dir;
+    QVERIFY(dir.isValid());
+    qunsetenv("CLAUDE_CODE_OAUTH_TOKEN");
+    qunsetenv("CLAUDEDIAL_SIMULATE");
+    qputenv("CLAUDE_CONFIG_DIR", dir.path().toUtf8());
+    const QString path = dir.filePath(QStringLiteral(".credentials.json"));
+
+    Credentials credentials;
+    Config config(QStringLiteral("claudedial-test"), QStringLiteral("reason"));
+    UsageService service(&credentials, &config);
+
+    // This string is no longer only a tooltip: with no reading it goes into the
+    // tray menu, which on AppIndicator is the one place a user can read
+    // anything at all. So each credential state has to name itself.
+    credentials.reload();
+    const QString missing = service.unavailableReason();
+    QVERIFY(!missing.isEmpty());
+    QVERIFY2(missing.contains(QLatin1String("Sign in")), qPrintable(missing));
+
+    const qint64 now = QDateTime::currentMSecsSinceEpoch();
+    const qint64 hour = 60 * 60 * 1000;
+
+    writeCredentials(path, now - hour, now + 30 * 24 * hour);
+    credentials.reload();
+    const QString expired = service.unavailableReason();
+    QVERIFY2(expired.contains(QLatin1String("expired")), qPrintable(expired));
+    QVERIFY2(expired != missing, "an expired token is not the same as never having one");
+
+    writeCredentials(path, now - hour, now - hour);
+    credentials.reload();
+    const QString signedOut = service.unavailableReason();
+    QVERIFY2(signedOut != expired, "a dead refresh token needs the user, not patience");
 
     qunsetenv("CLAUDE_CONFIG_DIR");
 }
