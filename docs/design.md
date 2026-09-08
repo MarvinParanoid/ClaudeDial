@@ -64,6 +64,25 @@ such a slider is `kTrayNeutral`, which is already the fallback used when nothing
 about the panel is known: visible on any background at the cost of being crisp
 on none. A control whose only useful positions are its extremes is two buttons.
 
+**The pace line is on trial, and the trial has a date.** Under the five-hour row
+sits `Usage 63% · window 60%`: two bare numbers, no projection and no verdict.
+The reasoning is that a percentage alone does not say whether it is a lot — 63%
+with four hours to run is heavy, 63% with forty minutes left is fine — and that
+the honest way to say so is to put the second number beside the first and let
+the reader do the comparison.
+
+It shipped marked experimental, with a review agreed for **10 September 2026**,
+because the case against it is real: it is the only line in the popup that asks
+the reader to do arithmetic, and a feature nobody uses is worse than absent. It
+appears on the five-hour window only — across seven days the idea stops meaning
+anything, since consumption is naturally uneven and "40% through the week" says
+nothing about whether 40% spent is a lot.
+
+What the review has to answer, and neither can be answered from the code: did it
+ever change a decision, and was it read at all? If not, it goes — the
+implementation is `format::pace()` plus one QML row, and `windowProgress()` is
+kept regardless, because the tooltip uses it too.
+
 **A question mark where a reading cannot be had.** An empty dial used to say
 three things at once: no reading yet, Claude Code not signed in, and a sign-in
 too old to use. Only the first is harmless, and a tray with no tooltips - GNOME
